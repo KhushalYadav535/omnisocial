@@ -75,7 +75,10 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
         />
 
         {/* Main Content View with Architectural Light Atmosphere */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+        <main
+          data-lenis-prevent="true"
+          className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative overscroll-contain"
+        >
           {/* Subtle Background Pattern */}
           <div
             className="absolute inset-0 opacity-[0.015] pointer-events-none select-none"

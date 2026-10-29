@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 
 interface SmoothScrollContextType {
@@ -16,10 +17,30 @@ const SmoothScrollContext = createContext<SmoothScrollContextType>({
 export const useSmoothScroll = () => useContext(SmoothScrollContext);
 
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Initialize Lenis with smooth luxury easing
+    // Only activate Lenis on marketing / landing pages where full-window scroll is desired.
+    // Inside the dashboard / app routes (e.g. /inbox, /dashboard, /content-studio, etc.),
+    // native mouse wheel scrolling must remain 100% unintercepted so inner panels scroll naturally.
+    const isLandingPage =
+      pathname === '/' ||
+      pathname === '/privacy' ||
+      pathname === '/terms' ||
+      pathname === '/data-deletion';
+
+    if (!isLandingPage) {
+      if (lenisRef.current) {
+        lenisRef.current.destroy();
+        lenisRef.current = null;
+      }
+      document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
+      document.body.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
+      return;
+    }
+
+    // Initialize Lenis for the marketing landing page with safe nested scroll bypass
     const lenis = new Lenis({
       duration: 1.25,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -28,6 +49,15 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       smoothWheel: true,
       wheelMultiplier: 1.05,
       touchMultiplier: 1.8,
+      allowNestedScroll: true,
+      prevent: (node) => {
+        if (!node) return false;
+        const el = node as HTMLElement;
+        return Boolean(
+          el.closest?.('[data-lenis-prevent]') ||
+          el.closest?.('.overflow-y-auto, .overflow-auto, textarea, input, select')
+        );
+      },
     });
 
     lenisRef.current = lenis;
@@ -63,8 +93,10 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       document.removeEventListener('click', handleAnchorClick);
       lenis.destroy();
       lenisRef.current = null;
+      document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
+      document.body.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
     };
-  }, []);
+  }, [pathname]);
 
   const scrollTo = (target: string | HTMLElement, options?: any) => {
     if (lenisRef.current) {
@@ -81,4 +113,3 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     </SmoothScrollContext.Provider>
   );
 }
-
