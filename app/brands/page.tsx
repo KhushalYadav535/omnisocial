@@ -334,8 +334,24 @@ export default function BrandsPage() {
                     value={responseGuidelines}
                     onChange={(e) => setResponseGuidelines(e.target.value)}
                     placeholder="Always greet warmly by name. In sizing or exchange issues, invite customer to DM their Order ID."
-                    className="w-full text-xs border border-slate-300 rounded-lg p-2.5"
+                    className="w-full text-xs border border-slate-300 rounded-lg p-2.5 focus:outline-hidden focus:ring-2 focus:ring-indigo-600"
                   />
+                </div>
+
+                {/* Bottom Sticky Action Bar (UX Ergonomics: Saves scrolling to the top) */}
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    All edits are versioned and synced with AI inference engine
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSaveVoice}
+                    disabled={savingVoice}
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md hover:shadow-indigo-500/20 flex items-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingVoice ? 'Saving Changes...' : 'Save Voice Profile'}</span>
+                  </button>
                 </div>
               </>
             ) : (

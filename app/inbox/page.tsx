@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppLayout from '../../components/AppLayout';
 import { apiRequest } from '../../lib/api';
 import {
   Inbox,
-  Filter,
   Search,
   MessageSquare,
   Sparkles,
@@ -16,16 +15,17 @@ import {
   Send,
   RefreshCw,
   ExternalLink,
-  ThumbsUp,
-  HelpCircle,
-  Tag,
-  ShieldAlert,
-  Edit3,
-  Check,
-  UserCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  Check,
+  Zap,
+  CornerDownLeft,
+  Trash2,
+  Smile,
+  Bot
 } from 'lucide-react';
+import { Facebook, Instagram } from '../../components/Icons';
 import confetti from 'canvas-confetti';
 
 function InboxContent() {
@@ -75,6 +75,8 @@ function InboxContent() {
   const [sendingReply, setSendingReply] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
+  const [showReplyComposerOnSent, setShowReplyComposerOnSent] = useState(false);
 
   const syncWithMeta = async () => {
     setSyncing(true);
@@ -85,12 +87,13 @@ function InboxContent() {
         body: JSON.stringify({ brandId: activeBrandId || undefined })
       });
       if (res.newItems > 0) {
-        setSuccessNotice(`Synced ${res.newItems} new comment(s) directly from Meta!`);
+        setSuccessNotice(`Synced ${res.newItems} new item(s) directly from Meta Graph!`);
       } else if (res.totalFound > 0) {
-        setSuccessNotice(`All ${res.totalFound} comments are up-to-date with Meta.`);
+        setSuccessNotice(`All ${res.totalFound} items are current with Meta.`);
       } else {
-        setSuccessNotice('Meta synchronization completed. No new comments found.');
+        setSuccessNotice('Meta synchronization completed. No new items found.');
       }
+      setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       await fetchInteractions(1);
     } catch (err: any) {
       console.error('Meta sync failed:', err);
@@ -101,7 +104,7 @@ function InboxContent() {
     }
   };
 
-  const fetchInteractions = async (targetPage?: number) => {
+  const fetchInteractions = useCallback(async (targetPage?: number) => {
     setLoading(true);
     try {
       const pageNum = typeof targetPage === 'number' ? targetPage : page;
@@ -123,7 +126,7 @@ function InboxContent() {
       if (res.commentsCount !== undefined) setCommentsTotal(res.commentsCount);
       if (res.dmsCount !== undefined) setDmsTotal(res.dmsCount);
 
-      // If no selected interaction, or selected one is not in new list, pick the first
+      // Auto-select first item if current selection is invalid or absent
       if (items.length > 0) {
         if (!selectedInteraction || !items.some((i: any) => i.id === selectedInteraction.id)) {
           loadInteractionDetail(items[0].id);
@@ -136,12 +139,13 @@ function InboxContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit, selectedInteraction]);
 
   const loadInteractionDetail = async (id: string) => {
     try {
       const res = await apiRequest(`/inbox/${id}`);
       setSelectedInteraction(res.interaction);
+      setShowReplyComposerOnSent(false);
 
       // Check if there is an existing draft reply
       const draft = (res.interaction.replies || []).find((r: any) => r.status === 'DRAFT');
@@ -157,6 +161,8 @@ function InboxContent() {
       // Auto-fetch AI suggestions if interaction needs response
       if (res.interaction.replyStatus === 'NEEDS_RESPONSE' || res.interaction.replyStatus === 'DRAFT_READY') {
         fetchAiSuggestions(id);
+      } else {
+        setSuggestions([]);
       }
     } catch (err) {
       console.error('Failed to load interaction detail:', err);
@@ -173,7 +179,6 @@ function InboxContent() {
       });
       if (res.suggestions) {
         setSuggestions(res.suggestions);
-        // If reply text is currently empty, pre-fill with recommended first suggestion
         if (!replyText && res.suggestions.length > 0) {
           setReplyText(res.suggestions[0].text);
         }
@@ -186,13 +191,31 @@ function InboxContent() {
     }
   };
 
+  const handleApplyTone = (tone: string) => {
+    if (!replyText.trim() && suggestions.length > 0) {
+      setReplyText(suggestions[0].text);
+      return;
+    }
+    // Quick prefix/tone modifier
+    if (tone === 'friendly') {
+      if (!replyText.toLowerCase().includes('hello') && !replyText.toLowerCase().includes('hi')) {
+        setReplyText(`Hi ${selectedInteraction?.authorName?.split(' ')[0] || 'there'}! ✨ ${replyText}`);
+      }
+    } else if (tone === 'professional') {
+      setReplyText(`Dear ${selectedInteraction?.authorName || 'Customer'}, thank you for contacting us. ${replyText.replace(/^(Hi|Hello|Hey)[^,]*,?\s*/i, '')}`);
+    } else if (tone === 'concise') {
+      const sentences = replyText.split(/[.!?]+/).filter(Boolean);
+      setReplyText(sentences.slice(0, 2).join('. ') + '.');
+    }
+  };
+
   const handleApproveAndSend = async () => {
     if (!selectedInteraction || !replyText.trim()) return;
     setSendingReply(true);
     setSuccessNotice(null);
 
     try {
-      // Step 1: Save draft if not created yet
+      // Step 1: Save draft
       const draftRes = await apiRequest('/replies/draft', {
         method: 'POST',
         body: JSON.stringify({
@@ -210,22 +233,36 @@ function InboxContent() {
       });
 
       confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b']
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b']
       });
 
-      setSuccessNotice(`Approved and sent reply to ${selectedInteraction.authorName} on ${selectedInteraction.platform}!`);
+      setSuccessNotice(`Approved & sent reply to ${selectedInteraction.authorName} on ${selectedInteraction.platform}!`);
 
       // Refresh item state
       selectedInteraction.replyStatus = 'SENT';
+      if (!selectedInteraction.replies) selectedInteraction.replies = [];
+      selectedInteraction.replies.unshift({
+        id: replyId,
+        finalContent: replyText,
+        status: 'SENT',
+        sentAt: new Date().toISOString()
+      });
       setSelectedInteraction({ ...selectedInteraction });
       fetchInteractions();
     } catch (err: any) {
       alert(`Approval error: ${err.message}`);
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleApproveAndSend();
     }
   };
 
@@ -239,80 +276,64 @@ function InboxContent() {
 
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
-      <div className="h-[calc(100vh-7rem)] flex flex-col space-y-4">
-        {/* Top Category Switcher: Post Comments vs Direct Messages (Separate Views) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-          <button
-            onClick={() => {
-              setTypeFilter('COMMENT');
-              setPage(1);
-            }}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2.5 transition-all cursor-pointer ${
-              typeFilter === 'COMMENT'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Post Comments</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              typeFilter === 'COMMENT' ? 'bg-indigo-500/90 text-white' : 'bg-slate-100 text-slate-700'
-            }`}>
-              {commentsTotal}
-            </span>
-          </button>
+      {/* Outer Shell strictly calibrated to viewport height with zero window overflow */}
+      <div className="h-[calc(100vh-7.5rem)] sm:h-[calc(100vh-8rem)] lg:h-[calc(100vh-8.5rem)] flex flex-col space-y-3">
+        
+        {/* COMPACT UNIFIED COMMAND BAR (UX OPTIMIZATION: REPLACES 2 GIANT HEADERS) */}
+        <header className="bg-white/95 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
+          {/* Left: View Mode Segmented Control + Live Meta Pulse */}
+          <div className="flex items-center space-x-3">
+            <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeFilter('COMMENT');
+                  setPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                  typeFilter === 'COMMENT'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Comments</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  typeFilter === 'COMMENT' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {commentsTotal}
+                </span>
+              </button>
 
-          <button
-            onClick={() => {
-              setTypeFilter('DIRECT_MESSAGE');
-              setPage(1);
-            }}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2.5 transition-all cursor-pointer ${
-              typeFilter === 'DIRECT_MESSAGE'
-                ? 'bg-purple-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            <Inbox className="w-4 h-4" />
-            <span>Direct Messages / DMs</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-              typeFilter === 'DIRECT_MESSAGE' ? 'bg-purple-500/90 text-white' : 'bg-slate-100 text-slate-700'
-            }`}>
-              {dmsTotal}
-            </span>
-          </button>
-        </div>
-
-        {/* Top Header & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/90 shadow-sm">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/80">
-                [ REAL-TIME ENGAGEMENT STREAM ]
-              </span>
-              <span className="text-xs text-slate-400 font-mono">• Multi-Channel Sync</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeFilter('DIRECT_MESSAGE');
+                  setPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                  typeFilter === 'DIRECT_MESSAGE'
+                    ? 'bg-white text-purple-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Inbox className="w-3.5 h-3.5" />
+                <span>Direct Messages</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  typeFilter === 'DIRECT_MESSAGE' ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {dmsTotal}
+                </span>
+              </button>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2 mt-1">
-              {typeFilter === 'COMMENT' ? (
-                <>
-                  <MessageSquare className="w-5 h-5 text-indigo-600" />
-                  <span>Post Comments & Public Discussions</span>
-                </>
-              ) : (
-                <>
-                  <Inbox className="w-5 h-5 text-purple-600" />
-                  <span>Direct Messages (DMs) & Messenger</span>
-                </>
-              )}
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {typeFilter === 'COMMENT'
-                ? 'Manage customer comments, questions, and replies across published Facebook & Instagram posts.'
-                : 'Process private 1-on-1 customer conversations from Facebook Page Messenger and Instagram Direct.'}
-            </p>
+
+            <div className="hidden xl:flex items-center space-x-1.5 text-[11px] text-slate-500 font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Meta Graph v22.0 Live</span>
+            </div>
           </div>
 
-          {/* Quick Filters */}
+          {/* Right: Search + Platform Filter + Status Filter + Sync Button */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
@@ -321,14 +342,14 @@ function InboxContent() {
                 placeholder={typeFilter === 'COMMENT' ? 'Search comments...' : 'Search messages...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-600 w-44 sm:w-56"
+                className="pl-8 pr-3 py-1.5 text-xs bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-600/30 w-36 sm:w-48 transition-all"
               />
             </div>
 
             <select
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium"
+              className="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50/70 hover:bg-white text-slate-700 font-medium cursor-pointer"
             >
               <option value="ALL">All Platforms</option>
               <option value="FACEBOOK">Facebook</option>
@@ -338,138 +359,181 @@ function InboxContent() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium"
+              className="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50/70 hover:bg-white text-slate-700 font-medium cursor-pointer"
             >
               <option value="ALL">All Status</option>
-              <option value="NEEDS_RESPONSE">Needs Response</option>
+              <option value="NEEDS_RESPONSE">Needs Reply</option>
               <option value="DRAFT_READY">Draft Ready</option>
               <option value="SENT">Sent</option>
             </select>
-          </div>
-        </div>
 
-        {/* Global Success / Sync Notice */}
+            <button
+              onClick={() => syncWithMeta()}
+              disabled={syncing}
+              title={`Last synced: ${lastSyncedTime}`}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 flex items-center space-x-1.5 transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-indigo-600' : 'text-slate-500'}`} />
+              <span className="hidden sm:inline">{syncing ? 'Syncing...' : 'Sync Meta'}</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Global Notice Banner (Collapsible) */}
         {successNotice && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+          <div className="px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shrink-0 animate-in fade-in">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{successNotice}</span>
+              <span className="font-medium">{successNotice}</span>
             </div>
             <button
               onClick={() => setSuccessNotice(null)}
-              className="text-emerald-700 hover:text-emerald-900 font-bold px-1"
+              className="text-emerald-700 hover:text-emerald-900 font-bold px-2 py-0.5 rounded cursor-pointer"
             >
               ✕
             </button>
           </div>
         )}
 
-        {/* 2-Pane Inbox View */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
-          {/* Left Pane: Interactions List (5 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col overflow-hidden">
-            <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                {typeFilter === 'COMMENT' ? 'Comments' : 'Direct Messages'} ({interactions.length})
+        {/* 2-PANE WORKSPACE: LEFT CONVERSATION LIST & RIGHT DOCKED STUDIO */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+          
+          {/* ============================================================== */}
+          {/* PANE 1: CONVERSATION LIST (ERGONOMIC 4-5 COLS)                   */}
+          {/* ============================================================== */}
+          <section className="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col min-h-0 overflow-hidden">
+            {/* List Header */}
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  {typeFilter === 'COMMENT' ? 'Post Comments' : 'Direct Messages'}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/70 px-2 py-0.2 rounded-full">
+                  {interactions.length}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {typeFilter === 'COMMENT' ? 'Public Graph' : 'Private Direct'}
               </span>
-              <button
-                onClick={() => syncWithMeta()}
-                disabled={syncing}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-indigo-50/70 hover:bg-indigo-100 transition-colors"
-                title={`Sync ${typeFilter === 'COMMENT' ? 'comments' : 'messages'} directly from Meta`}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-indigo-600' : ''}`} />
-                <span>{syncing ? 'Syncing...' : typeFilter === 'COMMENT' ? 'Sync Post Comments' : 'Sync Direct Messages'}</span>
-              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            {/* Scrollable Conversation Items */}
+            <div
+              data-lenis-prevent="true"
+              className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 overscroll-contain"
+            >
               {loading ? (
-                <div className="p-8 text-center text-xs text-slate-400">Loading interactions...</div>
+                <div className="p-10 text-center space-y-2">
+                  <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin mx-auto" />
+                  <p className="text-xs text-slate-400 font-medium">Fetching conversation telemetry...</p>
+                </div>
               ) : interactions.length === 0 ? (
                 <div className="p-8 text-center space-y-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
                     {typeFilter === 'COMMENT' ? <MessageSquare className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
                   </div>
                   <p className="text-xs text-slate-500 font-medium">
                     {typeFilter === 'COMMENT'
-                      ? 'No post comments match the selected filters.'
-                      : 'No direct messages match the selected filters.'}
+                      ? 'No post comments match the active filters.'
+                      : 'No direct messages match the active filters.'}
                   </p>
                   <button
                     onClick={() => syncWithMeta()}
                     disabled={syncing}
-                    className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg inline-flex items-center space-x-1.5 transition-colors"
+                    className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl inline-flex items-center space-x-1.5 transition-colors cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
-                    <span>
-                      {syncing
-                        ? 'Checking Meta...'
-                        : typeFilter === 'COMMENT'
-                        ? 'Fetch Comments from Facebook'
-                        : 'Fetch Messages from Messenger'}
-                    </span>
+                    <span>Sync from Meta</span>
                   </button>
                 </div>
               ) : (
                 interactions.map((item) => {
                   const isSelected = selectedInteraction?.id === item.id;
+                  const isDm = item.type === 'DIRECT_MESSAGE';
                   return (
                     <button
                       key={item.id}
+                      type="button"
                       onClick={() => loadInteractionDetail(item.id)}
-                      className={`w-full text-left p-3.5 transition-colors flex items-start space-x-3 ${
+                      className={`w-full text-left p-3.5 transition-all flex items-start space-x-3 cursor-pointer relative ${
                         isSelected
-                          ? 'bg-indigo-50/70 border-l-4 border-indigo-600'
-                          : 'hover:bg-slate-50'
+                          ? 'bg-indigo-50/80 border-l-4 border-indigo-600 shadow-2xs'
+                          : 'hover:bg-slate-50/80'
                       }`}
                     >
-                      <img
-                        src={item.authorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.authorName || 'User')}&background=6366f1&color=fff&bold=true&size=128`}
-                        className="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5"
-                        alt=""
-                      />
+                      {/* Avatar with Platform Micro-Badge */}
+                      <div className="relative shrink-0 mt-0.5">
+                        <img
+                          src={
+                            item.authorAvatarUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              item.authorName || 'User'
+                            )}&background=6366f1&color=fff&bold=true&size=128`
+                          }
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
+                          alt=""
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white shadow-2xs flex items-center justify-center p-0.5">
+                          {item.platform === 'INSTAGRAM' ? (
+                            <Instagram className="w-3 h-3 text-pink-600" />
+                          ) : (
+                            <Facebook className="w-3 h-3 text-blue-600" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Content Overview */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-900 truncate">
+                          <span className="text-xs font-black text-slate-900 truncate">
                             {item.authorName}
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(item.platformCreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(item.platformCreatedAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
                           </span>
                         </div>
 
-                        <p className="text-xs text-slate-700 line-clamp-2 mt-0.5">
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-snug">
                           {item.contentText}
                         </p>
 
+                        {/* Ergonomic Status Micro-Pills */}
                         <div className="mt-2 flex items-center space-x-1.5 flex-wrap gap-y-1">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-sm uppercase tracking-wider ${
-                            item.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
+                            item.platform === 'INSTAGRAM'
+                              ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
-                            {item.platform} • {item.type === 'COMMENT' ? 'Comment' : 'DM'}
+                            {item.platform.slice(0, 2)} • {isDm ? 'DM' : 'Post'}
                           </span>
 
                           {item.classification && (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-sm ${
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${
                               item.classification.sentiment === 'POSITIVE'
-                                ? 'bg-emerald-50 text-emerald-700'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : item.classification.sentiment === 'NEGATIVE'
-                                ? 'bg-rose-50 text-rose-700'
-                                : 'bg-slate-100 text-slate-600'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
                             }`}>
                               {item.classification.sentiment}
                             </span>
                           )}
 
-                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-sm ml-auto ${
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ml-auto flex items-center space-x-1 ${
                             item.replyStatus === 'SENT'
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : item.replyStatus === 'DRAFT_READY'
-                              ? 'bg-indigo-100 text-indigo-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
-                            {item.replyStatus.replace('_', ' ')}
+                            {item.replyStatus === 'NEEDS_RESPONSE' && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            )}
+                            {item.replyStatus === 'SENT' && <Check className="w-2.5 h-2.5 text-emerald-600" />}
+                            <span>{item.replyStatus === 'NEEDS_RESPONSE' ? 'Needs Reply' : item.replyStatus.replace('_', ' ')}</span>
                           </span>
                         </div>
                       </div>
@@ -479,11 +543,11 @@ function InboxContent() {
               )}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination Toolbar */}
             {totalPages > 1 && (
-              <div className="p-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/50">
-                <span className="font-medium text-[11px]">
-                  Page {page} of {totalPages} ({totalCount} total)
+              <div className="px-3 py-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 bg-slate-50/50 shrink-0">
+                <span className="font-semibold text-[11px]">
+                  Page {page} of {totalPages}
                 </span>
                 <div className="flex items-center space-x-1">
                   <button
@@ -493,8 +557,7 @@ function InboxContent() {
                       fetchInteractions(prev);
                     }}
                     disabled={page <= 1 || loading}
-                    className="p-1 rounded hover:bg-slate-200 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                    title="Previous page"
+                    className="p-1 rounded hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -505,197 +568,324 @@ function InboxContent() {
                       fetchInteractions(next);
                     }}
                     disabled={page >= totalPages || loading}
-                    className="p-1 rounded hover:bg-slate-200 disabled:opacity-40 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                    title="Next page"
+                    className="p-1 rounded hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Right Pane: Conversation & AI Assistant (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col overflow-hidden">
+          {/* ============================================================== */}
+          {/* PANE 2: DETAIL CONVERSATION & FIXED DOCKED COMPOSER (7-8 COLS)  */}
+          {/* ============================================================== */}
+          <section className="lg:col-span-7 xl:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col min-h-0 overflow-hidden">
             {selectedInteraction ? (
-              <div className="flex-1 flex flex-col overflow-y-auto">
-                {/* Interaction Header */}
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={selectedInteraction.authorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedInteraction.authorName || 'User')}&background=6366f1&color=fff&bold=true&size=128`}
-                      className="w-10 h-10 rounded-full object-cover"
-                      alt=""
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="text-sm font-bold text-slate-900">{selectedInteraction.authorName}</h3>
-                        <span className="text-xs text-slate-400">@{selectedInteraction.authorUsername}</span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200">
-                          {selectedInteraction.brandName}
-                        </span>
+              <div className="flex flex-col h-full min-h-0">
+                
+                {/* 1. FIXED CONVERSATION HEADER & INLINE TELEMETRY (SLIM & ERGONOMIC) */}
+                <div className="px-5 py-3 border-b border-slate-100 bg-white/95 backdrop-blur-md shrink-0 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <img
+                          src={
+                            selectedInteraction.authorAvatarUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              selectedInteraction.authorName || 'User'
+                            )}&background=6366f1&color=fff&bold=true&size=128`
+                          }
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
+                          alt=""
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white shadow-2xs flex items-center justify-center p-0.5">
+                          {selectedInteraction.platform === 'INSTAGRAM' ? (
+                            <Instagram className="w-3 h-3 text-pink-600" />
+                          ) : (
+                            <Facebook className="w-3 h-3 text-blue-600" />
+                          )}
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Received on {selectedInteraction.platform} via {selectedInteraction.accountName} •{' '}
-                        {new Date(selectedInteraction.platformCreatedAt).toLocaleString()}
-                      </p>
+
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                            {selectedInteraction.authorName}
+                          </h3>
+                          {selectedInteraction.authorUsername && (
+                            <span className="text-xs text-slate-400 font-mono">
+                              @{selectedInteraction.authorUsername}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                            {selectedInteraction.brandName}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                          Received via {selectedInteraction.accountName} on {selectedInteraction.platform} •{' '}
+                          {new Date(selectedInteraction.platformCreatedAt).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
                     </div>
+
+                    {selectedInteraction.permalinkUrl && (
+                      <a
+                        href={selectedInteraction.permalinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-white hover:bg-slate-50 transition-all flex items-center space-x-1.5"
+                      >
+                        <span>Open on Meta</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
 
-                  {selectedInteraction.permalinkUrl && (
-                    <a
-                      href={selectedInteraction.permalinkUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-slate-500 hover:text-indigo-600 flex items-center space-x-1"
-                    >
-                      <span>Platform Source</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                  {/* INLINE AI CLASSIFICATION TELEMETRY RIBBON (UX FIX: REPLACES 85px GIANT BOX) */}
+                  {selectedInteraction.classification && (
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px]">
+                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mr-1">
+                        AI Telemetry:
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
+                        <span>Sentiment:</span>
+                        <strong className="text-slate-900">{selectedInteraction.classification.sentiment} ({Math.round(selectedInteraction.classification.sentimentScore * 100)}%)</strong>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
+                        <span>Type:</span>
+                        <strong className="text-slate-900">{selectedInteraction.classification.isQuestion ? 'Inquiry / Question' : 'General'}</strong>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-semibold flex items-center space-x-1">
+                        <span>Lead:</span>
+                        <strong>{selectedInteraction.classification.isLeadIntent ? 'High Lead Potential' : 'Standard'}</strong>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
+                        <span>Urgency:</span>
+                        <strong className="text-slate-900">{selectedInteraction.classification.urgencyScore}/5</strong>
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                {/* Success alert */}
-                {successNotice && (
-                  <div className="m-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>{successNotice}</span>
-                  </div>
-                )}
-
-                {/* Content Thread Body */}
-                <div className="p-5 space-y-4">
+                {/* 2. MIDDLE CHAT STREAM: INCOMING BUBBLE & OUTGOING RESPONSES (SCROLLABLE) */}
+                <div
+                  data-lenis-prevent="true"
+                  className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4 bg-slate-50/40 overscroll-contain"
+                >
                   {/* Incoming Customer Message Bubble */}
-                  <div className="p-4 rounded-xl bg-slate-100/80 border border-slate-200 text-slate-900 text-sm leading-relaxed">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                      Customer Message:
-                    </p>
-                    <p className="font-medium">{selectedInteraction.contentText}</p>
+                  <div className="flex items-start space-x-3 max-w-2xl">
+                    <img
+                      src={
+                        selectedInteraction.authorAvatarUrl ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          selectedInteraction.authorName || 'User'
+                        )}&background=6366f1&color=fff&bold=true&size=128`
+                      }
+                      className="w-8 h-8 rounded-full object-cover shrink-0 mt-1"
+                      alt=""
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+                        <span className="font-bold text-slate-700">{selectedInteraction.authorName}</span>
+                        <span>•</span>
+                        <span>{new Date(selectedInteraction.platformCreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="bg-white rounded-2xl rounded-tl-xs p-4 border border-slate-200/90 shadow-2xs text-slate-900 text-sm leading-relaxed">
+                        <p className="font-medium whitespace-pre-wrap">{selectedInteraction.contentText}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* AI Classification Insights Card */}
-                  {selectedInteraction.classification && (
-                    <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Sentiment</span>
-                        <p className="font-bold text-slate-800">
-                          {selectedInteraction.classification.sentiment} (
-                          {Math.round(selectedInteraction.classification.sentimentScore * 100)}%)
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Inquiry Type</span>
-                        <p className="font-bold text-slate-800">
-                          {selectedInteraction.classification.isQuestion ? 'Question' : 'General'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Lead Intent</span>
-                        <p className="font-bold text-slate-800">
-                          {selectedInteraction.classification.isLeadIntent ? 'High Lead Potential' : 'Standard'}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase">Urgency Score</span>
-                        <p className="font-bold text-slate-800">
-                          {selectedInteraction.classification.urgencyScore} / 5
-                        </p>
-                      </div>
+                  {/* Previous Sent Replies (if any) */}
+                  {selectedInteraction.replies && selectedInteraction.replies.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      {selectedInteraction.replies
+                        .filter((r: any) => r.status === 'SENT')
+                        .map((reply: any, idx: number) => (
+                          <div key={reply.id || idx} className="flex flex-col items-end max-w-2xl ml-auto space-y-1">
+                            <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="font-semibold text-emerald-800">Delivered to Meta API v22.0</span>
+                              <span>•</span>
+                              <span>{reply.sentAt ? new Date(reply.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sent'}</span>
+                            </div>
+                            <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-xs p-4 shadow-sm text-sm leading-relaxed">
+                              <p className="font-medium whitespace-pre-wrap">{reply.finalContent}</p>
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   )}
 
-                  {/* AI Brand Voice Reply Assistant */}
-                  <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200 space-y-3">
-                    <div className="flex items-center justify-between">
+                  {/* Status Banner when already resolved */}
+                  {selectedInteraction.replyStatus === 'SENT' && !showReplyComposerOnSent && (
+                    <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
                       <div className="flex items-center space-x-2">
-                        <Sparkles className="w-4 h-4 text-indigo-600" />
-                        <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
-                          AI Suggestions Engine (Brand Voice Guided)
-                        </h4>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span className="font-bold">This interaction has been approved and delivered to {selectedInteraction.platform}.</span>
                       </div>
                       <button
-                        onClick={() => fetchAiSuggestions(selectedInteraction.id)}
-                        disabled={generatingAi}
-                        className="text-xs text-indigo-700 hover:text-indigo-900 font-semibold flex items-center space-x-1"
+                        type="button"
+                        onClick={() => setShowReplyComposerOnSent(true)}
+                        className="px-3 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold transition-all text-[11px] cursor-pointer"
                       >
-                        <RefreshCw className={`w-3.5 h-3.5 ${generatingAi ? 'animate-spin' : ''}`} />
-                        <span>Regenerate</span>
+                        Send Additional Reply
                       </button>
                     </div>
+                  )}
+                </div>
 
-                    {/* AI Configuration / Error Notice */}
-                    {aiError && (
-                      <div className="p-3 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold">AI Gateway Notice</p>
-                          <p className="text-amber-700 mt-0.5 text-[11px]">{aiError}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Suggestions options pills */}
-                    {suggestions.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-[11px] text-slate-500 font-medium">Click any option to insert into response:</p>
-                        <div className="grid grid-cols-1 gap-2">
-                          {suggestions.map((sug, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setReplyText(sug.text)}
-                              className="w-full text-left p-2.5 rounded-lg border border-indigo-100 bg-white hover:border-indigo-300 hover:shadow-2xs transition-all text-xs"
-                            >
-                              <span className="font-bold text-indigo-900 block">{sug.title}</span>
-                              <span className="text-slate-600 line-clamp-2 mt-0.5">{sug.text}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Response Composer & Approval Workflow */}
-                    <div className="pt-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                        <span>Final Response (Mandatory Human Approval)</span>
-                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-sm">
-                          SAFE-01 Enforced
+                {/* 3. DOCKED BOTTOM COMPOSER & AI STUDIO (ERGONOMIC FIX: NEVER PUSHED OFF-SCREEN!) */}
+                {(selectedInteraction.replyStatus !== 'SENT' || showReplyComposerOnSent) && (
+                  <div className="border-t border-slate-200/90 bg-white p-4 space-y-3 shrink-0 shadow-lg">
+                    
+                    {/* Top Row: AI Engine Controls & Tone Pills */}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          AI Reply Studio
                         </span>
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Type reply or pick an AI suggestion above..."
-                        className="w-full p-3 text-xs border border-slate-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-600 font-sans"
-                      />
+                        <span className="text-[10px] font-mono text-slate-400">
+                          (Tuned to Brand Voice)
+                        </span>
+                      </div>
+
+                      {/* Tone Modifier Pills */}
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Tone:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyTone('friendly')}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                        >
+                          ✨ Friendly
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyTone('professional')}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                        >
+                          👔 Professional
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyTone('concise')}
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                        >
+                          ⚡ Concise
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fetchAiSuggestions(selectedInteraction.id)}
+                          disabled={generatingAi}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold text-indigo-700 hover:bg-indigo-50 transition-all flex items-center space-x-1 cursor-pointer"
+                          title="Generate fresh AI suggestions"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${generatingAi ? 'animate-spin' : ''}`} />
+                          <span className="hidden sm:inline">Regen</span>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* AI Suggestions Quick Chips (1-Click Insertion) */}
+                    {suggestions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {suggestions.map((sug, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setReplyText(sug.text)}
+                            className="px-2.5 py-1 rounded-xl text-left bg-indigo-50/60 hover:bg-indigo-100/80 border border-indigo-200/80 hover:border-indigo-300 text-[11px] text-indigo-950 font-medium transition-all max-w-full truncate cursor-pointer"
+                            title={sug.text}
+                          >
+                            <span className="font-bold text-indigo-700 mr-1.5">{sug.title}:</span>
+                            <span className="text-slate-600 truncate">{sug.text.slice(0, 50)}...</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* AI Error Alert if Any */}
+                    {aiError && (
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="text-[11px]">{aiError}</span>
+                      </div>
+                    )}
+
+                    {/* Ergonomic Composer Textarea */}
+                    <div className="relative rounded-xl border border-slate-300 bg-white p-2.5 focus-within:ring-2 focus-within:ring-indigo-600/30 focus-within:border-indigo-600 transition-all shadow-2xs">
+                      <textarea
+                        rows={3}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={`Draft reply to ${selectedInteraction.authorName} or click an AI suggestion above... (Press Ctrl + Enter to send)`}
+                        className="w-full text-xs font-medium bg-transparent focus:outline-hidden text-slate-900 placeholder:text-slate-400 leading-relaxed resize-none"
+                      />
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+                        <span>Characters: {replyText.length}</span>
+                        <span>Press <kbd className="px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold">Ctrl + Enter</kbd> to transmit</span>
+                      </div>
+                    </div>
+
+                    {/* Action Bar (Optimal Ergonomic Button Hierarchy) */}
                     <div className="flex items-center justify-between pt-1">
-                      <p className="text-[11px] text-slate-500 flex items-center">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 mr-1" />
-                        Destination: {selectedInteraction.platform} ({selectedInteraction.accountName})
-                      </p>
+                      <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-mono">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                          SAFE-01 Guardrail Active
+                        </span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">Dest: {selectedInteraction.platform}</span>
+                      </div>
+
                       <div className="flex items-center space-x-2">
+                        {replyText.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setReplyText('')}
+                            className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        )}
+
                         <button
+                          type="button"
                           onClick={handleApproveAndSend}
                           disabled={sendingReply || !replyText.trim()}
-                          className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs flex items-center space-x-1.5 disabled:opacity-50 transition-colors"
+                          className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-indigo-500/25 active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                         >
                           <Send className="w-3.5 h-3.5" />
-                          <span>{sendingReply ? 'Transmitting...' : 'Approve & Send to Social API'}</span>
+                          <span>{sendingReply ? 'Transmitting...' : 'Approve & Send to Meta'}</span>
+                          <span className="text-[10px] bg-indigo-500/80 px-1.5 py-0.5 rounded text-white font-mono ml-1">
+                            ↵
+                          </span>
                         </button>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center p-8 text-center text-slate-400 text-xs">
-                Select an interaction from the list to review and reply.
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-3 text-slate-400">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+                  <Inbox className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-black text-slate-700">Select an Interaction</h3>
+                <p className="text-xs text-slate-400 max-w-xs">
+                  Choose a direct message or comment from the left directory to review AI classification and transmit replies.
+                </p>
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </AppLayout>
@@ -704,9 +894,14 @@ function InboxContent() {
 
 export default function InboxPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center"><p className="text-xs text-slate-400">Loading Inbox...</p></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#fafaf9] flex items-center justify-center">
+          <p className="text-xs text-slate-400 font-mono">Loading Sovereign Inbox...</p>
+        </div>
+      }
+    >
       <InboxContent />
     </Suspense>
   );
 }
-

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, API_BASE, getAuthToken } from '../../lib/api';
 import {
   BarChart3,
   TrendingUp,
@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
     setExporting(true);
     setNotice(null);
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+      const token = getAuthToken() || '';
       const days = Number(dateRange);
       const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
       const end = new Date().toISOString();
@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
       if (activeBrandId) query += `&brandId=${activeBrandId}`;
       if (platformFilter !== 'ALL') query += `&platform=${platformFilter}`;
 
-      const res = await fetch(`http://localhost:5000/api/analytics/export${query}`, {
+      const res = await fetch(`${API_BASE}/analytics/export${query}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
