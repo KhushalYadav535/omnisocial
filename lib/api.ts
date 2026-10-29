@@ -1,5 +1,9 @@
 // Central API Client for OmniSocial AI
-export const API_BASE = 'http://localhost:5000/api';
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://omnisocialbackend.onrender.com/api'
+    : 'http://localhost:5000/api');
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;

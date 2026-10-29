@@ -42,7 +42,7 @@ function CallbackContent() {
         type: 'META_OAUTH_SUCCESS',
         code,
         state
-      }, window.location.origin);
+      }, '*');
 
       setTimeout(() => {
         window.close();

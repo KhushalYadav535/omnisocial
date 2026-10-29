@@ -105,9 +105,10 @@ export default function AccountsPage() {
     setNotice({ type: 'info', text: 'Discovering Facebook Pages and connected Instagram accounts...' });
 
     try {
+      const currentCallback = window.location.origin + '/accounts/callback';
       const callbackRes = await apiRequest('/social-accounts/oauth-callback', {
         method: 'POST',
-        body: JSON.stringify({ code, state })
+        body: JSON.stringify({ code, state, redirectUri: currentCallback })
       });
 
       if (!callbackRes.discoveredAccounts || callbackRes.discoveredAccounts.length === 0) {
@@ -183,7 +184,8 @@ export default function AccountsPage() {
     setNotice(null);
 
     try {
-      const res = await apiRequest(`/social-accounts/oauth-url?brandId=${activeBrandId}`);
+      const currentCallback = window.location.origin + '/accounts/callback';
+      const res = await apiRequest(`/social-accounts/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}`);
       if (res.oauthUrl) {
         // Open OAuth dialog in popup window
         const width = 640;
