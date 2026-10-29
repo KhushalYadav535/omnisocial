@@ -103,11 +103,16 @@ export default function AnalyticsPage() {
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6">
         {/* Header with Filters & CSV Export */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-              <BarChart3 className="w-6 h-6 text-indigo-600" />
-              <span>Social Media Performance & Intelligence</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+                [ PERFORMANCE TELEMETRY // REAL-TIME METRICS ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Multi-Channel Sync</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+              <span>Performance Analytics & Reports</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               Live multi-channel metrics computed genuinely from database records and verified Meta Graph API endpoints.

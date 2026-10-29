@@ -1,504 +1,306 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { 
-  Sparkles, 
-  Share2, 
-  Inbox, 
-  Calendar, 
-  ShieldCheck, 
-  CheckCircle2, 
-  ArrowRight, 
-  Zap, 
-  Layers, 
-  Building2, 
-  Users, 
-  Key, 
-  Check, 
-  Lock,
-  ChevronRight,
+import {
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Zap,
   TrendingUp,
-  MessageSquareText,
-  ThumbsUp
+  Cpu,
+  Lock,
+  Layers,
+  ChevronRight,
+  ExternalLink,
+  Star,
+  Activity,
+  Terminal,
 } from 'lucide-react';
+import { FloatingNavbar } from '../components/ui/FloatingNavbar';
+import { FlipWords } from '../components/ui/FlipWords';
+import { InteractiveConsole } from '../components/ui/InteractiveConsole';
+import { InfiniteMarquee } from '../components/ui/InfiniteMarquee';
+import { BentoGridFeatures } from '../components/ui/BentoGridFeatures';
+import { ManifestoSection } from '../components/ui/ManifestoSection';
+import { ComparisonMatrix } from '../components/ui/ComparisonMatrix';
+import { AgencyRoiCalculator } from '../components/ui/AgencyRoiCalculator';
+import { LiveWebhookStream } from '../components/ui/LiveWebhookStream';
+import { TestimonialsSection } from '../components/ui/TestimonialsSection';
+import { PricingSection } from '../components/ui/PricingSection';
+import { FaqSection } from '../components/ui/FaqSection';
+import { StudioFooter } from '../components/ui/StudioFooter';
+import { NumberTicker } from '../components/ui/NumberTicker';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { Facebook, Instagram } from '../components/Icons';
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState<'inbox' | 'connect' | 'studio' | 'calendar'>('connect');
+  const marqueeItems = [
+    { label: 'Meta Graph API v22.0', badge: 'Official Partner' },
+    { label: 'Instagram Creator Webhooks', badge: '<300ms' },
+    { label: 'OpenAI GPT-4o & Claude 3.5', badge: 'BYOK Supported' },
+    { label: 'Sovereign Multi-Tenancy', badge: 'Zero Cross-Query' },
+    { label: 'Human-in-the-Loop Guardrails', badge: '100% Safe' },
+    { label: 'AES-256 Key Encryption', badge: 'SOC2 Ready' },
+    { label: '99.98% System Uptime', badge: 'Enterprise SLA' },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white shadow-xs">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div className="flex items-baseline space-x-1.5">
-              <span className="font-extrabold text-xl tracking-tight text-slate-900">OmniSocial</span>
-              <span className="text-xs font-bold px-1.5 py-0.5 rounded-sm bg-indigo-50 text-indigo-700 border border-indigo-200">AI</span>
-            </div>
-          </div>
+    <div className="relative min-h-screen bg-[#fafaf9] text-slate-900 overflow-x-hidden selection:bg-indigo-500/20 selection:text-indigo-950">
+      {/* Floating Island Navigation */}
+      <FloatingNavbar />
 
-          <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-indigo-600 transition-colors">Features</a>
-            <a href="#1-click-connect" className="hover:text-indigo-600 transition-colors">1-Click Connect</a>
-            <a href="#multi-tenancy" className="hover:text-indigo-600 transition-colors">Multi-Tenancy</a>
-            <a href="#pricing" className="hover:text-indigo-600 transition-colors">Pricing</a>
-          </div>
+      {/* HERO SECTION (CLEAN EDITORIAL AWWWARDS LIGHT THEME - STATIC BACKGROUND) */}
+      <section className="relative min-h-screen pt-32 pb-20 sm:pt-40 sm:pb-32 flex flex-col justify-center items-center overflow-hidden border-b border-slate-200">
+        {/* Soft Static Ambient Light Aura */}
+        <div
+          className="absolute top-8 left-1/2 -translate-x-1/2 w-[850px] h-[520px] pointer-events-none select-none opacity-60 blur-3xl"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 60% at 50% 20%, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.10), rgba(244, 63, 94, 0.04), transparent 70%)',
+          }}
+          aria-hidden="true"
+        />
 
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-slate-700 hover:text-indigo-600 px-3.5 py-2 transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg shadow-xs hover:shadow-md transition-all flex items-center space-x-1.5"
-            >
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+        {/* Architectural Subtle Swiss Grid Overlay (Static) */}
+        <div
+          className="absolute inset-0 opacity-[0.025] pointer-events-none select-none"
+          style={{
+            backgroundImage: `linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Swiss Blueprint Registration Crosshairs */}
+        <div className="absolute top-28 left-8 text-slate-300 font-mono text-xs select-none pointer-events-none hidden lg:block">
+          + 24.892° N [ GRID: 01A ]
         </div>
-      </nav>
+        <div className="absolute top-28 right-8 text-slate-300 font-mono text-xs select-none pointer-events-none hidden lg:block">
+          [ LATENCY: 248MS ] +
+        </div>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 pb-20 lg:pt-24 lg:pb-32 border-b border-slate-200 bg-linear-to-b from-white to-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-semibold text-indigo-700 mb-6">
-            <Zap className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Next-Gen Enterprise AI Social Media Platform</span>
-          </div>
+        {/* Hero Content Container */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+          {/* Badge Pill with Star Rating */}
+          <ScrollReveal direction="down" delay={0.05}>
+            <div className="inline-flex items-center space-x-3 px-4 py-1.5 rounded-full bg-white/95 border border-slate-200/90 shadow-xs backdrop-blur-md mb-8 group hover:border-indigo-300 transition-colors">
+              <div className="flex items-center space-x-1 text-amber-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-800">
+                4.9/5 RATED BY 340+ AGENCIES
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                Meta v22.0
+              </span>
+            </div>
+          </ScrollReveal>
 
-          {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight">
-            Manage Multiple Brands. <br className="hidden sm:inline" />
-            <span className="bg-linear-to-r from-indigo-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent">
-              Single-Click Social API Connect.
-            </span>
-          </h1>
+          {/* Monumental Headline with Dynamic FlipWords */}
+          <ScrollReveal direction="up" delay={0.1}>
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 tracking-tighter max-w-5xl leading-[1.08] sm:leading-[1.05]">
+              Manage 100+ Brands. <br />
+              Autonomous Social AI for <br className="hidden sm:inline" />
+              <span className="bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent">
+                <FlipWords
+                  words={[
+                    'Creative Agencies',
+                    'Boutique Creators',
+                    'Multi-Brand Studios',
+                    'E-Commerce Giants',
+                  ]}
+                />
+              </span>
+            </h1>
+          </ScrollReveal>
 
           {/* Subtitle */}
-          <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Multi-tenant social suite for agencies, boutique creators, and enterprises. 
-            Connect Facebook & Instagram in 1-click, synchronize comments & DMs into a unified inbox, 
-            and generate brand-voice AI replies with <strong>mandatory human approval</strong>.
-          </p>
+          <ScrollReveal direction="up" delay={0.2}>
+            <p className="mt-6 text-base sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
+              Single-click Meta OAuth connection for Facebook Pages & Instagram Creators. 
+              Synchronize comments and direct messages into a unified real-time inbox. 
+              Generate brand-voice replies with <strong className="text-slate-900 font-bold">mandatory human approval guardrails</strong>.
+            </p>
+          </ScrollReveal>
 
           {/* CTAs */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto px-7 py-3.5 text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2"
-            >
-              <span>Start Free Agency Trial</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="w-full sm:w-auto px-7 py-3.5 text-base font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2"
-            >
-              <span>Explore Interactive Demo</span>
-            </Link>
-          </div>
-
-          {/* Trust proof */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            <span className="flex items-center"><CheckCircle2 className="w-4 h-4 text-emerald-500 mr-1.5" /> 1-Click Meta OAuth</span>
-            <span className="flex items-center"><CheckCircle2 className="w-4 h-4 text-emerald-500 mr-1.5" /> BYOK Custom API Keys</span>
-            <span className="flex items-center"><CheckCircle2 className="w-4 h-4 text-emerald-500 mr-1.5" /> Human-in-the-loop Guardrails</span>
-            <span className="flex items-center"><CheckCircle2 className="w-4 h-4 text-emerald-500 mr-1.5" /> Super Admin Portal</span>
-          </div>
-
-          {/* Interactive Feature Demo Mockup */}
-          <div className="mt-14 max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden text-left">
-            {/* Window bar */}
-            <div className="bg-slate-100/90 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="w-3 h-3 rounded-full bg-rose-400"></span>
-                <span className="w-3 h-3 rounded-full bg-amber-400"></span>
-                <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
-                <span className="text-xs font-medium text-slate-500 ml-2">omnisocial-ai.enterprise.console</span>
-              </div>
-              <div className="flex space-x-1 bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold text-slate-700">
-                <button
-                  onClick={() => setActiveTab('connect')}
-                  className={`px-3 py-1 rounded-md transition-colors ${activeTab === 'connect' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  1-Click Connect
-                </button>
-                <button
-                  onClick={() => setActiveTab('inbox')}
-                  className={`px-3 py-1 rounded-md transition-colors ${activeTab === 'inbox' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Unified Inbox & AI
-                </button>
-                <button
-                  onClick={() => setActiveTab('studio')}
-                  className={`px-3 py-1 rounded-md transition-colors ${activeTab === 'studio' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  AI Content Studio
-                </button>
-              </div>
-            </div>
-
-            {/* Tab 1: 1-Click Connect Preview */}
-            {activeTab === 'connect' && (
-              <div className="p-6 sm:p-8 bg-slate-50">
-                <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900">Single-Click Social Media Integration</h3>
-                      <p className="text-xs text-slate-500">Connect Facebook Pages & Instagram Creator Accounts in under 5 seconds.</p>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                      Zero Manual Scripting
-                    </span>
-                  </div>
-
-                  <div className="mt-5 space-y-4">
-                    <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50/40 flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                          <Facebook className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">Facebook Page & Instagram Business</p>
-                          <p className="text-xs text-slate-500">Official Meta Graph OAuth with automated long-lived token exchange</p>
-                        </div>
-                      </div>
-                      <Link
-                        href="/login"
-                        className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg shadow-xs"
-                      >
-                        1-Click Connect
-                      </Link>
-                    </div>
-
-                    <div className="p-4 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-800 text-white flex items-center justify-center">
-                          <Key className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">BYOK: Bring Your Own Page Access Token</p>
-                          <p className="text-xs text-slate-500">Paste your Meta Graph Page Token for instant zero-redirect connection</p>
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                        Supported
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tab 2: Inbox Preview */}
-            {activeTab === 'inbox' && (
-              <div className="p-6 sm:p-8 bg-slate-50">
-                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop"
-                        className="w-10 h-10 rounded-full object-cover"
-                        alt="Priya"
-                      />
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-sm font-bold text-slate-900">Priya Kulkarni</h4>
-                          <span className="text-xs text-slate-400">@priya_k</span>
-                          <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                            Instagram Comment
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 mt-1">
-                          "Hey! Are the cotton summer dresses restocked yet? Need them for my Goa trip next week! ❤️✨"
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
-                      Positive Sentiment (94%)
-                    </span>
-                  </div>
-
-                  {/* AI Suggested Response Box */}
-                  <div className="mt-4 p-4 rounded-lg bg-indigo-50/50 border border-indigo-200">
-                    <div className="flex items-center justify-between text-xs font-bold text-indigo-900 mb-2">
-                      <span className="flex items-center">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 mr-1.5" />
-                        AI Suggested Reply (Adhering to Aura Wear Brand Voice)
-                      </span>
-                      <span className="text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-sm">
-                        Mandatory Human Approval Required
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-800 leading-relaxed font-mono bg-white p-2.5 rounded-md border border-indigo-100">
-                      "Hey Priya! ✨ So exciting, Goa trips are the best! 🌴 Our Pure Cotton Summer Breeze collection is being restocked this Friday at 12 noon! Drop us a quick DM and we will send you early-bird notification! 💛"
-                    </p>
-                    <div className="mt-3 flex justify-end space-x-2">
-                      <button className="text-xs font-semibold text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-md bg-white border border-slate-200">
-                        Edit Draft
-                      </button>
-                      <button className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 rounded-md shadow-xs">
-                        Approve & Send to Instagram
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tab 3: Studio Preview */}
-            {activeTab === 'studio' && (
-              <div className="p-6 sm:p-8 bg-slate-50">
-                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
-                      <span className="text-sm font-bold text-slate-900">AI Post Generator Preview</span>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-500">Target: Facebook & Instagram</span>
-                  </div>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-2">
-                      <p className="font-bold text-slate-700">Prompt Idea:</p>
-                      <p className="text-slate-600 italic">"Announce the Spring Summer 2026 linen collection with a resort aesthetic."</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50/40 rounded-lg border border-indigo-200 text-xs space-y-2">
-                      <p className="font-bold text-indigo-900">Generated Caption & Hashtags:</p>
-                      <p className="text-slate-800 leading-relaxed">
-                        "Breathe easy in effortless style. 🌿 Our Spring/Summer 2026 resort collection is officially live! Handcrafted from 100% sustainable European flax linen. #AuraLifestyle #Resort2026"
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 1-Click Connect Deep Dive Section */}
-      <section id="1-click-connect" className="py-20 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-              Seamless Integration
-            </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Single-Click Social Media Connection: How It Works
-            </h2>
-            <p className="mt-4 text-base text-slate-600">
-              Whether you are an agency managing 20 client brands or a creator with custom developer apps, 
-              connecting accounts takes 1-click without messy API configuration.
-            </p>
-          </div>
-
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 relative">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-base mb-4 shadow-xs">
-                1
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">1-Click Meta OAuth</h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Click "Connect Facebook / Instagram". The official Meta popup opens where the user logs in and picks their eligible Facebook Pages and linked Instagram accounts.
-              </p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 relative">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-base mb-4 shadow-xs">
-                2
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Automated Token Exchange</h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Backend securely converts the authorization code into a 60-day Long-Lived Token and retrieves Page Access Tokens (which never expire until revoked), keeping sync active 24/7.
-              </p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 relative">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-base mb-4 shadow-xs">
-                3
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">BYOK & Custom App Support</h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Agencies can also plug their own Meta App ID/Secret (or direct Page Tokens) in Tenant Settings so client consent screens show their custom agency branding.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Multi-Tenancy Architecture Section */}
-      <section id="multi-tenancy" className="py-20 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-              Enterprise Hierarchy
-            </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Built for Scale: Super Admin to Multi-Brand Workspaces
-            </h2>
-            <p className="mt-4 text-base text-slate-600">
-              Complete multi-tenancy isolation ensures that each agency or enterprise owns their data, team seats, and API keys.
-            </p>
-          </div>
-
-          <div className="mt-14 grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
-              <ShieldCheck className="w-8 h-8 text-amber-600 mb-3" />
-              <h3 className="text-base font-bold text-slate-900">Super Platform Admin</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Oversees all agencies, creators, and tenants. Manages subscription tiers, platform usage metrics, and system audit trail.
-              </p>
-            </div>
-
-            <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
-              <Building2 className="w-8 h-8 text-indigo-600 mb-3" />
-              <h3 className="text-base font-bold text-slate-900">Tenants & Agencies</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Dedicated tenant boundary. Agency Admin can invite team members with RBAC and plug custom BYOK credentials.
-              </p>
-            </div>
-
-            <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
-              <Layers className="w-8 h-8 text-blue-600 mb-3" />
-              <h3 className="text-base font-bold text-slate-900">Businesses & Brands</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Each tenant can manage multiple client businesses and brands. Each brand has its custom AI voice profile and FAQs.
-              </p>
-            </div>
-
-            <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs">
-              <Share2 className="w-8 h-8 text-emerald-600 mb-3" />
-              <h3 className="text-base font-bold text-slate-900">Connected Accounts</h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Each brand connects its respective Facebook Pages and Instagram handles for publishing, comments, and DMs.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-              Subscription Plans
-            </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Simple, Transparent Pricing for Creators & Agencies
-            </h2>
-            <p className="mt-4 text-base text-slate-600">
-              Manage all client brands from a single pane of glass.
-            </p>
-          </div>
-
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Starter */}
-            <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-bold text-slate-900">Starter Creator</h3>
-              <p className="text-xs text-slate-500 mt-1">For boutique brands & solo creators</p>
-              <div className="mt-6 flex items-baseline">
-                <span className="text-4xl font-black text-slate-900">$29</span>
-                <span className="text-xs font-semibold text-slate-500 ml-1.5">/ month</span>
-              </div>
-              <ul className="mt-6 space-y-3 text-xs text-slate-700">
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Up to 5 Brands</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 10 Connected Accounts</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 3 Team Member Seats</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Unified Inbox & Sentiment</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 50,000 AI Voice Tokens</li>
-              </ul>
+          <ScrollReveal direction="up" delay={0.3}>
+            <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
               <Link
                 href="/register"
-                className="mt-8 block text-center py-2.5 px-4 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="group relative w-full sm:w-auto px-8 py-4 text-sm font-bold text-white bg-slate-900 hover:bg-indigo-600 rounded-2xl shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 flex items-center justify-center space-x-2"
               >
-                Choose Starter
+                <span>Start Free 14-Day Agency Trial</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
+              <a
+                href="#demo"
+                className="w-full sm:w-auto px-7 py-4 text-sm font-bold text-slate-700 bg-white/90 hover:bg-slate-50 border border-slate-300/80 rounded-2xl shadow-xs transition-all flex items-center justify-center space-x-2 backdrop-blur-md"
+              >
+                <span>Explore Live Console Demo</span>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </a>
             </div>
+          </ScrollReveal>
 
-            {/* Agency Pro (Featured) */}
-            <div className="p-8 rounded-2xl bg-indigo-50/50 border-2 border-indigo-600 shadow-lg relative">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
-                Most Popular for Agencies
+          {/* Micro Trust Matrix */}
+          <ScrollReveal direction="up" delay={0.4}>
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-semibold text-slate-500">
+              <span className="flex items-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
+                1-Click Meta OAuth Handshake
               </span>
-              <h3 className="text-lg font-bold text-slate-900">Agency Pro</h3>
-              <p className="text-xs text-slate-500 mt-1">Multi-tenant power for marketing agencies</p>
-              <div className="mt-6 flex items-baseline">
-                <span className="text-4xl font-black text-slate-900">$99</span>
-                <span className="text-xs font-semibold text-slate-500 ml-1.5">/ month</span>
+              <span className="flex items-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
+                BYOK Custom Key Encryption
+              </span>
+              <span className="flex items-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
+                Human-in-the-Loop Signoff
+              </span>
+              <span className="flex items-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2 shrink-0" />
+                Sovereign Multi-Tenancy
+              </span>
+            </div>
+          </ScrollReveal>
+        </div>
+
+        {/* Interactive Console Centerpiece */}
+        <div id="demo" className="w-full mt-16 px-4 sm:px-6 lg:px-8 relative z-20">
+          <ScrollReveal direction="up" delay={0.25} duration={0.9}>
+            <InteractiveConsole />
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* INFINITE MARQUEE TICKER TAPE */}
+      <InfiniteMarquee items={marqueeItems} speed="normal" />
+
+      {/* LIVE TELEMETRY & WEBHOOK STREAM */}
+      <section className="py-12 bg-slate-50/70 border-b border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ScrollReveal direction="up" delay={0.1}>
+            <LiveWebhookStream />
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* STATS & METRICS DISPLAY */}
+      <section className="py-20 bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+            <div className="pt-4 lg:pt-0">
+              <div className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-mono">
+                <NumberTicker value={4.8} decimals={1} prefix="$" suffix="M+" />
               </div>
-              <ul className="mt-6 space-y-3 text-xs text-slate-700">
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Up to 25 Client Brands</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 50 Connected Accounts</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 15 Team Member Seats & RBAC</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Custom BYOK Meta & AI Keys</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Content Studio & Calendar</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 250,000 AI Voice Tokens</li>
-              </ul>
-              <Link
-                href="/register"
-                className="mt-8 block text-center py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors"
-              >
-                Get Started with Agency Pro
-              </Link>
+              <p className="mt-2 text-xs sm:text-sm font-semibold text-slate-500">
+                Agency Ad Spend Synchronized
+              </p>
             </div>
 
-            {/* Enterprise */}
-            <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-bold text-slate-900">Enterprise Scale</h3>
-              <p className="text-xs text-slate-500 mt-1">Unlimited scale & white-label infrastructure</p>
-              <div className="mt-6 flex items-baseline">
-                <span className="text-4xl font-black text-slate-900">$249</span>
-                <span className="text-xs font-semibold text-slate-500 ml-1.5">/ month</span>
+            <div className="pt-4 lg:pt-0">
+              <div className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-mono">
+                <NumberTicker value={12.4} decimals={1} suffix="M" />
               </div>
-              <ul className="mt-6 space-y-3 text-xs text-slate-700">
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 100+ Brands & Workspaces</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 200+ Connected Accounts</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> 50 Team Member Seats</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Custom White-label Domain</li>
-                <li className="flex items-center"><Check className="w-4 h-4 text-emerald-500 mr-2" /> Dedicated Webhook Infrastructure</li>
-              </ul>
-              <Link
-                href="/register"
-                className="mt-8 block text-center py-2.5 px-4 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors"
-              >
-                Contact Sales
-              </Link>
+              <p className="mt-2 text-xs sm:text-sm font-semibold text-slate-500">
+                Comments & DMs Triaged
+              </p>
+            </div>
+
+            <div className="pt-4 lg:pt-0">
+              <div className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-mono">
+                <NumberTicker value={99.8} decimals={1} suffix="%" />
+              </div>
+              <p className="mt-2 text-xs sm:text-sm font-semibold text-slate-500">
+                Human Approval Accuracy Rate
+              </p>
+            </div>
+
+            <div className="pt-4 lg:pt-0">
+              <div className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight font-mono">
+                <NumberTicker value={280} decimals={0} prefix="<" suffix="ms" />
+              </div>
+              <p className="mt-2 text-xs sm:text-sm font-semibold text-slate-500">
+                Meta Webhook Ingestion Latency
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-md bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">
-              <Sparkles className="w-3.5 h-3.5" />
+      {/* MANIFESTO SECTION */}
+      <ManifestoSection />
+
+      {/* COMPARISON MATRIX (OLD WAY VS OMNISOCIAL AI OS) */}
+      <ComparisonMatrix />
+
+      {/* BENTO GRID ARCHITECTURE & CAPABILITIES */}
+      <BentoGridFeatures />
+
+      {/* INTERACTIVE AGENCY ROI CALCULATOR */}
+      <AgencyRoiCalculator />
+
+      {/* TESTIMONIALS / WALL OF PROOF */}
+      <TestimonialsSection />
+
+      {/* PRICING MATRIX WITH ANNUAL TOGGLE */}
+      <PricingSection />
+
+      {/* FAQ SECTION */}
+      <FaqSection />
+
+      {/* BOTTOM CONVERSION HERO */}
+      <section className="py-24 bg-gradient-to-b from-white via-indigo-50/30 to-white relative overflow-hidden border-b border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="p-10 sm:p-16 rounded-3xl bg-slate-900 text-white shadow-2xl relative overflow-hidden">
+            {/* Background ambient shine */}
+            <div
+              className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
+              aria-hidden="true"
+            />
+
+            <span className="text-xs font-mono font-bold tracking-widest uppercase text-indigo-400 bg-indigo-950/80 px-3 py-1 rounded-full border border-indigo-800">
+              SCALE YOUR AGENCY TODAY
+            </span>
+
+            <h2 className="mt-6 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-2xl mx-auto leading-tight">
+              Ready to automate 100+ brands with complete peace of mind?
+            </h2>
+
+            <p className="mt-4 text-base text-slate-300 max-w-xl mx-auto">
+              Join leading marketing agencies, boutique studios, and creators scaling their engagement with OmniSocial AI.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/register"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md flex items-center justify-center space-x-2"
+              >
+                <span>Start Free 14-Day Trial</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/login"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all border border-slate-700"
+              >
+                Sign In to Console
+              </Link>
             </div>
-            <span className="font-bold text-white text-sm">OmniSocial AI</span>
-            <span className="text-xs text-slate-500">© 2026. All rights reserved.</span>
-          </div>
-          <div className="flex items-center space-x-6 text-xs text-slate-400">
-            <Link href="/login" className="hover:text-white transition-colors">Sign In</Link>
-            <Link href="/register" className="hover:text-white transition-colors">Register Agency</Link>
-            <a href="#features" className="hover:text-white transition-colors">Platform Docs</a>
+
+            <p className="mt-6 text-xs text-slate-400">
+              No credit card required • Instant 1-Click Meta OAuth setup • Cancel anytime
+            </p>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* MONUMENTAL STUDIO FOOTER */}
+      <StudioFooter />
     </div>
   );
 }

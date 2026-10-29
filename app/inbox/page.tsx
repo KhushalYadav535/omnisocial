@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 function InboxContent() {
   const searchParams = useSearchParams();
@@ -208,6 +209,13 @@ function InboxContent() {
         body: JSON.stringify({ editedText: replyText })
       });
 
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b']
+      });
+
       setSuccessNotice(`Approved and sent reply to ${selectedInteraction.authorName} on ${selectedInteraction.platform}!`);
 
       // Refresh item state
@@ -276,9 +284,15 @@ function InboxContent() {
         </div>
 
         {/* Top Header & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/90 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/90 shadow-sm">
           <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/80">
+                [ REAL-TIME ENGAGEMENT STREAM ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Multi-Channel Sync</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2 mt-1">
               {typeFilter === 'COMMENT' ? (
                 <>
                   <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -291,7 +305,7 @@ function InboxContent() {
                 </>
               )}
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 mt-0.5">
               {typeFilter === 'COMMENT'
                 ? 'Manage customer comments, questions, and replies across published Facebook & Instagram posts.'
                 : 'Process private 1-on-1 customer conversations from Facebook Page Messenger and Instagram Direct.'}
@@ -351,9 +365,9 @@ function InboxContent() {
         )}
 
         {/* 2-Pane Inbox View */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
           {/* Left Pane: Interactions List (5 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col overflow-hidden">
+          <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col overflow-hidden">
             <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 {typeFilter === 'COMMENT' ? 'Comments' : 'Direct Messages'} ({interactions.length})
@@ -502,7 +516,7 @@ function InboxContent() {
           </div>
 
           {/* Right Pane: Conversation & AI Assistant (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col overflow-hidden">
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col overflow-hidden">
             {selectedInteraction ? (
               <div className="flex-1 flex flex-col overflow-y-auto">
                 {/* Interaction Header */}

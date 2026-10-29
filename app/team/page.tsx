@@ -132,11 +132,16 @@ export default function TeamPage() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-              <Users className="w-6 h-6 text-indigo-600" />
-              <span>Team Members & Role-Based Access (RBAC)</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+                [ WORKSPACE SEATS // ROLE-BASED ACCESS CONTROL ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Multi-Tenant RBAC</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+              <span>Team Directory & Permissions</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               Secure single-use invitations, granular server-enforced role permissions, and full audit trail logging.

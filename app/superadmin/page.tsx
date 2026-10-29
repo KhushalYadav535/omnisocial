@@ -88,15 +88,18 @@ export default function SuperAdminPage() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent p-6 rounded-2xl border border-amber-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-6 sm:p-7 rounded-3xl border border-amber-200/90 shadow-2xs">
           <div>
             <div className="flex items-center space-x-2">
-              <ShieldCheck className="w-6 h-6 text-amber-600" />
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Super Platform Admin Portal</h1>
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-sm bg-amber-600 text-white uppercase tracking-wider">
-                Root Access
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-md border border-amber-300">
+                [ PLATFORM ROOT // GLOBAL GOVERNANCE ]
               </span>
+              <span className="text-xs text-amber-700/80 font-mono">• Sovereign Super Admin</span>
             </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+              <ShieldCheck className="w-7 h-7 text-amber-600" />
+              <span>Super Administrator Portal</span>
+            </h1>
             <p className="text-xs text-slate-600 mt-1 max-w-2xl">
               Oversee all subscribed agencies, manage multi-tenant billing tiers, monitor platform API throughput, and inspect system audit trails.
             </p>

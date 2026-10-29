@@ -97,10 +97,15 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-            <Settings className="w-6 h-6 text-indigo-600" />
-            <span>Tenant Settings & BYOK Integration Keys</span>
+        <div className="pb-2 border-b border-slate-200/80">
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+              [ TENANT GOVERNANCE // BYOK CREDENTIAL VAULT ]
+            </span>
+            <span className="text-xs text-slate-400 font-mono">• AES-256 Encrypted</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+            <span>Workspace Settings & BYOK Keys</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Configure agency details, Bring-Your-Own-Key (BYOK) Meta credentials, and platform webhook endpoints.
@@ -108,7 +113,7 @@ export default function SettingsPage() {
         </div>
 
         {notice && (
-          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 ${
+          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs ${
             notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
           }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
@@ -118,7 +123,7 @@ export default function SettingsPage() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* General Workspace Profile */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-6 space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-4">
             <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
               <Building2 className="w-4 h-4 text-indigo-600" />
               <h3 className="text-sm font-bold text-slate-900">Agency / Organization Profile</h3>

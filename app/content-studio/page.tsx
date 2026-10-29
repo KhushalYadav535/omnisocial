@@ -209,11 +209,16 @@ export default function ContentStudioPage() {
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-              <Sparkles className="w-6 h-6 text-indigo-600" />
-              <span>AI Content Studio & Post Composer</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+                [ AI CONTENT STUDIO // OMNICHANNEL COMPOSER ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Direct Meta Publishing</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+              <span>Post Composer & Visual Studio</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               Generate platform-optimized captions, hashtags, and schedule across Facebook & Instagram.
@@ -222,12 +227,12 @@ export default function ContentStudioPage() {
         </div>
 
         {statusMessage && (
-          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 ${
+          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs ${
             statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
           }`}>
             {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
-              <span>{statusMessage.text}</span>
+              <span className="font-medium">{statusMessage.text}</span>
               {publishedUrl && (
                 <a
                   href={publishedUrl}
@@ -246,7 +251,7 @@ export default function ContentStudioPage() {
         {/* 2-Column Composer & Live Preview */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Form & AI Controls (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4">
+          <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-5">
             {/* Target Brand & Format */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

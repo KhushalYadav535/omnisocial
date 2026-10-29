@@ -234,10 +234,15 @@ export default function CalendarPage() {
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6">
         {/* Header with Navigation and View Mode Switcher */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-              <CalendarIcon className="w-6 h-6 text-indigo-600" />
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+                [ EDITORIAL CALENDAR // TIMEZONE AWARE SCHEDULER ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Automated Queue</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
               <span>Multi-Platform Content Calendar</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">

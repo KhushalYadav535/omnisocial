@@ -373,11 +373,16 @@ export default function AccountsPage() {
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
-              <Share2 className="w-6 h-6 text-indigo-600" />
-              <span>Facebook Pages & Instagram Accounts</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
+                [ SOCIAL ASSETS // META GRAPH v22.0 ]
+              </span>
+              <span className="text-xs text-slate-400 font-mono">• Permanent Page Tokens</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+              <span>Connected Social Accounts</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               Enterprise Meta Graph API integration with AES-256-GCM token encryption, multi-page discovery, and live inbox publishing.
@@ -387,18 +392,18 @@ export default function AccountsPage() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowQuickModal(true)}
-              className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 px-3.5 py-2 rounded-lg shadow-2xs transition-colors flex items-center space-x-1.5"
+              className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-4 py-2.5 rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-center space-x-2"
             >
               <Key className="w-4 h-4 text-slate-500" />
-              <span>BYOK Quick Token</span>
+              <span>BYOK Custom Token</span>
             </button>
             <button
               onClick={handleOneClickOAuth}
               disabled={connecting}
-              className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg shadow-xs transition-colors flex items-center space-x-2 disabled:opacity-50"
+              className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-xl shadow-md hover:shadow-blue-500/20 transition-all flex items-center space-x-2 disabled:opacity-50"
             >
               <Facebook className="w-4 h-4" />
-              <span>{connecting ? 'Connecting...' : 'Connect Facebook & Instagram'}</span>
+              <span>{connecting ? 'Connecting...' : '1-Click Connect (Meta OAuth)'}</span>
             </button>
           </div>
         </div>
@@ -472,26 +477,26 @@ export default function AccountsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {accounts.map(acc => (
-              <div key={acc.id} className="bg-white rounded-xl border border-slate-200 shadow-2xs p-5 flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
+              <div key={acc.id} className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 flex flex-col justify-between space-y-4 hover:shadow-md hover:border-indigo-200/80 transition-all">
                 <div>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3.5">
                       <img
                         src={acc.profilePicUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'}
-                        className="w-11 h-11 rounded-full object-cover border border-slate-200"
+                        className="w-12 h-12 rounded-2xl object-cover border border-slate-200 ring-2 ring-slate-100"
                         alt=""
                       />
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">{acc.accountName}</h3>
-                        <p className="text-xs text-slate-400">@{acc.username || acc.platformAccountId}</p>
-                        <span className="inline-block mt-0.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        <p className="text-xs text-slate-400 font-mono">@{acc.username || acc.platformAccountId}</p>
+                        <span className="inline-block mt-0.5 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
                           {acc.pageCategory || 'Brand Asset'}
                         </span>
                       </div>
                     </div>
 
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-white ${
-                      acc.platform === 'INSTAGRAM' ? 'bg-linear-to-tr from-amber-500 via-rose-500 to-purple-600' : 'bg-blue-600'
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-2xs ${
+                      acc.platform === 'INSTAGRAM' ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600' : 'bg-blue-600'
                     }`}>
                       {acc.platform === 'INSTAGRAM' ? <Instagram className="w-4 h-4" /> : <Facebook className="w-4 h-4" />}
                     </span>
