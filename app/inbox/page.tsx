@@ -411,7 +411,7 @@ function InboxContent() {
                       }`}
                     >
                       <img
-                        src={item.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop'}
+                        src={item.authorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.authorName || 'User')}&background=6366f1&color=fff&bold=true&size=128`}
                         className="w-9 h-9 rounded-full object-cover shrink-0 mt-0.5"
                         alt=""
                       />
@@ -509,7 +509,7 @@ function InboxContent() {
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
                   <div className="flex items-center space-x-3">
                     <img
-                      src={selectedInteraction.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop'}
+                      src={selectedInteraction.authorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedInteraction.authorName || 'User')}&background=6366f1&color=fff&bold=true&size=128`}
                       className="w-10 h-10 rounded-full object-cover"
                       alt=""
                     />
