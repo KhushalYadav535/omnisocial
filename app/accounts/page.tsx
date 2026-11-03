@@ -62,15 +62,15 @@ export default function AccountsPage() {
   // Dedicated Instagram Connect Modal State
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [igConnectMethod, setIgConnectMethod] = useState<'instant' | 'oauth'>('instant');
-  const [igUsername, setIgUsername] = useState('apexdigital_official');
-  const [igAccountName, setIgAccountName] = useState('Apex Digital Studio');
+  const [igUsername, setIgUsername] = useState('sentient_digital');
+  const [igAccountName, setIgAccountName] = useState('Sentient Digital');
   const [igToken, setIgToken] = useState('EAAB_mock_test_ig_professional_token_apex');
   const [igAvatarUrl, setIgAvatarUrl] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop');
 
   // Dedicated Facebook Connect Modal State
   const [showFacebookModal, setShowFacebookModal] = useState(false);
   const [fbConnectMethod, setFbConnectMethod] = useState<'oauth' | 'instant'>('oauth');
-  const [fbPageName, setFbPageName] = useState('Apex Digital Media');
+  const [fbPageName, setFbPageName] = useState('Sentient Digital');
   const [fbToken, setFbToken] = useState('EAAB_mock_test_fb_page_token_apex');
 
   // Quick Connect Modal State (BYOK Generic)
