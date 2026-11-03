@@ -812,6 +812,17 @@ function InboxContent() {
                       </div>
                     )}
 
+                    {/* Meta 24-Hour Messaging Policy Warning for DMs */}
+                    {selectedInteraction.type === 'DIRECT_MESSAGE' && 
+                     (Date.now() - new Date(selectedInteraction.platformCreatedAt).getTime() > 24 * 60 * 60 * 1000) && (
+                      <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5 shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-[11px] leading-relaxed">
+                          <strong className="font-bold text-amber-950">Meta 24-Hour Policy Window:</strong> This message was received more than 24 hours ago ({new Date(selectedInteraction.platformCreatedAt).toLocaleString()}). Meta Messenger Platform Policy strictly restricts automated/API replies outside the 24-hour window. To test live DM replies, please send a fresh message to the Page from Facebook Messenger.
+                        </div>
+                      </div>
+                    )}
+
                     {/* AI Error Alert if Any */}
                     {aiError && (
                       <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
