@@ -225,7 +225,7 @@ export default function AccountsPage() {
 
     try {
       const currentCallback = window.location.origin + '/accounts/callback';
-      const res = await apiRequest(`/social-accounts/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}`);
+      const res = await apiRequest(`/social-accounts/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}&platform=${intent}`);
       if (res.oauthUrl) {
         const width = 640;
         const height = 740;
