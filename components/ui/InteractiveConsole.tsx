@@ -189,7 +189,7 @@ export function InteractiveConsole() {
                     <span className="text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-md">
                       Interactive OAuth Test
                     </span>
-                    <span className="text-xs text-slate-400">• Meta Graph v22.0</span>
+                    <span className="text-xs text-slate-400">• Meta Graph v26.0</span>
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mt-1">
                     Simulate Single-Click Meta Authorization
@@ -625,7 +625,7 @@ export function InteractiveConsole() {
         <div className="flex items-center space-x-3">
           <span className="flex items-center text-emerald-600 font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-ping" />
-            Meta Graph API v22 Connected
+            Meta Graph API v26 Connected
           </span>
           <span className="hidden sm:inline text-slate-300">|</span>
           <span className="hidden sm:inline">Uptime: 99.98%</span>

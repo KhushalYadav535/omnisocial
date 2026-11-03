@@ -329,7 +329,7 @@ function InboxContent() {
 
             <div className="hidden xl:flex items-center space-x-1.5 text-[11px] text-slate-500 font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Meta Graph v22.0 Live</span>
+              <span>Meta Graph v26.0 Live</span>
             </div>
           </div>
 
@@ -711,7 +711,7 @@ function InboxContent() {
                           <div key={reply.id || idx} className="flex flex-col items-end max-w-2xl ml-auto space-y-1">
                             <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="font-semibold text-emerald-800">Delivered to Meta API v22.0</span>
+                              <span className="font-semibold text-emerald-800">Delivered to Meta API v26.0</span>
                               <span>•</span>
                               <span>{reply.sentAt ? new Date(reply.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sent'}</span>
                             </div>

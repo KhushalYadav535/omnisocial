@@ -488,7 +488,7 @@ export default function AccountsPage() {
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
-                [ SOCIAL ASSETS // META GRAPH v22.0 ]
+                [ SOCIAL ASSETS // META GRAPH v26.0 ]
               </span>
               <span className="text-xs text-slate-400 font-mono">• Permanent Tokens</span>
             </div>
@@ -924,7 +924,7 @@ export default function AccountsPage() {
                   <div className="p-3.5 bg-blue-50/70 rounded-xl border border-blue-200/80 space-y-2 text-xs text-blue-900">
                     <div className="flex items-center space-x-1.5 font-bold">
                       <Facebook className="w-4 h-4 text-[#1877F2] shrink-0 fill-current" />
-                      <span>Official Meta Graph OAuth v22.0</span>
+                      <span>Official Meta Graph OAuth v26.0</span>
                     </div>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
                       Launches the official Facebook login window to automatically discover all Pages you manage and exchange a permanent 60-day Page Access Token.

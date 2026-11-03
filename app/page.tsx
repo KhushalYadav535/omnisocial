@@ -37,7 +37,7 @@ import { Facebook, Instagram } from '../components/Icons';
 
 export default function LandingPage() {
   const marqueeItems = [
-    { label: 'Meta Graph API v22.0', badge: 'Official Partner' },
+    { label: 'Meta Graph API v26.0', badge: 'Official Partner' },
     { label: 'Instagram Creator Webhooks', badge: '<300ms' },
     { label: 'OpenAI GPT-4o & Claude 3.5', badge: 'BYOK Supported' },
     { label: 'Sovereign Multi-Tenancy', badge: 'Zero Cross-Query' },
@@ -95,7 +95,7 @@ export default function LandingPage() {
                 4.9/5 RATED BY 340+ AGENCIES
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                Meta v22.0
+                Meta v26.0
               </span>
             </div>
           </ScrollReveal>

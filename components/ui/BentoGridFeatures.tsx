@@ -74,7 +74,7 @@ export function BentoGridFeatures() {
                     <span className="font-mono text-slate-500">API Handshake:</span>
                     <span className="font-bold text-emerald-600 flex items-center">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-                      Meta Graph API v22.0 Active
+                      Meta Graph API v26.0 Active
                     </span>
                   </div>
                   <div className="flex items-center space-x-3 pt-1">

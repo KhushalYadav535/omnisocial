@@ -31,7 +31,7 @@ export function StudioFooter() {
             </p>
             <div className="pt-2 flex items-center space-x-2 text-xs font-mono text-emerald-400 bg-emerald-950/60 px-3 py-1.5 rounded-full border border-emerald-800/80 w-fit">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>All Systems Operational • Meta Graph v22.0</span>
+              <span>All Systems Operational • Meta Graph v26.0</span>
             </div>
           </div>
 

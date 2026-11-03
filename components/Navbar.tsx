@@ -140,7 +140,7 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
           {/* Operational Status Pill */}
           <div className="hidden lg:flex items-center space-x-2 text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Meta Graph v22.0 Connected</span>
+            <span>Meta Graph v26.0 Connected</span>
           </div>
 
           {/* Quick Notification Bell */}

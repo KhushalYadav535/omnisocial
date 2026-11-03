@@ -779,7 +779,7 @@ export default function ContentStudioPage() {
                       )}
                     </div>
 
-                    <p className="text-[10px] text-slate-400 uppercase pt-1">Just now • Meta Graph API v22.0</p>
+                    <p className="text-[10px] text-slate-400 uppercase pt-1">Just now • Meta Graph API v26.0</p>
                   </div>
                 </div>
               ) : (
