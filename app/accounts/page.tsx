@@ -62,7 +62,7 @@ export default function AccountsPage() {
   // Dedicated Instagram Connect Modal State
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [igConnectMethod, setIgConnectMethod] = useState<'instant' | 'oauth'>('instant');
-  const [igUsername, setIgUsername] = useState('sentient_digital');
+  const [igUsername, setIgUsername] = useState('sent.ientdigital');
   const [igAccountName, setIgAccountName] = useState('Sentient Digital');
   const [igToken, setIgToken] = useState('EAAB_mock_test_ig_professional_token_apex');
   const [igAvatarUrl, setIgAvatarUrl] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop');
