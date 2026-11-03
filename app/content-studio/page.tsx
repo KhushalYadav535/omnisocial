@@ -56,6 +56,7 @@ export default function ContentStudioPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedPosts, setPublishedPosts] = useState<Array<{ platform: string; url: string; postId: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [generating, setGenerating] = useState(false);
@@ -191,6 +192,7 @@ export default function ContentStudioPage() {
     setSubmitting(true);
     setStatusMessage(null);
     setPublishedUrl(null);
+    setPublishedPosts([]);
 
     try {
       const res = await apiRequest('/content', {
@@ -210,20 +212,60 @@ export default function ContentStudioPage() {
       });
 
       if (immediatePublish && selectedAccountIds.length > 0) {
+        // Send multi-channel publish request to publish across all selected accounts (Facebook & Instagram)
         const pubRes = await apiRequest('/publications/publish-now', {
           method: 'POST',
           body: JSON.stringify({
             contentId: res.content.id,
-            socialAccountId: selectedAccountIds[0]
+            socialAccountId: selectedAccountIds[0],
+            socialAccountIds: selectedAccountIds
           })
         });
 
-        const liveUrl = pubRes.publication?.platformPostUrl;
-        setPublishedUrl(liveUrl || null);
+        let publications = pubRes.publications || (pubRes.publication ? [pubRes.publication] : []);
+
+        // Resilience fallback: if older backend instance only processed the first account, broadcast remaining
+        if (publications.length < selectedAccountIds.length) {
+          const processedIds = new Set(publications.map((p: any) => p.socialAccountId));
+          const remainingIds = selectedAccountIds.filter(id => !processedIds.has(id));
+          for (const remId of remainingIds) {
+            try {
+              const remRes = await apiRequest('/publications/publish-now', {
+                method: 'POST',
+                body: JSON.stringify({
+                  contentId: res.content.id,
+                  socialAccountId: remId
+                })
+              });
+              if (remRes.publication) {
+                publications.push(remRes.publication);
+              }
+            } catch (remErr) {
+              console.warn('Publishing to remaining channel failed:', remId, remErr);
+            }
+          }
+        }
+
+        const liveList = publications
+          .filter((p: any) => p.status === 'PUBLISHED')
+          .map((p: any) => ({
+            platform: p.platform || (p.platformPostUrl?.includes('instagram') ? 'INSTAGRAM' : 'FACEBOOK'),
+            url: p.platformPostUrl,
+            postId: p.platformPostId
+          }));
+
+        setPublishedPosts(liveList);
+        if (liveList.length > 0) {
+          setPublishedUrl(liveList[0].url || null);
+        }
+
+        const platformLabels = liveList.map((p: { platform: string }) => p.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook');
+        const uniqueLabels = Array.from(new Set(platformLabels)).join(' & ');
+
         setStatusMessage({
           type: 'success',
-          text: liveUrl
-            ? `Post published live to Meta! Post ID: ${pubRes.publication?.platformPostId}`
+          text: liveList.length > 0
+            ? `Successfully published live to ${uniqueLabels}! (${liveList.length} channel${liveList.length > 1 ? 's' : ''})`
             : 'Post published immediately to connected social channels!'
         });
 
@@ -295,17 +337,32 @@ export default function ContentStudioPage() {
             {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold">{statusMessage.text}</span>
-              {publishedUrl && (
+              {publishedPosts.length > 0 ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  {publishedPosts.map((post, idx) => (
+                    <a
+                      key={idx}
+                      href={post.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700 bg-white/70 px-2.5 py-1 rounded-lg border border-emerald-300 text-xs shadow-2xs"
+                    >
+                      <span>View Live on {post.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ))}
+                </div>
+              ) : publishedUrl ? (
                 <a
                   href={publishedUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700"
                 >
-                  <span>View Live on Facebook</span>
+                  <span>View Live on Meta</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
-              )}
+              ) : null}
             </div>
           </div>
         )}
