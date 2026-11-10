@@ -29,10 +29,60 @@ import {
   Flame,
   LayoutGrid,
   Film,
-  Layers as LayersIcon
+  Layers as LayersIcon,
+  Video,
+  Play,
+  Volume2,
+  Wand2,
+  Music
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Facebook, Instagram } from '../../components/Icons';
+import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
+
+function AccountPillAvatar({
+  url,
+  name,
+  platform
+}: {
+  url?: string | null;
+  name: string;
+  platform: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const initials = (name || 'Social')
+    .split(' ')
+    .map(p => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'SO';
+
+  const platformBg =
+    platform === 'LINKEDIN'
+      ? 'bg-gradient-to-tr from-[#004182] to-[#0A66C2]'
+      : platform === 'INSTAGRAM'
+      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
+      : 'bg-gradient-to-tr from-[#1877F2] to-[#0d5ec9]';
+
+  if (!url || imgError) {
+    return (
+      <div
+        className={`w-8 h-8 rounded-full ${platformBg} text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 shadow-2xs`}
+      >
+        {initials}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt={name}
+      onError={() => setImgError(true)}
+      className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-200/80"
+    />
+  );
+}
 
 export default function ContentStudioPage() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
@@ -47,12 +97,29 @@ export default function ContentStudioPage() {
   const [newTagInput, setNewTagInput] = useState('');
   const [mediaUrl, setMediaUrl] = useState('https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&h=1080&fit=crop');
   const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>('POST');
-  const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM']);
+  const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
 
-  // Media Upload State
-  const [mediaMode, setMediaMode] = useState<'upload' | 'url'>('upload');
+  // Media Creator Hub State (AI Video & Reel, AI Image, Upload, URL)
+  const [mediaMode, setMediaMode] = useState<'ai-video' | 'ai-image' | 'upload' | 'url'>('ai-video');
+  const [isVideoMedia, setIsVideoMedia] = useState(false);
+
+  // OpenRouter Video / Reel Generation State
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoModel, setVideoModel] = useState('google/veo-3.1-fast');
+  const [videoAspectRatio, setVideoAspectRatio] = useState<'9:16' | '16:9' | '1:1'>('9:16');
+  const [videoDuration, setVideoDuration] = useState<number>(4);
+  const [videoGenerateAudio, setVideoGenerateAudio] = useState(true);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoGenerationStage, setVideoGenerationStage] = useState<string>('');
+
+  // OpenRouter Image Generation State
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageModel, setImageModel] = useState('black-forest-labs/flux-3-image-klein');
+  const [imageAspectRatio, setImageAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('1:1');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
@@ -64,7 +131,7 @@ export default function ContentStudioPage() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Active Preview Tab
-  const [previewPlatform, setPreviewPlatform] = useState<'FACEBOOK' | 'INSTAGRAM'>('INSTAGRAM');
+  const [previewPlatform, setPreviewPlatform] = useState<'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN'>('INSTAGRAM');
 
   // Quick Prompt Presets for high UX productivity
   const promptPresets = [
@@ -141,13 +208,20 @@ export default function ContentStudioPage() {
     setHashtags(hashtags.filter(tag => tag !== tagToRemove));
   };
 
+  const isVideoUrl = (url?: string | null) => {
+    if (!url) return false;
+    return /\.(mp4|mov|webm|m4v|avi)(\?.*)?$/i.test(url) || url.includes('reel_ai') || url.includes('/videos/');
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show temporary local object preview
+    const isVid = file.type.startsWith('video/') || /\.(mp4|mov|webm|m4v|avi)$/i.test(file.name);
     const tempUrl = URL.createObjectURL(file);
     setMediaUrl(tempUrl);
+    setIsVideoMedia(isVid);
+    if (isVid) setFormat('REEL');
     setUploadedFileName(file.name);
     setIsUploading(true);
     setStatusMessage(null);
@@ -163,23 +237,157 @@ export default function ContentStudioPage() {
 
       if (res.url) {
         setMediaUrl(res.url);
+        const vidDetected = res.isVideo || isVid;
+        setIsVideoMedia(vidDetected);
         setUploadedFileName(res.originalName || file.name);
         setStatusMessage({
           type: 'success',
-          text: `Image "${res.originalName || file.name}" uploaded successfully!`
+          text: `${vidDetected ? 'Video / Reel' : 'Image'} "${res.originalName || file.name}" uploaded successfully!`
         });
       }
     } catch (err: any) {
       console.error('File upload error:', err);
       setStatusMessage({
         type: 'error',
-        text: err.message || 'Image upload failed. Please try again.'
+        text: err.message || 'Media upload failed. Please try again.'
       });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  // Generate Photorealistic AI Video / Reel using OpenRouter
+  const handleGenerateAiVideo = async () => {
+    const promptToUse = videoPrompt.trim() || rawIdea || caption;
+    if (!promptToUse) {
+      alert('Please enter a video prompt or provide a post concept.');
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+    setVideoGenerationStage('Submitting request to OpenRouter (Google Veo)...');
+    setStatusMessage(null);
+
+    try {
+      const submitRes = await apiRequest('/ai/generate-video', {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: promptToUse,
+          model: videoModel,
+          aspectRatio: videoAspectRatio,
+          duration: videoDuration,
+          resolution: '720p',
+          generateAudio: videoGenerateAudio
+        })
+      });
+
+      if (!submitRes.jobId) {
+        throw new Error(submitRes.error || 'Failed to initialize video generation job');
+      }
+
+      setVideoGenerationStage('Generating photorealistic video frames & synchronized audio...');
+
+      const jobId = submitRes.jobId;
+      let attempts = 0;
+      const maxAttempts = 60; // up to ~4 minutes
+
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const pollRes = await apiRequest(`/ai/video-status/${jobId}`);
+          if (pollRes.status === 'completed' && pollRes.videoUrl) {
+            clearInterval(pollInterval);
+            setMediaUrl(pollRes.videoUrl);
+            setIsVideoMedia(true);
+            setFormat('REEL');
+            const modelLabel = videoModel.includes('veo') ? 'Google Veo 3.1' : videoModel.includes('seedance') ? 'ByteDance Seedance' : 'AI Reel';
+            setUploadedFileName(`${modelLabel} Video (${videoAspectRatio})`);
+            setIsGeneratingVideo(false);
+            setVideoGenerationStage('');
+            setStatusMessage({
+              type: 'success',
+              text: `Realistic AI Video successfully generated with ${modelLabel} and attached to your post!`
+            });
+            confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+          } else if (pollRes.status === 'failed') {
+            clearInterval(pollInterval);
+            setIsGeneratingVideo(false);
+            setVideoGenerationStage('');
+            setStatusMessage({
+              type: 'error',
+              text: pollRes.error || 'Video generation failed at provider.'
+            });
+          } else {
+            setVideoGenerationStage(`Rendering realistic motion & audio with ${videoModel.split('/')[1] || 'Veo'}... (${attempts * 4}s)`);
+          }
+        } catch (pollErr: any) {
+          console.warn('Polling error:', pollErr.message);
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setIsGeneratingVideo(false);
+          setVideoGenerationStage('');
+          setStatusMessage({
+            type: 'error',
+            text: 'Video generation is still processing. Please check back in a few seconds.'
+          });
+        }
+      }, 4000);
+    } catch (err: any) {
+      setIsGeneratingVideo(false);
+      setVideoGenerationStage('');
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'Video generation failed'
+      });
+    }
+  };
+
+  // Generate Photorealistic AI Image using OpenRouter (FLUX 3)
+  const handleGenerateAiImage = async () => {
+    const promptToUse = imagePrompt.trim() || rawIdea || caption;
+    if (!promptToUse) {
+      alert('Please enter an image prompt or provide a post concept.');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setStatusMessage(null);
+
+    try {
+      const res = await apiRequest('/ai/generate-image', {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: promptToUse,
+          model: imageModel,
+          aspectRatio: imageAspectRatio
+        })
+      });
+
+      if (res.imageUrl) {
+        setMediaUrl(res.imageUrl);
+        setIsVideoMedia(false);
+        const modelLabel = imageModel.includes('flux') ? 'FLUX 3' : 'AI Photo';
+        setUploadedFileName(`${modelLabel} Realistic Image (${imageAspectRatio})`);
+        setStatusMessage({
+          type: 'success',
+          text: `Photorealistic AI Image successfully generated with ${modelLabel} and attached!`
+        });
+        confetti({ particleCount: 45, spread: 55, origin: { y: 0.6 } });
+      } else {
+        throw new Error(res.error || 'Failed to generate image');
+      }
+    } catch (err: any) {
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'Image generation failed'
+      });
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -249,7 +457,7 @@ export default function ContentStudioPage() {
         const liveList = publications
           .filter((p: any) => p.status === 'PUBLISHED')
           .map((p: any) => ({
-            platform: p.platform || (p.platformPostUrl?.includes('instagram') ? 'INSTAGRAM' : 'FACEBOOK'),
+            platform: p.platform || (p.platformPostUrl?.includes('linkedin') ? 'LINKEDIN' : p.platformPostUrl?.includes('instagram') ? 'INSTAGRAM' : 'FACEBOOK'),
             url: p.platformPostUrl,
             postId: p.platformPostId
           }));
@@ -259,8 +467,8 @@ export default function ContentStudioPage() {
           setPublishedUrl(liveList[0].url || null);
         }
 
-        const platformLabels = liveList.map((p: { platform: string }) => p.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook');
-        const uniqueLabels = Array.from(new Set(platformLabels)).join(' & ');
+        const platformLabels = liveList.map((p: { platform: string }) => p.platform === 'LINKEDIN' ? 'LinkedIn' : p.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook');
+        const uniqueLabels = Array.from(new Set(platformLabels)).join(', ');
 
         setStatusMessage({
           type: 'success',
@@ -307,7 +515,7 @@ export default function ContentStudioPage() {
               AI Creative Studio
             </h1>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Multi-platform viral copywriting, visual staging & instant Meta Graph dispatch.
+              Multi-platform viral copywriting, visual staging & instant Facebook, Instagram & LinkedIn dispatch.
             </p>
           </div>
 
@@ -328,7 +536,17 @@ export default function ContentStudioPage() {
               className="px-6 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>{submitting ? 'Transmitting...' : 'Publish Now to Meta'}</span>
+              <span>
+                {submitting
+                  ? 'Transmitting...'
+                  : selectedAccountIds.length > 1
+                  ? 'Publish Now to All Channels'
+                  : targetPlatforms.includes('LINKEDIN')
+                  ? 'Publish Now to LinkedIn'
+                  : targetPlatforms.includes('INSTAGRAM')
+                  ? 'Publish Now to Instagram'
+                  : 'Publish Now'}
+              </span>
             </button>
           </div>
         </div>
@@ -351,7 +569,7 @@ export default function ContentStudioPage() {
                       rel="noreferrer"
                       className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700 bg-white/70 px-2.5 py-1 rounded-lg border border-emerald-300 text-xs shadow-2xs"
                     >
-                      <span>View Live on {post.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
+                      <span>View Live on {post.platform === 'LINKEDIN' ? 'LinkedIn' : post.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ))}
@@ -363,7 +581,7 @@ export default function ContentStudioPage() {
                   rel="noreferrer"
                   className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700"
                 >
-                  <span>View Live on Meta</span>
+                  <span>View Live Post</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               ) : null}
@@ -416,10 +634,109 @@ export default function ContentStudioPage() {
                 </div>
               </div>
 
+              {/* Multi-Platform Fast Selector Buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Target Social Platforms:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allSelected = targetPlatforms.length === 3;
+                      if (allSelected) {
+                        setTargetPlatforms([]);
+                        setSelectedAccountIds([]);
+                      } else {
+                        setTargetPlatforms(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
+                        setSelectedAccountIds(accounts.map(a => a.id));
+                      }
+                    }}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                  >
+                    {targetPlatforms.length === 3 ? 'Deselect All' : 'Select All (FB + IG + LI)'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Facebook Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exists = targetPlatforms.includes('FACEBOOK');
+                      const next = exists ? targetPlatforms.filter(p => p !== 'FACEBOOK') : [...targetPlatforms, 'FACEBOOK'];
+                      setTargetPlatforms(next);
+                      const fbAccIds = accounts.filter(a => a.platform === 'FACEBOOK').map(a => a.id);
+                      if (exists) {
+                        setSelectedAccountIds(selectedAccountIds.filter(id => !fbAccIds.includes(id)));
+                      } else {
+                        setSelectedAccountIds(Array.from(new Set([...selectedAccountIds, ...fbAccIds])));
+                      }
+                    }}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                      targetPlatforms.includes('FACEBOOK')
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-300'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <Facebook className="w-4 h-4 fill-current shrink-0" />
+                    <span>Facebook</span>
+                  </button>
+
+                  {/* Instagram Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exists = targetPlatforms.includes('INSTAGRAM');
+                      const next = exists ? targetPlatforms.filter(p => p !== 'INSTAGRAM') : [...targetPlatforms, 'INSTAGRAM'];
+                      setTargetPlatforms(next);
+                      const igAccIds = accounts.filter(a => a.platform === 'INSTAGRAM').map(a => a.id);
+                      if (exists) {
+                        setSelectedAccountIds(selectedAccountIds.filter(id => !igAccIds.includes(id)));
+                      } else {
+                        setSelectedAccountIds(Array.from(new Set([...selectedAccountIds, ...igAccIds])));
+                      }
+                    }}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                      targetPlatforms.includes('INSTAGRAM')
+                        ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white border-transparent shadow-sm ring-2 ring-pink-300'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <Instagram className="w-4 h-4 shrink-0" />
+                    <span>Instagram</span>
+                  </button>
+
+                  {/* LinkedIn Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exists = targetPlatforms.includes('LINKEDIN');
+                      const next = exists ? targetPlatforms.filter(p => p !== 'LINKEDIN') : [...targetPlatforms, 'LINKEDIN'];
+                      setTargetPlatforms(next);
+                      const liAccIds = accounts.filter(a => a.platform === 'LINKEDIN').map(a => a.id);
+                      if (exists) {
+                        setSelectedAccountIds(selectedAccountIds.filter(id => !liAccIds.includes(id)));
+                      } else {
+                        setSelectedAccountIds(Array.from(new Set([...selectedAccountIds, ...liAccIds])));
+                      }
+                    }}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                      targetPlatforms.includes('LINKEDIN')
+                        ? 'bg-[#0A66C2] text-white border-[#0A66C2] shadow-sm ring-2 ring-sky-300'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <LinkedIn className="w-4 h-4 fill-current shrink-0" />
+                    <span>LinkedIn</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Destination Account Pills with Avatars */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-2">
-                  Target Social Accounts:
+                  Target Social Accounts ({selectedAccountIds.length} selected):
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {accounts.map(acc => {
@@ -435,16 +752,29 @@ export default function ContentStudioPage() {
                             setSelectedAccountIds([...selectedAccountIds, acc.id]);
                           }
                         }}
-                        className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all ${
+                        className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition-all cursor-pointer ${
                           isChecked
                             ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-300'
                             : 'border-slate-200/80 bg-white hover:bg-slate-50'
                         }`}
                       >
-                        <img src={acc.profilePicUrl} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                        <AccountPillAvatar
+                          url={acc.profilePicUrl}
+                          name={acc.accountName}
+                          platform={acc.platform}
+                        />
                         <div className="flex-1 truncate">
                           <p className="text-xs font-bold text-slate-900 truncate">{acc.accountName}</p>
-                          <p className="text-[10px] text-slate-400 font-mono uppercase">{acc.platform}</p>
+                          <div className="flex items-center space-x-1">
+                            {acc.platform === 'LINKEDIN' ? (
+                              <LinkedIn className="w-3 h-3 text-[#0A66C2] fill-current shrink-0" />
+                            ) : acc.platform === 'INSTAGRAM' ? (
+                              <Instagram className="w-3 h-3 text-pink-600 shrink-0" />
+                            ) : (
+                              <Facebook className="w-3 h-3 text-blue-600 fill-current shrink-0" />
+                            )}
+                            <p className="text-[10px] text-slate-400 font-mono uppercase">{acc.platform}</p>
+                          </div>
                         </div>
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
                           isChecked ? 'bg-indigo-600 text-white' : 'border border-slate-300'
@@ -618,108 +948,394 @@ export default function ContentStudioPage() {
               </div>
             </div>
 
-            {/* PANEL 4: MEDIA ASSET (IMAGE UPLOAD & URL) */}
+            {/* PANEL 4: ADVANCED AI MEDIA STUDIO (AI VIDEO/REELS, AI IMAGES, UPLOAD, URL) */}
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-2">
-                  <ImageIcon className="w-4 h-4 text-indigo-600" />
-                  <span>4. Featured Visual Media</span>
+                  <Film className="w-4 h-4 text-indigo-600" />
+                  <span>4. Visual Media & AI Production</span>
                 </span>
-                <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-xl text-xs font-semibold">
+                <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setMediaMode('ai-video')}
+                    className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer ${
+                      mediaMode === 'ai-video' ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>AI Reel / Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaMode('ai-image')}
+                    className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer ${
+                      mediaMode === 'ai-image' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Wand2 className="w-3.5 h-3.5" />
+                    <span>AI Image</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setMediaMode('upload')}
-                    className={`px-3 py-1 rounded-lg flex items-center space-x-1 transition-all ${
-                      mediaMode === 'upload' ? 'bg-white text-indigo-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                    className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer ${
+                      mediaMode === 'upload' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <Upload className="w-3 h-3" />
-                    <span>Upload Image</span>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload (100MB)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setMediaMode('url')}
-                    className={`px-3 py-1 rounded-lg flex items-center space-x-1 transition-all ${
-                      mediaMode === 'url' ? 'bg-white text-indigo-700 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                    className={`px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer ${
+                      mediaMode === 'url' ? 'bg-white text-indigo-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <Link2 className="w-3 h-3" />
-                    <span>Paste URL</span>
+                    <Link2 className="w-3.5 h-3.5" />
+                    <span>URL</span>
                   </button>
                 </div>
               </div>
 
-              {/* Hidden File Input */}
+              {/* Hidden File Input for Video/Image Upload */}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
                 onChange={handleFileUpload}
                 className="hidden"
               />
 
-              {mediaMode === 'upload' ? (
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                  {isUploading ? (
-                    <div className="flex flex-col items-center justify-center py-6 space-y-2 text-indigo-600">
-                      <Loader2 className="w-7 h-7 animate-spin" />
-                      <span className="text-xs font-bold">Uploading image to secure storage...</span>
-                    </div>
-                  ) : mediaUrl ? (
-                    <div className="flex items-center space-x-4 bg-white p-3 rounded-xl border border-slate-200">
+              {/* ACTIVE ATTACHED MEDIA PREVIEW STRIP (If mediaUrl exists) */}
+              {mediaUrl && (
+                <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/80 flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    {isVideoUrl(mediaUrl) ? (
+                      <div className="w-16 h-16 rounded-xl bg-black overflow-hidden relative shrink-0 flex items-center justify-center border border-slate-200">
+                        <video src={mediaUrl} className="w-full h-full object-cover" muted />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                          <Play className="w-5 h-5 fill-white" />
+                        </div>
+                      </div>
+                    ) : (
                       <img
                         src={mediaUrl}
                         alt="Preview"
                         className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">
-                          {uploadedFileName || 'Featured Image Attached'}
-                        </p>
-                        <p className="text-[11px] text-emerald-600 font-semibold flex items-center space-x-1 mt-1">
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {uploadedFileName || (isVideoUrl(mediaUrl) ? 'Video Reel Attached' : 'Visual Asset Attached')}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          isVideoUrl(mediaUrl) ? 'bg-violet-100 text-violet-800' : 'bg-indigo-100 text-indigo-800'
+                        }`}>
+                          {isVideoUrl(mediaUrl) ? '🎬 Video Reel' : '🖼️ Image'}
+                        </span>
+                        <span className="text-[11px] text-emerald-600 font-semibold flex items-center space-x-1">
                           <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                          <span>Ready for Meta Publishing</span>
-                        </p>
+                          <span>Ready for Publishing</span>
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaUrl('');
+                        setUploadedFileName(null);
+                        setIsVideoMedia(false);
+                      }}
+                      className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE 1: AI VIDEO / REEL GENERATOR */}
+              {mediaMode === 'ai-video' && (
+                <div className="space-y-4 pt-1">
+                  <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100/80 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-violet-900 uppercase tracking-wider flex items-center space-x-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+                        <span>OpenRouter Realistic Video Engine</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idea = rawIdea || caption || 'A high-end cinematic vertical reel of our luxury product in studio lighting with elegant slow-motion movement';
+                          setVideoPrompt(idea);
+                        }}
+                        className="text-[11px] font-bold text-violet-700 hover:text-violet-900 underline flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        <span>Fill from Post Idea</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <textarea
+                        rows={3}
+                        value={videoPrompt}
+                        onChange={(e) => setVideoPrompt(e.target.value)}
+                        placeholder="Describe the video in realistic detail (e.g., Ultra photorealistic cinematic vertical reel of luxury modern cosmetics on wet dark slate with golden light rays and water droplets in slow motion...)"
+                        className="w-full text-xs font-medium border border-violet-200/90 rounded-xl p-3 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-violet-600 leading-relaxed shadow-2xs"
+                      />
+                    </div>
+
+                    {/* Model, Aspect Ratio & Duration Controls */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          AI Video Model:
+                        </label>
+                        <select
+                          value={videoModel}
+                          onChange={(e) => setVideoModel(e.target.value)}
+                          className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-violet-600"
                         >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMediaUrl('');
-                            setUploadedFileName(null);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-xl transition-colors"
-                          title="Remove image"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                          <option value="google/veo-3.1-fast">Google: Veo 3.1 Fast (Best for Reels + Audio)</option>
+                          <option value="google/veo-3.1">Google: Veo 3.1 Cinematic 4K</option>
+                          <option value="bytedance/seedance-2.0">ByteDance: Seedance 2.0 (TikTok/Reels AI)</option>
+                          <option value="kwaivgi/kling-v3.0-pro">Kling: Video v3.0 Pro</option>
+                          <option value="alibaba/wan-3.0-prime">Alibaba: Wan 3.0 Prime</option>
+                        </select>
                       </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Aspect Ratio:
+                        </label>
+                        <div className="grid grid-cols-3 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setVideoAspectRatio('9:16')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              videoAspectRatio === '9:16' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            9:16 Reel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVideoAspectRatio('16:9')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              videoAspectRatio === '16:9' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            16:9 Wide
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVideoAspectRatio('1:1')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              videoAspectRatio === '1:1' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            1:1 Square
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Duration & Audio:
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <select
+                            value={videoDuration}
+                            onChange={(e) => setVideoDuration(Number(e.target.value))}
+                            className="flex-1 text-xs font-semibold border border-slate-200 rounded-xl p-2 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-violet-600"
+                          >
+                            <option value={4}>4 Seconds</option>
+                            <option value={6}>6 Seconds</option>
+                            <option value={8}>8 Seconds</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setVideoGenerateAudio(!videoGenerateAudio)}
+                            title="Generate AI Sound Effects"
+                            className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                              videoGenerateAudio ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-slate-200'
+                            }`}
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Generate Button & Progress */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleGenerateAiVideo}
+                        disabled={isGeneratingVideo}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-pink-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md flex items-center justify-center space-x-2 transition-all disabled:opacity-60 cursor-pointer"
+                      >
+                        {isGeneratingVideo ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>{videoGenerationStage || 'Generating Realistic AI Video...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Video className="w-4 h-4" />
+                            <span>Generate Photorealistic AI Video with Google Veo</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE 2: AI IMAGE GENERATOR (FLUX 3) */}
+              {mediaMode === 'ai-image' && (
+                <div className="space-y-4 pt-1">
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider flex items-center space-x-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>OpenRouter FLUX 3 Photorealistic Engine</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idea = rawIdea || caption || 'A luxury studio photograph of our brand product with soft morning natural lighting and depth of field';
+                          setImagePrompt(idea);
+                        }}
+                        className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 underline flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        <span>Fill from Post Idea</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      <textarea
+                        rows={3}
+                        value={imagePrompt}
+                        onChange={(e) => setImagePrompt(e.target.value)}
+                        placeholder="Describe the image (e.g., Editorial architectural photography of contemporary storefront with warm ambient lighting, 8k resolution, photorealistic Hasselblad camera...)"
+                        className="w-full text-xs font-medium border border-indigo-200/90 rounded-xl p-3 bg-white text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-600 leading-relaxed shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Image Model:
+                        </label>
+                        <select
+                          value={imageModel}
+                          onChange={(e) => setImageModel(e.target.value)}
+                          className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2 bg-white text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-600"
+                        >
+                          <option value="black-forest-labs/flux-3-image-klein">Black Forest Labs: FLUX 3 (Recommended - SOTA)</option>
+                          <option value="bytedance-seed/seedream-5-0-flash">ByteDance: Seedream 5.0 Flash</option>
+                          <option value="google/gemini-nano-banana-2.1">Google: Nano Banana 2.1</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          Aspect Ratio:
+                        </label>
+                        <div className="grid grid-cols-3 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setImageAspectRatio('1:1')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              imageAspectRatio === '1:1' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            1:1 Square
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageAspectRatio('16:9')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              imageAspectRatio === '16:9' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            16:9 Wide
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageAspectRatio('9:16')}
+                            className={`py-1.5 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              imageAspectRatio === '9:16' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            9:16 Vertical
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleGenerateAiImage}
+                        disabled={isGeneratingImage}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-extrabold text-xs shadow-md flex items-center justify-center space-x-2 transition-all disabled:opacity-60 cursor-pointer"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Generating Ultra-Realistic Image with FLUX 3...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-4 h-4" />
+                            <span>Generate Photorealistic AI Image with FLUX 3</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE 3: MANUAL UPLOAD (VIDEO & IMAGE UP TO 100MB) */}
+              {mediaMode === 'upload' && (
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  {isUploading ? (
+                    <div className="flex flex-col items-center justify-center py-6 space-y-2 text-indigo-600">
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                      <span className="text-xs font-bold">Uploading file to media server...</span>
                     </div>
                   ) : (
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       className="cursor-pointer flex flex-col items-center justify-center py-6 space-y-2 text-center group"
                     >
-                      <div className="w-11 h-11 rounded-2xl bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center text-indigo-600 transition-colors shadow-2xs">
-                        <Upload className="w-5 h-5" />
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center text-indigo-600 transition-colors shadow-2xs">
+                        <Upload className="w-6 h-6" />
                       </div>
                       <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-600">
-                        Click to select image from your computer
+                        Click to select Video (Reel) or Image from your device
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        PNG, JPG, WEBP up to 25MB (Auto-formatted for 1080x1080 / 1080x1350)
+                        MP4, MOV, WEBM, JPG, PNG up to 100MB (Auto-optimized for Instagram Reels & Facebook)
                       </p>
                     </div>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {/* MODE 4: DIRECT URL */}
+              {mediaMode === 'url' && (
                 <div className="space-y-2">
                   <div className="relative">
                     <input
@@ -728,16 +1344,20 @@ export default function ContentStudioPage() {
                       onChange={(e) => {
                         setMediaUrl(e.target.value);
                         setUploadedFileName(null);
+                        setIsVideoMedia(isVideoUrl(e.target.value));
                       }}
-                      placeholder="https://images.unsplash.com/photo-..."
+                      placeholder="https://example.com/video.mp4 or https://images.unsplash.com/..."
                       className="w-full text-xs font-mono border border-slate-200/90 rounded-2xl pl-10 pr-10 py-3 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-indigo-600 text-slate-800"
                     />
                     <Link2 className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                     {mediaUrl && (
                       <button
                         type="button"
-                        onClick={() => setMediaUrl('')}
-                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600"
+                        onClick={() => {
+                          setMediaUrl('');
+                          setIsVideoMedia(false);
+                        }}
+                        className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -777,6 +1397,16 @@ export default function ContentStudioPage() {
                     <Facebook className="w-3.5 h-3.5" />
                     <span>Facebook</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPlatform('LINKEDIN')}
+                    className={`px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all ${
+                      previewPlatform === 'LINKEDIN' ? 'bg-white text-[#0A66C2] shadow-2xs font-bold' : 'text-slate-600'
+                    }`}
+                  >
+                    <LinkedIn className="w-3.5 h-3.5 fill-current" />
+                    <span>LinkedIn</span>
+                  </button>
                 </div>
               </div>
 
@@ -802,14 +1432,32 @@ export default function ContentStudioPage() {
                     <span className="text-slate-400 text-xs">•••</span>
                   </div>
 
-                  {/* Media Frame */}
-                  <div className="aspect-square bg-slate-100 overflow-hidden relative">
+                  {/* Media Frame (Video Reel or Image) */}
+                  <div className={`${isVideoUrl(mediaUrl) || format === 'REEL' ? 'aspect-[9/14]' : 'aspect-square'} bg-slate-100 overflow-hidden relative group`}>
                     {mediaUrl ? (
-                      <img src={mediaUrl} className="w-full h-full object-cover" alt="Post preview" />
+                      isVideoUrl(mediaUrl) ? (
+                        <div className="w-full h-full relative bg-black">
+                          <video
+                            src={mediaUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            controls
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center space-x-1">
+                            <Film className="w-3 h-3 text-pink-400" />
+                            <span>Reel</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={mediaUrl} className="w-full h-full object-cover" alt="Post preview" />
+                      )
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 text-xs p-6 text-center">
                         <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                        <span>Upload an image or paste URL to preview</span>
+                        <span>Upload or generate media with AI to preview</span>
                       </div>
                     )}
                   </div>
@@ -843,7 +1491,7 @@ export default function ContentStudioPage() {
                     <p className="text-[10px] text-slate-400 uppercase pt-1">Just now • Meta Graph API v26.0</p>
                   </div>
                 </div>
-              ) : (
+              ) : previewPlatform === 'FACEBOOK' ? (
                 /* Facebook Post Preview */
                 <div className="border border-slate-200/90 rounded-3xl overflow-hidden bg-white shadow-sm max-w-sm mx-auto">
                   {/* FB Header */}
@@ -870,9 +1518,15 @@ export default function ContentStudioPage() {
                     )}
                   </div>
 
-                  {/* FB Image */}
-                  <div className="aspect-4/3 bg-slate-100 overflow-hidden">
-                    {mediaUrl && <img src={mediaUrl} className="w-full h-full object-cover" alt="" />}
+                  {/* FB Media (Video or Image) */}
+                  <div className="aspect-4/3 bg-slate-100 overflow-hidden bg-black/90">
+                    {mediaUrl && (
+                      isVideoUrl(mediaUrl) ? (
+                        <video src={mediaUrl} controls autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={mediaUrl} className="w-full h-full object-cover" alt="" />
+                      )
+                    )}
                   </div>
 
                   {/* FB Action Bar */}
@@ -880,6 +1534,86 @@ export default function ContentStudioPage() {
                     <span>👍 Like</span>
                     <span>💬 Comment</span>
                     <span>↗ Share</span>
+                  </div>
+                </div>
+              ) : (
+                /* LinkedIn Post Preview */
+                <div className="border border-slate-200/90 rounded-3xl overflow-hidden bg-white shadow-sm max-w-sm mx-auto">
+                  {/* LinkedIn Header */}
+                  <div className="p-3.5 flex items-start justify-between border-b border-slate-100">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-10 h-10 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-xs ring-2 ring-slate-100">
+                        {selectedBrand?.name?.slice(0, 2).toUpperCase() || 'AW'}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-1">
+                          <p className="text-xs font-bold text-slate-900 leading-tight">
+                            {selectedBrand?.name || 'OmniSocial Brand'}
+                          </p>
+                          <span className="text-[10px] text-slate-400 font-semibold">• 1st</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[170px]">
+                          {selectedBrand?.voiceProfile?.writingStyle || 'Innovating Social Media AI'}
+                        </p>
+                        <p className="text-[9px] text-slate-400 flex items-center space-x-1">
+                          <span>Just now</span>
+                          <span>•</span>
+                          <span>🌐 Public</span>
+                        </p>
+                      </div>
+                    </div>
+                    <button type="button" className="text-xs text-[#0A66C2] font-bold hover:underline px-2.5 py-1 rounded-full border border-[#0A66C2]/40 hover:bg-sky-50 cursor-pointer">
+                      + Follow
+                    </button>
+                  </div>
+
+                  {/* LinkedIn Caption / Commentary */}
+                  <div className="px-3.5 py-3 text-xs text-slate-800 whitespace-pre-line leading-relaxed">
+                    {caption || 'Your thought-leadership copy and industry insights will appear live here...'}
+                    {hashtags.length > 0 && (
+                      <p className="text-[#0A66C2] font-semibold text-[11px] mt-1.5">
+                        {hashtags.join(' ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* LinkedIn Media Preview (Video or Image) */}
+                  {mediaUrl && (
+                    <div className="aspect-16/10 bg-black/90 overflow-hidden border-y border-slate-100">
+                      {isVideoUrl(mediaUrl) ? (
+                        <video src={mediaUrl} controls className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={mediaUrl} className="w-full h-full object-cover" alt="LinkedIn post media" />
+                      )}
+                    </div>
+                  )}
+
+                  {/* LinkedIn Social Counts */}
+                  <div className="px-3.5 py-2 flex items-center justify-between text-[10px] text-slate-500 border-b border-slate-100">
+                    <span className="flex items-center space-x-1">
+                      <span>👍 💡 ❤️ 184</span>
+                    </span>
+                    <span>28 comments • 12 reposts</span>
+                  </div>
+
+                  {/* LinkedIn Action Buttons */}
+                  <div className="p-2 grid grid-cols-4 text-center text-xs text-slate-600 font-semibold">
+                    <span className="py-1 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-center space-x-1">
+                      <span>👍</span>
+                      <span className="text-[11px]">Like</span>
+                    </span>
+                    <span className="py-1 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-center space-x-1">
+                      <span>💬</span>
+                      <span className="text-[11px]">Comment</span>
+                    </span>
+                    <span className="py-1 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-center space-x-1">
+                      <span>🔁</span>
+                      <span className="text-[11px]">Repost</span>
+                    </span>
+                    <span className="py-1 hover:bg-slate-50 rounded-lg cursor-pointer flex items-center justify-center space-x-1">
+                      <span>✈️</span>
+                      <span className="text-[11px]">Send</span>
+                    </span>
                   </div>
                 </div>
               )}

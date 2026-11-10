@@ -35,7 +35,7 @@ import {
   Eye,
   BarChart3
 } from 'lucide-react';
-import { Facebook, Instagram } from '../../components/Icons';
+import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
 function DashboardContent() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
@@ -703,7 +703,7 @@ function DashboardContent() {
                             <span className="text-[11px] text-neutral-400 font-mono">@{item.authorUsername}</span>
                           )}
                           <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${
-                            item.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                            item.platform === 'LINKEDIN' ? 'bg-sky-50 text-sky-700 border border-sky-200' : item.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
                             {item.platform} • {item.type}
                           </span>
@@ -780,9 +780,9 @@ function DashboardContent() {
                     <div key={acc.id} className="p-3 rounded-2xl bg-neutral-50/80 border border-neutral-200/60 flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
-                          acc.platform === 'INSTAGRAM' ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600' : 'bg-blue-600'
+                          acc.platform === 'LINKEDIN' ? 'bg-[#0A66C2]' : acc.platform === 'INSTAGRAM' ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600' : 'bg-blue-600'
                         }`}>
-                          {acc.platform === 'INSTAGRAM' ? <Instagram className="w-4 h-4" /> : <Facebook className="w-4 h-4" />}
+                          {acc.platform === 'LINKEDIN' ? <LinkedIn className="w-4 h-4 fill-current" /> : acc.platform === 'INSTAGRAM' ? <Instagram className="w-4 h-4" /> : <Facebook className="w-4 h-4" />}
                         </div>
                         <div>
                           <p className="text-xs font-bold text-neutral-900">{acc.accountName}</p>
@@ -798,7 +798,7 @@ function DashboardContent() {
                 ) : (
                   <div className="p-4 text-center text-xs text-neutral-400">
                     <Link href="/accounts" className="text-neutral-900 font-semibold underline cursor-pointer">
-                      Connect Facebook or Instagram account in 1-Click
+                      Connect Facebook, Instagram, or LinkedIn account in 1-Click
                     </Link>
                   </div>
                 )}

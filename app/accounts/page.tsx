@@ -24,7 +24,7 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
-import { Facebook, Instagram } from '../../components/Icons';
+import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
 interface DiscoveredAccount {
   pageId: string;
@@ -47,6 +47,60 @@ interface AccountSelectionState {
   connectInstagram: boolean;
 }
 
+function AccountAvatar({
+  url,
+  name,
+  platform
+}: {
+  url?: string | null;
+  name: string;
+  platform: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const initials = (name || 'Omni')
+    .split(' ')
+    .map(p => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'OS';
+
+  const platformBg =
+    platform === 'LINKEDIN'
+      ? 'bg-gradient-to-tr from-[#004182] to-[#0A66C2]'
+      : platform === 'INSTAGRAM'
+      ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
+      : 'bg-gradient-to-tr from-blue-700 to-blue-500';
+
+  return (
+    <div className="relative shrink-0">
+      {url && !imgError ? (
+        <img
+          src={url}
+          alt={name}
+          onError={() => setImgError(true)}
+          className="w-13 h-13 rounded-2xl object-cover border border-slate-200/90 shadow-2xs"
+        />
+      ) : (
+        <div
+          className={`w-13 h-13 rounded-2xl ${platformBg} text-white font-extrabold text-sm flex items-center justify-center shadow-2xs border border-white/20`}
+        >
+          {initials}
+        </div>
+      )}
+      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white shadow-xs border border-slate-200/80 flex items-center justify-center">
+        {platform === 'LINKEDIN' ? (
+          <LinkedIn className="w-3 h-3 text-[#0A66C2] fill-current" />
+        ) : platform === 'INSTAGRAM' ? (
+          <Instagram className="w-3 h-3 text-pink-600" />
+        ) : (
+          <Facebook className="w-3 h-3 text-[#1877F2] fill-current" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AccountsPage() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
   const [brands, setBrands] = useState<any[]>([]);
@@ -55,9 +109,17 @@ export default function AccountsPage() {
   const [connecting, setConnecting] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // Connection intent tracker ('ALL' | 'FACEBOOK' | 'INSTAGRAM')
-  const [connectIntent, setConnectIntent] = useState<'FACEBOOK' | 'INSTAGRAM' | 'ALL'>('ALL');
-  const connectIntentRef = useRef<'FACEBOOK' | 'INSTAGRAM' | 'ALL'>('ALL');
+  // Connection intent tracker ('ALL' | 'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN')
+  const [connectIntent, setConnectIntent] = useState<'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN' | 'ALL'>('ALL');
+  const connectIntentRef = useRef<'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN' | 'ALL'>('ALL');
+  const processedCodesRef = useRef<Set<string>>(new Set());
+  const isProcessingCodeRef = useRef<boolean>(false);
+
+  // Dedicated LinkedIn Connect Modal State
+  const [showLinkedInModal, setShowLinkedInModal] = useState(false);
+  const [liConnectMethod, setLiConnectMethod] = useState<'oauth' | 'token'>('oauth');
+  const [liAccountName, setLiAccountName] = useState('Sentient Digital Professional');
+  const [liAccessToken, setLiAccessToken] = useState('');
 
   // Dedicated Instagram Connect Modal State
   const [showInstagramModal, setShowInstagramModal] = useState(false);
@@ -122,8 +184,25 @@ export default function AccountsPage() {
 
   // Handle OAuth code processing
   const processOAuthCode = useCallback(async (code: string, state: string) => {
+    if (!code || processedCodesRef.current.has(code) || isProcessingCodeRef.current) {
+      return;
+    }
+    processedCodesRef.current.add(code);
+    isProcessingCodeRef.current = true;
     setConnecting(true);
-    setNotice({ type: 'info', text: 'Discovering Facebook Pages and connected Instagram accounts...' });
+
+    let isLi = connectIntentRef.current === 'LINKEDIN';
+    if (!isLi && state) {
+      try {
+        const b64 = state.split('.')[0];
+        const payload = JSON.parse(atob(b64.replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.platform === 'LINKEDIN') isLi = true;
+      } catch {}
+    }
+    setNotice({
+      type: 'info',
+      text: isLi ? 'Connecting and verifying LinkedIn profile...' : 'Discovering Facebook Pages and connected Instagram accounts...'
+    });
 
     try {
       const currentCallback = window.location.origin + '/accounts/callback';
@@ -131,6 +210,15 @@ export default function AccountsPage() {
         method: 'POST',
         body: JSON.stringify({ code, state, redirectUri: currentCallback })
       });
+
+      if (callbackRes.isDirectSingleAccount || callbackRes.account?.platform === 'LINKEDIN') {
+        setNotice({
+          type: 'success',
+          text: `LinkedIn profile "${callbackRes.account?.accountName}" successfully connected and AES-256 encrypted!`
+        });
+        await fetchAccounts();
+        return;
+      }
 
       if (!callbackRes.discoveredAccounts || callbackRes.discoveredAccounts.length === 0) {
         setNotice({
@@ -170,30 +258,41 @@ export default function AccountsPage() {
       setShowDiscoveryModal(true);
       setNotice(null);
     } catch (err: any) {
+      // Gracefully handle replay attack errors where an earlier concurrent call already connected the account
+      if (err.message?.includes('already been consumed') || err.message?.includes('replay attack')) {
+        await fetchAccounts();
+        setNotice({
+          type: 'success',
+          text: 'Social account verified and successfully connected!'
+        });
+        return;
+      }
       setNotice({ type: 'error', text: err.message || 'OAuth exchange and account discovery failed' });
     } finally {
+      isProcessingCodeRef.current = false;
       setConnecting(false);
     }
-  }, []);
+  }, [fetchAccounts]);
 
   // Listen for OAuth messages from popup window or handle redirected session
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'META_OAUTH_SUCCESS') {
+      if (event.data?.type === 'META_OAUTH_SUCCESS' || event.data?.type === 'LINKEDIN_OAUTH_SUCCESS') {
         const { code, state } = event.data;
         if (code && state) {
           processOAuthCode(code, state);
         }
-      } else if (event.data?.type === 'META_OAUTH_ERROR') {
+      } else if (event.data?.type === 'META_OAUTH_ERROR' || event.data?.type === 'LINKEDIN_OAUTH_ERROR') {
         setNotice({ type: 'error', text: `OAuth Error: ${event.data.error || 'Authorization denied'}` });
       }
     };
 
     window.addEventListener('message', handleMessage);
 
-    const pendingOAuth = sessionStorage.getItem('meta_oauth_pending');
+    const pendingOAuth = sessionStorage.getItem('meta_oauth_pending') || sessionStorage.getItem('linkedin_oauth_pending');
     if (pendingOAuth) {
       sessionStorage.removeItem('meta_oauth_pending');
+      sessionStorage.removeItem('linkedin_oauth_pending');
       try {
         const { code, state } = JSON.parse(pendingOAuth);
         if (code && state) {
@@ -207,8 +306,8 @@ export default function AccountsPage() {
     return () => window.removeEventListener('message', handleMessage);
   }, [processOAuthCode]);
 
-  // 1-Click Meta OAuth Initiation with Intent
-  const handleOneClickOAuth = async (intent: 'FACEBOOK' | 'INSTAGRAM' | 'ALL' = 'ALL') => {
+  // 1-Click OAuth Initiation with Platform Intent
+  const handleOneClickOAuth = async (intent: 'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN' | 'ALL' = 'ALL') => {
     if (!activeBrandId) {
       alert('Please select a target brand first.');
       return;
@@ -222,10 +321,14 @@ export default function AccountsPage() {
     // Close source modals
     setShowInstagramModal(false);
     setShowFacebookModal(false);
+    setShowLinkedInModal(false);
 
     try {
       const currentCallback = window.location.origin + '/accounts/callback';
-      const res = await apiRequest(`/social-accounts/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}&platform=${intent}`);
+      const endpoint = intent === 'LINKEDIN'
+        ? `/linkedin/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}`
+        : `/social-accounts/oauth-url?brandId=${activeBrandId}&redirectUri=${encodeURIComponent(currentCallback)}&platform=${intent}`;
+      const res = await apiRequest(endpoint);
       if (res.oauthUrl) {
         const width = 640;
         const height = 740;
@@ -234,7 +337,7 @@ export default function AccountsPage() {
 
         const popup = window.open(
           res.oauthUrl,
-          'MetaOAuth',
+          intent === 'LINKEDIN' ? 'LinkedInOAuth' : 'MetaOAuth',
           `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,status=yes`
         );
 
@@ -247,7 +350,38 @@ export default function AccountsPage() {
         }
       }
     } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Failed to initiate Meta OAuth' });
+      setNotice({ type: 'error', text: err.message || 'Failed to initiate OAuth' });
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  // Dedicated Direct LinkedIn Token Connect
+  const handleDirectLinkedInConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeBrandId) {
+      alert('Please select a target brand first.');
+      return;
+    }
+    setConnecting(true);
+    setNotice(null);
+    try {
+      const res = await apiRequest('/linkedin/connect-direct', {
+        method: 'POST',
+        body: JSON.stringify({
+          brandId: activeBrandId,
+          accessToken: liAccessToken.trim(),
+          accountNameCustom: liAccountName.trim() || 'LinkedIn Member Profile'
+        })
+      });
+      setNotice({
+        type: 'success',
+        text: `LinkedIn profile "${res.account?.accountName}" connected successfully!`
+      });
+      setShowLinkedInModal(false);
+      fetchAccounts();
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to connect LinkedIn account' });
     } finally {
       setConnecting(false);
     }
@@ -483,104 +617,160 @@ export default function AccountsPage() {
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6 pb-12">
-        {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & FILTER CAPSULES */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
+        {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & CONTROLS */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 pb-2 pt-1">
           <div>
             <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
-              <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
+              <span className="hover:text-neutral-700 cursor-pointer transition-colors">OmniSocial</span>
               <span>›</span>
-              <span className="hover:text-neutral-700 cursor-pointer">Configuration</span>
+              <span className="hover:text-neutral-700 cursor-pointer transition-colors">Configuration</span>
               <span>›</span>
               <span className="text-neutral-900 font-semibold">Social Channels</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1 flex items-center space-x-2">
-              <span>Connected Social Accounts</span>
+              <span>Connected Social Channels</span>
             </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Enterprise Meta Graph API integration for Facebook Pages and Instagram Professional accounts with AES-256-GCM encryption.
+            <p className="text-xs text-neutral-500 mt-1 max-w-xl">
+              Centrally manage & publish to Facebook Pages, Instagram Professional, and LinkedIn Profiles with AES-256-GCM encrypted security.
             </p>
           </div>
 
-          {/* Action Buttons: Separate Facebook & Instagram Controls */}
+          {/* Action Toolbar: Sleek, Unified SaaS Button Group */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => setShowQuickModal(true)}
-              className="text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] px-4 py-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all flex items-center space-x-1.5"
-              title="BYOK Token Connect"
-            >
-              <Key className="w-3.5 h-3.5 text-neutral-500" />
-              <span>BYOK Token</span>
-            </button>
-
-            {/* Dedicated Facebook Button */}
+            {/* Facebook Button */}
             <button
               onClick={() => setShowFacebookModal(true)}
               disabled={connecting}
-              className="text-xs font-semibold text-white bg-[#1877F2] hover:bg-[#166fe5] px-5 py-2 rounded-full shadow-sm hover:shadow-blue-500/20 transition-all flex items-center space-x-2 disabled:opacity-50"
+              className="text-xs font-bold text-slate-800 hover:text-white bg-white hover:bg-[#1877F2] border border-slate-200/90 hover:border-[#1877F2] px-4 py-2.5 rounded-2xl shadow-2xs hover:shadow-md transition-all flex items-center space-x-2 group cursor-pointer disabled:opacity-50"
             >
-              <Facebook className="w-4 h-4 fill-current" />
-              <span>Connect Facebook Page</span>
+              <span className="w-6 h-6 rounded-xl bg-blue-50 group-hover:bg-white text-[#1877F2] flex items-center justify-center transition-colors">
+                <Facebook className="w-3.5 h-3.5 fill-current" />
+              </span>
+              <span>Facebook</span>
             </button>
 
-            {/* Dedicated Instagram Button */}
+            {/* Instagram Button */}
             <button
               onClick={() => setShowInstagramModal(true)}
               disabled={connecting}
-              className="text-xs font-semibold text-white bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-95 px-5 py-2 rounded-full shadow-sm hover:shadow-pink-500/20 transition-all flex items-center space-x-2 disabled:opacity-50"
+              className="text-xs font-bold text-slate-800 hover:text-white bg-white hover:bg-gradient-to-r hover:from-purple-600 hover:via-pink-600 hover:to-amber-500 border border-slate-200/90 hover:border-transparent px-4 py-2.5 rounded-2xl shadow-2xs hover:shadow-md transition-all flex items-center space-x-2 group cursor-pointer disabled:opacity-50"
             >
-              <Instagram className="w-4 h-4" />
-              <span>Connect Instagram Account</span>
+              <span className="w-6 h-6 rounded-xl bg-gradient-to-tr from-amber-500/10 via-rose-500/10 to-purple-600/10 group-hover:bg-white text-pink-600 flex items-center justify-center transition-colors">
+                <Instagram className="w-3.5 h-3.5" />
+              </span>
+              <span>Instagram</span>
+            </button>
+
+            {/* LinkedIn Button */}
+            <button
+              onClick={() => setShowLinkedInModal(true)}
+              disabled={connecting}
+              className="text-xs font-bold text-slate-800 hover:text-white bg-white hover:bg-[#0A66C2] border border-slate-200/90 hover:border-[#0A66C2] px-4 py-2.5 rounded-2xl shadow-2xs hover:shadow-md transition-all flex items-center space-x-2 group cursor-pointer disabled:opacity-50"
+            >
+              <span className="w-6 h-6 rounded-xl bg-sky-50 group-hover:bg-white text-[#0A66C2] flex items-center justify-center transition-colors">
+                <LinkedIn className="w-3.5 h-3.5 fill-current" />
+              </span>
+              <span>LinkedIn</span>
+            </button>
+
+            {/* BYOK / Manual Button */}
+            <button
+              onClick={() => setShowQuickModal(true)}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 px-3.5 py-2.5 rounded-2xl transition-all flex items-center space-x-1.5 cursor-pointer"
+              title="Connect with custom Access Token"
+            >
+              <Key className="w-3.5 h-3.5 text-slate-400" />
+              <span>BYOK</span>
             </button>
           </div>
         </div>
 
+        {/* Global Feedback Banner */}
         {notice && (
-          <div className={`p-3.5 rounded-2xl border text-xs flex items-center space-x-2 ${
+          <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between shadow-2xs transition-all ${
             notice.type === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              ? 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
               : notice.type === 'info'
-              ? 'bg-blue-50 border-blue-200 text-blue-800'
-              : 'bg-rose-50 border-rose-200 text-rose-800'
+              ? 'bg-sky-50/90 border-sky-200 text-sky-900'
+              : 'bg-rose-50/90 border-rose-200 text-rose-900'
           }`}>
-            {notice.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : notice.type === 'info' ? (
-              <Activity className="w-4 h-4 text-blue-600 shrink-0 animate-spin" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span>{notice.text}</span>
+            <div className="flex items-center space-x-3">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                notice.type === 'success' ? 'bg-emerald-100 text-emerald-700' : notice.type === 'info' ? 'bg-sky-100 text-sky-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                {notice.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : notice.type === 'info' ? (
+                  <Activity className="w-4 h-4 animate-spin" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+              </div>
+              <span className="font-semibold">{notice.text}</span>
+            </div>
+            <button
+              onClick={() => setNotice(null)}
+              className="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
         )}
 
-        {/* Brand Selector Ribbon in Clean Pill Card */}
-        <div className="p-3.5 bg-white rounded-full border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex items-center justify-between px-6">
-          <div className="flex items-center space-x-2 text-xs font-medium text-neutral-700">
-            <span className="font-bold text-neutral-900">Target Brand:</span>
-            <select
-              value={activeBrandId}
-              onChange={(e) => setActiveBrandId(e.target.value)}
-              className="text-xs border border-neutral-200 rounded-full px-3 py-1 font-semibold bg-neutral-50 text-neutral-900"
-            >
-              {brands.map(b => (
-                <option key={b.id} value={b.id}>{b.name} ({b.businessName || 'Business'})</option>
-              ))}
-            </select>
+        {/* Brand & Security Intelligence Bar */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center font-extrabold text-xs">
+              {brands.find(b => b.id === activeBrandId)?.name?.slice(0, 2).toUpperCase() || 'BR'}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Target Brand</span>
+              <select
+                value={activeBrandId}
+                onChange={(e) => setActiveBrandId(e.target.value)}
+                className="text-xs border border-slate-200 rounded-xl px-3 py-1 font-bold bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+              >
+                {brands.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.businessName || 'Business'})</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex items-center space-x-3 text-xs">
-            <span className="flex items-center text-neutral-500 text-[11px]">
-              <Lock className="w-3.5 h-3.5 text-emerald-600 mr-1" />
-              AES-256-GCM Encrypted at Rest
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200">
-              {accounts.length} Connected Asset(s)
+
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            {/* Channel Counts Breakdown */}
+            <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl text-[11px] font-medium text-slate-600">
+              <span className="flex items-center space-x-1 font-bold text-slate-800">
+                <Facebook className="w-3 h-3 text-[#1877F2] fill-current inline" />
+                <span>{accounts.filter(a => a.platform === 'FACEBOOK').length}</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center space-x-1 font-bold text-slate-800">
+                <Instagram className="w-3 h-3 text-pink-600 inline" />
+                <span>{accounts.filter(a => a.platform === 'INSTAGRAM').length}</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center space-x-1 font-bold text-slate-800">
+                <LinkedIn className="w-3 h-3 text-[#0A66C2] fill-current inline" />
+                <span>{accounts.filter(a => a.platform === 'LINKEDIN').length}</span>
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-1.5 text-slate-500 text-[11px] bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>AES-256-GCM Encrypted</span>
+            </div>
+
+            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center space-x-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{accounts.length} Active Asset{accounts.length !== 1 ? 's' : ''}</span>
             </span>
           </div>
         </div>
 
         {/* Connected Accounts Cards Grid */}
         {loading ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center text-slate-400">
             <Activity className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
             <p className="text-xs font-medium">Loading connected social accounts...</p>
           </div>
@@ -593,19 +783,22 @@ export default function AccountsPage() {
               <div className="w-12 h-12 bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 text-white rounded-2xl flex items-center justify-center shadow-2xs">
                 <Instagram className="w-6 h-6" />
               </div>
+              <div className="w-12 h-12 bg-sky-50 text-[#0A66C2] rounded-2xl flex items-center justify-center border border-sky-100 shadow-2xs">
+                <LinkedIn className="w-6 h-6 fill-current" />
+              </div>
             </div>
 
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">No Social Accounts Connected Yet</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Connect your brand&apos;s Facebook Pages and Instagram Professional accounts to start scheduling posts, publishing reels, and managing comments in real-time.
+                Connect your brand&apos;s Facebook Pages, Instagram Professional, and LinkedIn accounts to start publishing, scheduling posts, and managing comments in real-time.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => setShowFacebookModal(true)}
-                className="w-full sm:w-auto text-xs font-bold text-white bg-[#1877F2] hover:bg-[#166fe5] px-5 py-2.5 rounded-xl shadow-xs transition flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto text-xs font-bold text-white bg-[#1877F2] hover:bg-[#166fe5] px-5 py-2.5 rounded-xl shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <Facebook className="w-4 h-4 fill-current" />
                 <span>Connect Facebook Page</span>
@@ -613,106 +806,154 @@ export default function AccountsPage() {
 
               <button
                 onClick={() => setShowInstagramModal(true)}
-                className="w-full sm:w-auto text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-95 px-5 py-2.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-95 px-5 py-2.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <Instagram className="w-4 h-4" />
                 <span>Connect Instagram Account</span>
+              </button>
+
+              <button
+                onClick={() => setShowLinkedInModal(true)}
+                className="w-full sm:w-auto text-xs font-bold text-white bg-[#0A66C2] hover:bg-[#004182] px-5 py-2.5 rounded-xl shadow-xs transition flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <LinkedIn className="w-4 h-4 fill-current" />
+                <span>Connect LinkedIn Profile</span>
               </button>
             </div>
 
             <div className="pt-2">
               <button
                 onClick={() => setShowQuickModal(true)}
-                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline"
+                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline cursor-pointer"
               >
                 Or connect manually with BYOK Access Token
               </button>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {accounts.map(acc => (
-              <div key={acc.id} className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
-                <div>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3.5">
-                      <img
-                        src={acc.profilePicUrl || (acc.platform === 'INSTAGRAM' ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop' : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop')}
-                        className="w-12 h-12 rounded-2xl object-cover border border-slate-200 ring-2 ring-slate-100"
-                        alt=""
-                      />
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">{acc.accountName}</h3>
-                        <p className="text-xs text-slate-400 font-mono">@{acc.username || acc.platformAccountId}</p>
-                        <span className={`inline-block mt-0.5 text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.2 rounded ${
-                          acc.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {acc.pageCategory || (acc.platform === 'INSTAGRAM' ? 'Instagram Professional' : 'Facebook Page')}
-                        </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {accounts.map(acc => {
+              const platformTheme =
+                acc.platform === 'LINKEDIN'
+                  ? {
+                      line: 'from-[#0A66C2] to-sky-400',
+                      badge: 'bg-sky-50 text-[#0A66C2] border-sky-200',
+                      label: 'LinkedIn Profile',
+                      borderHover: 'hover:border-sky-300',
+                    }
+                  : acc.platform === 'INSTAGRAM'
+                  ? {
+                      line: 'from-purple-600 via-rose-500 to-amber-500',
+                      badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+                      label: 'Instagram Professional',
+                      borderHover: 'hover:border-pink-300',
+                    }
+                  : {
+                      line: 'from-[#1877F2] to-blue-500',
+                      badge: 'bg-blue-50 text-[#1877F2] border-blue-200',
+                      label: 'Facebook Page',
+                      borderHover: 'hover:border-blue-300',
+                    };
+
+              const formattedCategory = (acc.pageCategory || platformTheme.label)
+                .toLowerCase()
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+              return (
+                <div
+                  key={acc.id}
+                  className={`bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(0,0,0,0.08)] ${platformTheme.borderHover} transition-all duration-300 flex flex-col justify-between overflow-hidden relative group`}
+                >
+                  {/* Glowing Top Platform Accent Stripe */}
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${platformTheme.line}`} />
+
+                  <div className="p-6 space-y-4">
+                    {/* Header: Avatar, Name, Handle, Platform Pill */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center space-x-3.5 min-w-0">
+                        <AccountAvatar
+                          url={acc.profilePicUrl}
+                          name={acc.accountName}
+                          platform={acc.platform}
+                        />
+                        <div className="min-w-0">
+                          <h3 className="text-base font-extrabold text-slate-900 truncate leading-snug">
+                            {acc.accountName}
+                          </h3>
+                          <p className="text-xs text-slate-400 font-medium truncate">
+                            @{acc.username || acc.platformAccountId}
+                          </p>
+                          <span className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${platformTheme.badge}`}>
+                            {formattedCategory}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-2xs ${
-                      acc.platform === 'INSTAGRAM' ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600' : 'bg-[#1877F2]'
-                    }`}>
-                      {acc.platform === 'INSTAGRAM' ? <Instagram className="w-4 h-4" /> : <Facebook className="w-4 h-4 fill-current" />}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Brand Mapping:</span>
-                      <span className="font-semibold text-slate-800">{acc.brandName}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Token Health:</span>
-                      {renderTokenBadge(acc.tokenStatus, acc.tokenExpiresAt)}
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Security at Rest:</span>
-                      <span className="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                        <Lock className="w-2.5 h-2.5 text-emerald-600 mr-1" />
-                        AES-256-GCM
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-xl border shrink-0 ${platformTheme.badge}`}>
+                        {acc.platform}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Last Synced:</span>
-                      <span className="text-slate-600">{new Date(acc.lastSyncedAt || Date.now()).toLocaleTimeString()}</span>
+                    {/* Operational Details Grid */}
+                    <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-100 space-y-2 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-medium">Brand:</span>
+                        <span className="font-bold text-slate-800">{acc.brandName || 'Primary'}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-medium">Token Health:</span>
+                        {renderTokenBadge(acc.tokenStatus, acc.tokenExpiresAt)}
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-medium">Security at Rest:</span>
+                        <span className="inline-flex items-center text-[10px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs">
+                          <Lock className="w-2.5 h-2.5 text-emerald-600 mr-1" />
+                          AES-256-GCM
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-medium">Last Synced:</span>
+                        <span className="text-slate-600 font-mono text-[11px]">
+                          {new Date(acc.lastSyncedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Action Bar */}
+                  <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
+                    <button
+                      onClick={() => handleCheckHealth(acc)}
+                      className="px-3 py-1.5 rounded-xl font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span>Check Health</span>
+                    </button>
+
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() => handleSyncAccount(acc.id)}
+                        className="px-3 py-1.5 rounded-xl font-bold text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Sync</span>
+                      </button>
+                      <button
+                        onClick={() => handleDisconnect(acc.id, acc.accountName)}
+                        className="px-3 py-1.5 rounded-xl font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition flex items-center space-x-1.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Disconnect</span>
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <button
-                    onClick={() => handleCheckHealth(acc)}
-                    className="font-semibold text-emerald-600 hover:text-emerald-800 flex items-center space-x-1"
-                  >
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>Check Health</span>
-                  </button>
-
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleSyncAccount(acc.id)}
-                      className="font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Sync</span>
-                    </button>
-                    <button
-                      onClick={() => handleDisconnect(acc.id, acc.accountName)}
-                      className="font-semibold text-rose-600 hover:text-rose-800 flex items-center space-x-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Disconnect</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -1004,7 +1245,156 @@ export default function AccountsPage() {
           </div>
         )}
 
-        {/* Multi-Account Discovery Modal (Post-OAuth) */}
+        {/* ======================================================== */}
+        {/* DEDICATED LINKEDIN CONNECT MODAL                         */}
+        {/* ======================================================== */}
+        {showLinkedInModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#0A66C2] text-white flex items-center justify-center shadow-md">
+                    <LinkedIn className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Connect LinkedIn Account</h3>
+                    <p className="text-xs text-slate-500">Official LinkedIn OpenID Connect & Posts API Integration</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLinkedInModal(false)}
+                  className="text-slate-400 hover:text-slate-600 font-bold p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Method Switcher Tabs */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
+                <button
+                  type="button"
+                  onClick={() => setLiConnectMethod('oauth')}
+                  className={`py-2 rounded-lg transition ${liConnectMethod === 'oauth' ? 'bg-white text-[#0A66C2] shadow-2xs font-extrabold' : 'hover:text-slate-900'}`}
+                >
+                  🌐 1-Click LinkedIn OAuth
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLiConnectMethod('token')}
+                  className={`py-2 rounded-lg transition ${liConnectMethod === 'token' ? 'bg-white text-indigo-700 shadow-2xs font-extrabold' : 'hover:text-slate-900'}`}
+                >
+                  ⚡ Direct Token (BYOK)
+                </button>
+              </div>
+
+              {liConnectMethod === 'oauth' ? (
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-sky-50/70 rounded-xl border border-sky-200/80 space-y-2 text-xs text-sky-900">
+                    <div className="flex items-center space-x-1.5 font-bold">
+                      <LinkedIn className="w-4 h-4 text-[#0A66C2] shrink-0 fill-current" />
+                      <span>LinkedIn Developer App Requirements</span>
+                    </div>
+                    <ul className="list-disc list-inside text-[11px] text-slate-600 space-y-1">
+                      <li>Ensure your app has products <strong>Sign In with LinkedIn using OpenID Connect</strong> and <strong>Share on LinkedIn</strong> added in Developer Portal.</li>
+                      <li>Add this Authorized Redirect URL in Developer Portal:</li>
+                    </ul>
+                    <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-sky-200 font-mono text-[11px] text-sky-950">
+                      <span className="truncate">{typeof window !== 'undefined' ? `${window.location.origin}/accounts/callback` : 'http://localhost:3000/accounts/callback'}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `${window.location.origin}/accounts/callback`;
+                          navigator.clipboard.writeText(url);
+                          alert('Redirect URL copied to clipboard: ' + url);
+                        }}
+                        className="ml-2 text-sky-600 hover:text-sky-800 font-bold text-[10px] uppercase underline shrink-0 cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOneClickOAuth('LINKEDIN')}
+                    disabled={connecting}
+                    className="w-full text-xs font-bold text-white bg-[#0A66C2] hover:bg-[#004182] px-5 py-3 rounded-xl shadow-md transition flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    <LinkedIn className="w-4 h-4 fill-current" />
+                    <span>{connecting ? 'Connecting to LinkedIn...' : 'Launch LinkedIn 1-Click OAuth'}</span>
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleDirectLinkedInConnect} className="space-y-3.5">
+                  <div className="p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-900 space-y-1">
+                    <p className="font-bold flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#0A66C2]" />
+                      <span>Developer Access Token or BYOK</span>
+                    </p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      You can paste a LinkedIn Access Token generated from the Developer Portal OAuth Token Generator for testing or production.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Account / Profile Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={liAccountName}
+                      onChange={(e) => setLiAccountName(e.target.value)}
+                      placeholder="e.g. Sentient Digital Professional"
+                      className="w-full text-xs border border-slate-200 rounded-xl p-2.5 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#0A66C2]"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      LinkedIn Access Token (Encrypted with AES-256-GCM)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={liAccessToken}
+                      onChange={(e) => setLiAccessToken(e.target.value)}
+                      placeholder="Paste your LinkedIn Bearer Access Token here..."
+                      className="w-full text-xs font-mono border border-slate-200 rounded-xl p-2.5 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-[#0A66C2]"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end space-x-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowLinkedInModal(false)}
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={connecting || !liAccessToken.trim()}
+                      className="px-5 py-2.5 text-xs font-bold text-white bg-[#0A66C2] hover:bg-[#004182] rounded-xl shadow-xs transition disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      {connecting ? (
+                        <>
+                          <Activity className="w-3.5 h-3.5 animate-spin" />
+                          <span>Connecting Profile...</span>
+                        </>
+                      ) : (
+                        <>
+                          <LinkedIn className="w-3.5 h-3.5 fill-current" />
+                          <span>Connect LinkedIn Profile Now</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
         {showDiscoveryModal && (
           <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1177,10 +1567,10 @@ export default function AccountsPage() {
 
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <img
-                    src={healthModalAccount.profilePicUrl}
-                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                    alt=""
+                  <AccountAvatar
+                    url={healthModalAccount.profilePicUrl}
+                    name={healthModalAccount.accountName}
+                    platform={healthModalAccount.platform}
                   />
                   <div>
                     <h4 className="text-sm font-bold text-slate-800">{healthModalAccount.accountName}</h4>

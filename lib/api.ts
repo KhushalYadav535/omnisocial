@@ -63,7 +63,9 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  // Strip duplicate '/api' prefix if passed accidentally (e.g. '/api/linkedin' with API_BASE ending in '/api')
+  const cleanEndpoint = endpoint.replace(/^\/api(\/|$)/, '/');
+  const url = `${API_BASE}${cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`}`;
 
   try {
     const res = await fetch(url, {
@@ -71,9 +73,16 @@ export async function apiRequest<T = any>(
       headers
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data: any;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`Server returned non-JSON response (${res.status}): ${text.slice(0, 150)}`);
+    }
+
     if (!res.ok) {
-      throw new Error(data.error || data.message || `Request failed with status ${res.status}`);
+      throw new Error(data.message || data.error || `Request failed with status ${res.status}`);
     }
     return data;
   } catch (err: any) {
