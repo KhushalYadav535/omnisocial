@@ -47,39 +47,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F4F5F7] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Soft Ambient Light Aura */}
       <div
-        className="absolute top-1/6 left-1/2 -translate-x-1/2 w-[800px] h-[450px] pointer-events-none select-none opacity-40 blur-3xl"
+        className="absolute top-1/6 left-1/2 -translate-x-1/2 w-[800px] h-[450px] pointer-events-none select-none opacity-30 blur-3xl"
         style={{
           background:
-            'radial-gradient(ellipse 65% 55% at 50% 30%, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.10), transparent 70%)',
+            'radial-gradient(ellipse 65% 55% at 50% 30%, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.08), transparent 70%)',
         }}
         aria-hidden="true"
       />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center relative z-10">
         <Link href="/" className="inline-flex items-center space-x-2.5 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-blue-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-full bg-[#111215] text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="m10 15 5-3-5-3v6Z" fill="currentColor" />
+            </svg>
           </div>
           <div className="flex items-baseline space-x-1">
-            <span className="font-black text-2xl tracking-tight text-slate-900">OmniSocial</span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">AI</span>
+            <span className="font-extrabold text-2xl tracking-tight text-[#0F1012]">OmniSocial</span>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-800">CADRA</span>
           </div>
         </Link>
-        <h2 className="mt-5 text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+        <h2 className="mt-5 text-2xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight">
           Create Agency / Creator Workspace
         </h2>
-        <p className="mt-2 text-xs sm:text-sm text-slate-500">
+        <p className="mt-2 text-xs sm:text-sm text-neutral-500">
           Setup your dedicated multi-brand environment with 14 days of Agency Pro included.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl relative z-10 px-4 sm:px-0">
-        <div className="bg-white/90 backdrop-blur-2xl py-8 px-6 sm:px-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06)] border border-slate-200/90 rounded-3xl">
+        <div className="bg-white py-8 px-6 sm:px-10 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.04)] border border-black/[0.06] rounded-[32px]">
           {error && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-2.5 text-rose-800 text-xs animate-shake">
+            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-2.5 text-rose-800 text-xs animate-shake">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>

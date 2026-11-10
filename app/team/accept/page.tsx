@@ -74,25 +74,28 @@ function AcceptInviteContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
-            <ShieldCheck className="w-7 h-7" />
-          </div>
+    <div className="min-h-screen bg-[#F4F5F7] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#0A0D12] text-white shadow-md mb-3">
+          <ShieldCheck className="w-6 h-6 text-emerald-400" />
         </div>
-        <h2 className="mt-6 text-center text-2xl font-black text-slate-900 tracking-tight">
+        <div className="flex items-center justify-center space-x-1.5 text-[11px] font-semibold text-slate-400 mb-1">
+          <span>Cadra Workspace</span>
+          <span>•</span>
+          <span>Single-Use Onboarding</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Accept Team Invitation
-        </h2>
-        <p className="mt-2 text-center text-xs text-slate-500">
-          Set up your profile to join your organization&apos;s workspace.
+        </h1>
+        <p className="mt-1 text-xs text-slate-500">
+          Create your credentials to join your organization&apos;s workspace.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl sm:px-10 border border-slate-200">
+        <div className="bg-white py-8 px-6 sm:px-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] rounded-[28px] border border-black/[0.06]">
           {error && (
-            <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center space-x-2">
+            <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200/80 rounded-2xl text-xs text-rose-800 flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
@@ -100,61 +103,61 @@ function AcceptInviteContent() {
 
           {success ? (
             <div className="py-6 text-center space-y-3">
-              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+              <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center mx-auto text-emerald-600">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Account Activated!</h3>
-              <p className="text-xs text-slate-500">Redirecting to your dashboard workspace...</p>
+              <h3 className="text-base font-extrabold text-slate-900">Workspace Connected!</h3>
+              <p className="text-xs text-slate-500">Redirecting to your dashboard overview...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
                     type="text"
                     required
                     placeholder="Alex Morgan"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-xs font-medium pl-10 pr-3.5 py-3 border border-black/[0.08] rounded-2xl focus:ring-2 focus:ring-black/10 focus:outline-hidden bg-[#FAFBFD]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Create Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
                     type="password"
                     required
                     placeholder="At least 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-xs font-medium pl-10 pr-3.5 py-3 border border-black/[0.08] rounded-2xl focus:ring-2 focus:ring-black/10 focus:outline-hidden bg-[#FAFBFD]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
                     type="password"
                     required
                     placeholder="Repeat password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-xs font-medium pl-10 pr-3.5 py-3 border border-black/[0.08] rounded-2xl focus:ring-2 focus:ring-black/10 focus:outline-hidden bg-[#FAFBFD]"
                   />
                 </div>
               </div>
@@ -163,15 +166,15 @@ function AcceptInviteContent() {
                 <button
                   type="submit"
                   disabled={loading || !token}
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-full text-xs font-bold text-white bg-[#0A0D12] hover:bg-neutral-800 shadow-md flex items-center justify-center space-x-2 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  <span>{loading ? 'Activating Account...' : 'Accept Invitation & Join'}</span>
+                  <span>{loading ? 'Activating Workspace Access...' : 'Accept Invitation & Launch Workspace'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               <div className="text-center pt-2">
-                <Link href="/login" className="text-[11px] text-slate-500 hover:text-indigo-600 font-semibold">
+                <Link href="/login" className="text-[11px] text-slate-500 hover:text-slate-900 font-semibold transition-colors">
                   Already have an active account? Sign in
                 </Link>
               </div>
@@ -185,9 +188,8 @@ function AcceptInviteContent() {
 
 export default function AcceptInvitePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-xs text-slate-400">Loading invitation...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#F4F5F7] flex items-center justify-center text-xs text-slate-400">Loading invitation...</div>}>
       <AcceptInviteContent />
     </Suspense>
   );
 }
-

@@ -47,7 +47,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#fafaf9] text-slate-900 overflow-x-hidden selection:bg-indigo-500/20 selection:text-indigo-950">
+    <div className="relative min-h-screen bg-[#fafaf9] text-slate-900 w-full overflow-x-clip selection:bg-indigo-500/20 selection:text-indigo-950">
       {/* Floating Island Navigation */}
       <FloatingNavbar />
 

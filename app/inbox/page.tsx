@@ -276,30 +276,30 @@ function InboxContent() {
 
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
-      {/* Outer Shell strictly calibrated to viewport height with zero window overflow */}
-      <div className="h-[calc(100vh-7.5rem)] sm:h-[calc(100vh-8rem)] lg:h-[calc(100vh-8.5rem)] flex flex-col space-y-3">
+      {/* Outer Shell with responsive height and natural page scroll support */}
+      <div className="w-full flex flex-col space-y-4 pb-16">
         
-        {/* COMPACT UNIFIED COMMAND BAR (UX OPTIMIZATION: REPLACES 2 GIANT HEADERS) */}
-        <header className="bg-white/95 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
+        {/* COMPACT UNIFIED CADRA COMMAND BAR */}
+        <header className="bg-white px-5 py-3 rounded-[24px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
           {/* Left: View Mode Segmented Control + Live Meta Pulse */}
           <div className="flex items-center space-x-3">
-            <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80">
+            <div className="inline-flex p-1 rounded-full bg-[#EAEBED] border border-black/[0.04]">
               <button
                 type="button"
                 onClick={() => {
                   setTypeFilter('COMMENT');
                   setPage(1);
                 }}
-                className={`px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
                   typeFilter === 'COMMENT'
-                    ? 'bg-white text-indigo-700 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#111215] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Comments</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                  typeFilter === 'COMMENT' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+                <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
+                  typeFilter === 'COMMENT' ? 'bg-orange-500 text-white' : 'bg-neutral-200 text-neutral-700'
                 }`}>
                   {commentsTotal}
                 </span>
@@ -311,23 +311,23 @@ function InboxContent() {
                   setTypeFilter('DIRECT_MESSAGE');
                   setPage(1);
                 }}
-                className={`px-3.5 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
+                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
                   typeFilter === 'DIRECT_MESSAGE'
-                    ? 'bg-white text-purple-700 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#111215] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
                 <Inbox className="w-3.5 h-3.5" />
                 <span>Direct Messages</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                  typeFilter === 'DIRECT_MESSAGE' ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-600'
+                <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
+                  typeFilter === 'DIRECT_MESSAGE' ? 'bg-orange-500 text-white' : 'bg-neutral-200 text-neutral-700'
                 }`}>
                   {dmsTotal}
                 </span>
               </button>
             </div>
 
-            <div className="hidden xl:flex items-center space-x-1.5 text-[11px] text-slate-500 font-mono">
+            <div className="hidden xl:flex items-center space-x-1.5 text-xs text-neutral-500 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Meta Graph v26.0 Live</span>
             </div>
@@ -336,20 +336,20 @@ function InboxContent() {
           {/* Right: Search + Platform Filter + Status Filter + Sync Button */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder={typeFilter === 'COMMENT' ? 'Search comments...' : 'Search messages...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-600/30 w-36 sm:w-48 transition-all"
+                className="pl-8 pr-3 py-1.5 text-xs bg-neutral-50 hover:bg-neutral-100/60 focus:bg-white border border-neutral-200/80 rounded-full focus:outline-hidden focus:ring-2 focus:ring-neutral-900/10 w-36 sm:w-48 transition-all"
               />
             </div>
 
             <select
               value={platformFilter}
               onChange={(e) => setPlatformFilter(e.target.value)}
-              className="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50/70 hover:bg-white text-slate-700 font-medium cursor-pointer"
+              className="text-xs border border-neutral-200/80 rounded-full px-3 py-1.5 bg-neutral-50 hover:bg-white text-neutral-700 font-medium cursor-pointer"
             >
               <option value="ALL">All Platforms</option>
               <option value="FACEBOOK">Facebook</option>
@@ -359,7 +359,7 @@ function InboxContent() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50/70 hover:bg-white text-slate-700 font-medium cursor-pointer"
+              className="text-xs border border-neutral-200/80 rounded-full px-3 py-1.5 bg-neutral-50 hover:bg-white text-neutral-700 font-medium cursor-pointer"
             >
               <option value="ALL">All Status</option>
               <option value="NEEDS_RESPONSE">Needs Reply</option>
@@ -371,9 +371,9 @@ function InboxContent() {
               onClick={() => syncWithMeta()}
               disabled={syncing}
               title={`Last synced: ${lastSyncedTime}`}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 border border-slate-200 flex items-center space-x-1.5 transition-all cursor-pointer"
+              className="px-4 py-1.5 rounded-full text-xs font-semibold text-neutral-800 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200/80 flex items-center space-x-1.5 transition-all cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-indigo-600' : 'text-slate-500'}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-neutral-900' : 'text-neutral-500'}`} />
               <span className="hidden sm:inline">{syncing ? 'Syncing...' : 'Sync Meta'}</span>
             </button>
           </div>
@@ -381,7 +381,7 @@ function InboxContent() {
 
         {/* Global Notice Banner (Collapsible) */}
         {successNotice && (
-          <div className="px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shrink-0 animate-in fade-in">
+          <div className="px-4 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs flex items-center justify-between shrink-0 animate-in fade-in">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-medium">{successNotice}</span>
@@ -396,32 +396,29 @@ function InboxContent() {
         )}
 
         {/* 2-PANE WORKSPACE: LEFT CONVERSATION LIST & RIGHT DOCKED STUDIO */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           
           {/* ============================================================== */}
-          {/* PANE 1: CONVERSATION LIST (ERGONOMIC 4-5 COLS)                   */}
+          {/* PANE 1: CONVERSATION LIST (CADRA 4-5 COLS)                       */}
           {/* ============================================================== */}
-          <section className="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col min-h-0 overflow-hidden">
+          <section className="lg:col-span-5 xl:col-span-4 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             {/* List Header */}
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
+            <div className="px-5 py-3.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50 shrink-0">
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
                   {typeFilter === 'COMMENT' ? 'Post Comments' : 'Direct Messages'}
                 </span>
-                <span className="text-[11px] font-bold text-slate-500 bg-slate-200/70 px-2 py-0.2 rounded-full">
+                <span className="text-[11px] font-semibold text-neutral-600 bg-neutral-200/70 px-2.5 py-0.2 rounded-full">
                   {interactions.length}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-[10px] text-neutral-400 font-mono">
                 {typeFilter === 'COMMENT' ? 'Public Graph' : 'Private Direct'}
               </span>
             </div>
 
             {/* Scrollable Conversation Items */}
-            <div
-              data-lenis-prevent="true"
-              className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 overscroll-contain"
-            >
+            <div className="overflow-y-auto max-h-[720px] min-h-[380px] divide-y divide-neutral-100">
               {loading ? (
                 <div className="p-10 text-center space-y-2">
                   <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin mx-auto" />
@@ -580,23 +577,24 @@ function InboxContent() {
           {/* ============================================================== */}
           {/* PANE 2: DETAIL CONVERSATION & FIXED DOCKED COMPOSER (7-8 COLS)  */}
           {/* ============================================================== */}
-          <section className="lg:col-span-7 xl:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col min-h-0 overflow-hidden">
+          <section className="lg:col-span-7 xl:col-span-8 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             {selectedInteraction ? (
-              <div className="flex flex-col h-full min-h-0">
+              <div className="flex flex-col">
                 
-                {/* 1. FIXED CONVERSATION HEADER & INLINE TELEMETRY (SLIM & ERGONOMIC) */}
-                <div className="px-5 py-3 border-b border-slate-100 bg-white/95 backdrop-blur-md shrink-0 space-y-2">
-                  <div className="flex items-center justify-between">
+                {/* 1. ELEGANT CONVERSATION HEADER WITH EMBEDDED TELEMETRY PILLS */}
+                <div className="px-5 py-3.5 border-b border-black/[0.05] bg-white shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    {/* Left: Customer Info */}
                     <div className="flex items-center space-x-3">
-                      <div className="relative">
+                      <div className="relative shrink-0">
                         <img
                           src={
                             selectedInteraction.authorAvatarUrl ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(
                               selectedInteraction.authorName || 'User'
-                            )}&background=6366f1&color=fff&bold=true&size=128`
+                            )}&background=111215&color=fff&bold=true&size=128`
                           }
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-black/[0.05]"
                           alt=""
                         />
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white shadow-2xs flex items-center justify-center p-0.5">
@@ -610,19 +608,19 @@ function InboxContent() {
 
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                          <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
                             {selectedInteraction.authorName}
-                          </h3>
+                          </h2>
                           {selectedInteraction.authorUsername && (
                             <span className="text-xs text-slate-400 font-mono">
                               @{selectedInteraction.authorUsername}
                             </span>
                           )}
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                             {selectedInteraction.brandName}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                           Received via {selectedInteraction.accountName} on {selectedInteraction.platform} •{' '}
                           {new Date(selectedInteraction.platformCreatedAt).toLocaleString([], {
                             month: 'short',
@@ -634,71 +632,98 @@ function InboxContent() {
                       </div>
                     </div>
 
-                    {selectedInteraction.permalinkUrl && (
-                      <a
-                        href={selectedInteraction.permalinkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-white hover:bg-slate-50 transition-all flex items-center space-x-1.5"
-                      >
-                        <span>Open on Meta</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
+                    {/* Right: Actions & Telemetry Badges */}
+                    <div className="flex items-center space-x-2 shrink-0">
+                      {selectedInteraction.classification && (
+                        <div className="flex items-center space-x-1.5">
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                            selectedInteraction.classification.sentiment === 'POSITIVE'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : selectedInteraction.classification.sentiment === 'NEGATIVE'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}>
+                            {selectedInteraction.classification.sentiment} ({Math.round(selectedInteraction.classification.sentimentScore * 100)}%)
+                          </span>
+                          <span className="hidden md:inline-flex text-[10px] font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            Urgency: {selectedInteraction.classification.urgencyScore}/5
+                          </span>
+                        </div>
+                      )}
 
-                  {/* INLINE AI CLASSIFICATION TELEMETRY RIBBON (UX FIX: REPLACES 85px GIANT BOX) */}
-                  {selectedInteraction.classification && (
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px]">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mr-1">
-                        AI Telemetry:
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
-                        <span>Sentiment:</span>
-                        <strong className="text-slate-900">{selectedInteraction.classification.sentiment} ({Math.round(selectedInteraction.classification.sentimentScore * 100)}%)</strong>
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
-                        <span>Type:</span>
-                        <strong className="text-slate-900">{selectedInteraction.classification.isQuestion ? 'Inquiry / Question' : 'General'}</strong>
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-semibold flex items-center space-x-1">
-                        <span>Lead:</span>
-                        <strong>{selectedInteraction.classification.isLeadIntent ? 'High Lead Potential' : 'Standard'}</strong>
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200 font-semibold flex items-center space-x-1">
-                        <span>Urgency:</span>
-                        <strong className="text-slate-900">{selectedInteraction.classification.urgencyScore}/5</strong>
-                      </span>
+                      {selectedInteraction.permalinkUrl && (
+                        <a
+                          href={selectedInteraction.permalinkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-semibold text-slate-700 hover:text-black px-3 py-1.5 rounded-full border border-black/[0.08] bg-white hover:bg-slate-50 transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+                        >
+                          <span>Open on Meta</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* 2. MIDDLE CHAT STREAM: INCOMING BUBBLE & OUTGOING RESPONSES (SCROLLABLE) */}
-                <div
-                  data-lenis-prevent="true"
-                  className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 space-y-4 bg-slate-50/40 overscroll-contain"
-                >
-                  {/* Incoming Customer Message Bubble */}
-                  <div className="flex items-start space-x-3 max-w-2xl">
-                    <img
-                      src={
-                        selectedInteraction.authorAvatarUrl ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          selectedInteraction.authorName || 'User'
-                        )}&background=6366f1&color=fff&bold=true&size=128`
-                      }
-                      className="w-8 h-8 rounded-full object-cover shrink-0 mt-1"
-                      alt=""
-                    />
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-                        <span className="font-bold text-slate-700">{selectedInteraction.authorName}</span>
-                        <span>•</span>
-                        <span>{new Date(selectedInteraction.platformCreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                {/* 2. SPACIOUS CONVERSATION CANVAS (PLENTY OF BREATHING ROOM FOR CUSTOMER MESSAGE) */}
+                <div className="p-4 sm:p-5 space-y-3.5 bg-[#F8F9FA]/80">
+                  
+                  {/* Clean Context Label */}
+                  <div className="flex items-center justify-center my-1">
+                    <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400 bg-white px-3 py-1 rounded-full border border-black/[0.04] shadow-2xs">
+                      Customer Message Thread
+                    </span>
+                  </div>
+
+                  {/* PROMINENT INCOMING CUSTOMER MESSAGE CARD */}
+                  <div className="bg-white rounded-[22px] p-5 sm:p-6 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-3.5 max-w-3xl">
+                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.04]">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={
+                            selectedInteraction.authorAvatarUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              selectedInteraction.authorName || 'User'
+                            )}&background=111215&color=fff&bold=true&size=128`
+                          }
+                          className="w-9 h-9 rounded-full object-cover ring-2 ring-black/[0.04]"
+                          alt=""
+                        />
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-extrabold text-slate-900">{selectedInteraction.authorName}</span>
+                            {selectedInteraction.authorUsername && (
+                              <span className="text-xs text-slate-400 font-mono">@{selectedInteraction.authorUsername}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(selectedInteraction.platformCreatedAt).toLocaleString([], {
+                              dateStyle: 'medium',
+                              timeStyle: 'short'
+                            })}
+                          </span>
+                        </div>
                       </div>
-                      <div className="bg-white rounded-2xl rounded-tl-xs p-4 border border-slate-200/90 shadow-2xs text-slate-900 text-sm leading-relaxed">
-                        <p className="font-medium whitespace-pre-wrap">{selectedInteraction.contentText}</p>
-                      </div>
+
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                        selectedInteraction.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`}>
+                        {selectedInteraction.platform} • {selectedInteraction.type}
+                      </span>
+                    </div>
+
+                    {/* The Full Message Text - Crystal Clear, Beautiful & Un-congested */}
+                    <div className="text-sm sm:text-[15px] font-medium text-slate-900 leading-relaxed whitespace-pre-wrap py-1">
+                      {selectedInteraction.contentText}
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-black/[0.03]">
+                      <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Live Verified Engagement from Meta Graph API
+                      </span>
+                      <span className="font-mono text-[10px]">ID: {selectedInteraction.id.slice(0, 10)}...</span>
                     </div>
                   </div>
 
@@ -715,7 +740,7 @@ function InboxContent() {
                               <span>•</span>
                               <span>{reply.sentAt ? new Date(reply.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sent'}</span>
                             </div>
-                            <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-xs p-4 shadow-sm text-sm leading-relaxed">
+                            <div className="bg-[#111215] text-white rounded-[22px] rounded-tr-xs p-5 shadow-sm text-sm leading-relaxed border border-black/10">
                               <p className="font-medium whitespace-pre-wrap">{reply.finalContent}</p>
                             </div>
                           </div>
@@ -725,15 +750,15 @@ function InboxContent() {
 
                   {/* Status Banner when already resolved */}
                   {selectedInteraction.replyStatus === 'SENT' && !showReplyComposerOnSent && (
-                    <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+                    <div className="p-4 rounded-[20px] bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
                       <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span className="font-bold">This interaction has been approved and delivered to {selectedInteraction.platform}.</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowReplyComposerOnSent(true)}
-                        className="px-3 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold transition-all text-[11px] cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-full bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold transition-all text-xs cursor-pointer shadow-2xs"
                       >
                         Send Additional Reply
                       </button>
@@ -741,43 +766,42 @@ function InboxContent() {
                   )}
                 </div>
 
-                {/* 3. DOCKED BOTTOM COMPOSER & AI STUDIO (ERGONOMIC FIX: NEVER PUSHED OFF-SCREEN!) */}
+                {/* 3. DOCKED BOTTOM COMPOSER & COMPACT AI STUDIO */}
                 {(selectedInteraction.replyStatus !== 'SENT' || showReplyComposerOnSent) && (
-                  <div className="border-t border-slate-200/90 bg-white p-4 space-y-3 shrink-0 shadow-lg">
+                  <div className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
                     
-                    {/* Top Row: AI Engine Controls & Tone Pills */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                    {/* Top Row: AI Reply Studio Controls & Tone Pills */}
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center space-x-2">
-                        <Sparkles className="w-4 h-4 text-indigo-600" />
-                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
                           AI Reply Studio
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400">
+                        <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
                           (Tuned to Brand Voice)
                         </span>
                       </div>
 
                       {/* Tone Modifier Pills */}
                       <div className="flex items-center space-x-1.5">
-                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Tone:</span>
                         <button
                           type="button"
                           onClick={() => handleApplyTone('friendly')}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
                         >
                           ✨ Friendly
                         </button>
                         <button
                           type="button"
                           onClick={() => handleApplyTone('professional')}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
                         >
                           👔 Professional
                         </button>
                         <button
                           type="button"
                           onClick={() => handleApplyTone('concise')}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
                         >
                           ⚡ Concise
                         </button>
@@ -785,76 +809,85 @@ function InboxContent() {
                           type="button"
                           onClick={() => fetchAiSuggestions(selectedInteraction.id)}
                           disabled={generatingAi}
-                          className="px-2 py-1 rounded-lg text-[10px] font-bold text-indigo-700 hover:bg-indigo-50 transition-all flex items-center space-x-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center space-x-1 cursor-pointer"
                           title="Generate fresh AI suggestions"
                         >
                           <RefreshCw className={`w-3 h-3 ${generatingAi ? 'animate-spin' : ''}`} />
-                          <span className="hidden sm:inline">Regen</span>
+                          <span>Regen</span>
                         </button>
                       </div>
                     </div>
 
-                    {/* AI Suggestions Quick Chips (1-Click Insertion) */}
+                    {/* AI Suggestions Quick Chips (1-Row Horizontal Capsule Selector) */}
                     {suggestions.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-0.5">
-                        {suggestions.map((sug, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setReplyText(sug.text)}
-                            className="px-2.5 py-1 rounded-xl text-left bg-indigo-50/60 hover:bg-indigo-100/80 border border-indigo-200/80 hover:border-indigo-300 text-[11px] text-indigo-950 font-medium transition-all max-w-full truncate cursor-pointer"
-                            title={sug.text}
-                          >
-                            <span className="font-bold text-indigo-700 mr-1.5">{sug.title}:</span>
-                            <span className="text-slate-600 truncate">{sug.text.slice(0, 50)}...</span>
-                          </button>
-                        ))}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+                          AI Options:
+                        </span>
+                        {suggestions.map((sug, idx) => {
+                          const isSelected = replyText === sug.text;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setReplyText(sug.text)}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-[#111215] text-white border-neutral-900 shadow-xs' 
+                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/[0.08]'
+                              }`}
+                              title={sug.text}
+                            >
+                              <span>{sug.title}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {/* Meta 24-Hour Messaging Policy Warning for DMs */}
+                    {/* Meta 24-Hour Messaging Policy Warning for DMs (if needed) */}
                     {selectedInteraction.type === 'DIRECT_MESSAGE' && 
                      (Date.now() - new Date(selectedInteraction.platformCreatedAt).getTime() > 24 * 60 * 60 * 1000) && (
-                      <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5 shadow-2xs">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                         <div className="text-[11px] leading-relaxed">
-                          <strong className="font-bold text-amber-950">Meta 24-Hour Policy Window:</strong> This message was received more than 24 hours ago ({new Date(selectedInteraction.platformCreatedAt).toLocaleString()}). Meta Messenger Platform Policy strictly restricts automated/API replies outside the 24-hour window. To test live DM replies, please send a fresh message to the Page from Facebook Messenger.
+                          <strong className="font-bold">Meta 24-Hour Policy Window:</strong> This message was received more than 24 hours ago. For live DM transmission, send a fresh test message to the Page.
                         </div>
                       </div>
                     )}
 
                     {/* AI Error Alert if Any */}
                     {aiError && (
-                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span className="text-[11px]">{aiError}</span>
                       </div>
                     )}
 
-                    {/* Ergonomic Composer Textarea */}
-                    <div className="relative rounded-xl border border-slate-300 bg-white p-2.5 focus-within:ring-2 focus-within:ring-indigo-600/30 focus-within:border-indigo-600 transition-all shadow-2xs">
+                    {/* Compact Ergonomic Composer Textarea */}
+                    <div className="relative rounded-[20px] border border-black/[0.08] bg-white p-3 focus-within:ring-2 focus-within:ring-black/10 focus-within:border-black transition-all shadow-2xs">
                       <textarea
-                        rows={3}
+                        rows={2}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={`Draft reply to ${selectedInteraction.authorName} or click an AI suggestion above... (Press Ctrl + Enter to send)`}
-                        className="w-full text-xs font-medium bg-transparent focus:outline-hidden text-slate-900 placeholder:text-slate-400 leading-relaxed resize-none"
+                        placeholder={`Draft reply to ${selectedInteraction.authorName} or click an AI Option above... (Ctrl + Enter to send)`}
+                        className="w-full text-xs sm:text-[13px] font-medium bg-transparent focus:outline-hidden text-slate-900 placeholder:text-slate-400 leading-relaxed resize-none"
                       />
                       <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
                         <span>Characters: {replyText.length}</span>
-                        <span>Press <kbd className="px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold">Ctrl + Enter</kbd> to transmit</span>
+                        <span className="hidden sm:inline">Press <kbd className="px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold">Ctrl + Enter</kbd> to transmit</span>
                       </div>
                     </div>
 
-                    {/* Action Bar (Optimal Ergonomic Button Hierarchy) */}
-                    <div className="flex items-center justify-between pt-1">
+                    {/* Action Bar */}
+                    <div className="flex items-center justify-between pt-0.5">
                       <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-mono">
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
                           SAFE-01 Guardrail Active
                         </span>
                         <span className="hidden sm:inline">•</span>
-                        <span className="hidden sm:inline">Dest: {selectedInteraction.platform}</span>
+                        <span className="hidden sm:inline">Channel: {selectedInteraction.platform}</span>
                       </div>
 
                       <div className="flex items-center space-x-2">
@@ -862,7 +895,7 @@ function InboxContent() {
                           <button
                             type="button"
                             onClick={() => setReplyText('')}
-                            className="px-3 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+                            className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
                           >
                             Clear
                           </button>
@@ -872,11 +905,11 @@ function InboxContent() {
                           type="button"
                           onClick={handleApproveAndSend}
                           disabled={sendingReply || !replyText.trim()}
-                          className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-indigo-500/25 active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#111215] hover:bg-neutral-800 shadow-sm active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                         >
                           <Send className="w-3.5 h-3.5" />
                           <span>{sendingReply ? 'Transmitting...' : 'Approve & Send to Meta'}</span>
-                          <span className="text-[10px] bg-indigo-500/80 px-1.5 py-0.5 rounded text-white font-mono ml-1">
+                          <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded text-white font-mono ml-1">
                             ↵
                           </span>
                         </button>
@@ -886,7 +919,7 @@ function InboxContent() {
                 )}
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-3 text-slate-400">
+              <div className="flex flex-col items-center justify-center p-12 text-center space-y-3 text-slate-400 min-h-[420px]">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
                   <Inbox className="w-6 h-6" />
                 </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   getStoredUser, 
   getStoredTenant, 
@@ -20,21 +20,46 @@ import {
   Sparkles,
   User as UserIcon,
   Activity,
-  Check
+  Check,
+  Circle,
+  ExternalLink
 } from 'lucide-react';
 
 interface NavbarProps {
   currentBrandId?: string;
   onBrandChange?: (brandId: string) => void;
+  unreadCount?: number;
+  commentsCount?: number;
+  dmsCount?: number;
 }
 
-export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
+export default function Navbar({ 
+  currentBrandId, 
+  onBrandChange,
+  unreadCount = 0,
+  commentsCount = 4,
+  dmsCount = 2
+}: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [tenant, setTenant] = useState<any>(null);
   const [brands, setBrands] = useState<any[]>([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showBrandMenu, setShowBrandMenu] = useState(false);
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+      );
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -43,7 +68,6 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
     setTenant(storedTenant);
 
     if (storedUser) {
-      // Fetch brands for switcher
       apiRequest('/brands')
         .then(res => {
           if (res.brands) setBrands(res.brands);
@@ -59,51 +83,67 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
 
   const selectedBrand = brands.find(b => b.id === currentBrandId) || brands[0];
 
+  const navTabs = [
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Comments', href: '/inbox?type=COMMENT', count: commentsCount },
+    { name: 'DMs', href: '/inbox?type=DIRECT_MESSAGE', count: dmsCount },
+    { name: 'Studio', href: '/content-studio' },
+    { name: 'Calendar', href: '/calendar' },
+    { name: 'Channels', href: '/accounts' },
+    { name: 'Analytics', href: '/analytics' },
+    { name: 'Settings', href: '/settings' },
+  ];
+
+  const isTabActive = (href: string) => {
+    if (href.startsWith('/inbox')) {
+      return pathname === '/inbox';
+    }
+    return pathname === href;
+  };
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/85 backdrop-blur-xl border-b border-slate-200/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
-        {/* Left: Brand Identity & Tenant */}
-        <div className="flex items-center space-x-4">
+    <header className="sticky top-0 z-30 w-full bg-[#F4F5F7]/95 backdrop-blur-xl border-b border-black/[0.05] py-2 px-3 sm:px-6">
+      <div className="w-full max-w-[1680px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        
+        {/* Left: Cadra Brand Mark & Context */}
+        <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
           <Link href="/dashboard" className="flex items-center space-x-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4" />
+            {/* Minimalist Geometric Emblem */}
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#111215] text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m10 15 5-3-5-3v6Z" fill="currentColor" />
+              </svg>
             </div>
-            <div className="flex items-baseline space-x-1">
-              <span className="font-black text-slate-900 tracking-tight text-base sm:text-lg">OmniSocial</span>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/80">AI</span>
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-1.5">
+                <span className="font-extrabold text-[#0F1012] tracking-tight text-xs sm:text-sm leading-none">
+                  OmniSocial
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              </div>
+              <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 leading-none mt-1 hidden xs:inline">
+                Larkspur Engine
+              </span>
             </div>
           </Link>
 
-          {/* Tenant Indicator */}
-          {tenant && (
-            <div className="hidden md:flex items-center space-x-2 pl-4 border-l border-slate-200/80">
-              <Building2 className="w-4 h-4 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tenant:</span>
-              <span className="text-xs font-bold text-slate-800 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/70">
-                {tenant.name}
-              </span>
-              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/80">
-                {tenant.plan || 'Agency Pro'}
-              </span>
-            </div>
-          )}
-
-          {/* Brand Switcher */}
+          {/* Active Brand Switcher Capsule */}
           {brands.length > 0 && (
-            <div className="relative">
+            <div className="relative hidden md:block pl-1 sm:pl-2">
               <button
                 onClick={() => setShowBrandMenu(!showBrandMenu)}
-                className="flex items-center space-x-2 text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50/90 hover:bg-slate-100/90 border border-slate-200/80 px-3 py-1.5 rounded-xl transition-all shadow-2xs"
+                className="flex items-center space-x-1.5 text-xs font-semibold text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.06] px-2.5 py-1.5 rounded-full transition-all shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-pointer"
               >
-                <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="font-bold text-slate-900">{selectedBrand?.name || 'All Brands'}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                <span className="max-w-[70px] lg:max-w-[100px] truncate">{selectedBrand?.name || 'All Brands'}</span>
+                <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
               </button>
 
               {showBrandMenu && (
-                <div className="absolute left-0 mt-2 w-60 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3.5 py-1.5 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                    Switch Active Brand
+                <div className="absolute left-1 sm:left-2 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
+                    Switch Workspace Brand
                   </div>
                   {brands.map(b => (
                     <button
@@ -112,19 +152,19 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
                         if (onBrandChange) onBrandChange(b.id);
                         setShowBrandMenu(false);
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                        selectedBrand?.id === b.id ? 'font-bold text-indigo-600 bg-indigo-50/50' : 'text-slate-700 font-medium'
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer ${
+                        selectedBrand?.id === b.id ? 'font-bold text-neutral-900 bg-neutral-100/70' : 'text-neutral-700 font-medium'
                       }`}
                     >
                       <span className="truncate">{b.name}</span>
-                      {selectedBrand?.id === b.id && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                      {selectedBrand?.id === b.id && <Check className="w-3.5 h-3.5 text-neutral-900" />}
                     </button>
                   ))}
-                  <div className="border-t border-slate-100 mt-1 pt-1">
+                  <div className="border-t border-neutral-100 mt-1 pt-1">
                     <Link
                       href="/brands"
                       onClick={() => setShowBrandMenu(false)}
-                      className="block px-3.5 py-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-bold"
+                      className="block px-3.5 py-1.5 text-xs text-neutral-900 hover:underline font-semibold"
                     >
                       + Manage Brands & Voice
                     </Link>
@@ -135,47 +175,84 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
           )}
         </div>
 
-        {/* Right: Operational Status, Notifications & Profile */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
-          {/* Operational Status Pill */}
-          <div className="hidden lg:flex items-center space-x-2 text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Meta Graph v26.0 Connected</span>
+        {/* Center: The Cadra Segmented Pill Bar (Responsive & Compact) */}
+        <nav className="hidden lg:flex items-center bg-[#E6E8EC] p-1 rounded-full border border-black/[0.04] shadow-xs">
+          {navTabs.map((tab) => {
+            const active = isTabActive(tab.href);
+            return (
+              <Link
+                key={tab.name}
+                href={tab.href}
+                className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11px] xl:text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
+                  active
+                    ? 'bg-[#111215] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-white/40'
+                }`}
+              >
+                <span>{tab.name}</span>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span
+                    className={`text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                      active
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right: Live Clock, Status Bar Pill & Profile (Fits 100% On-Screen) */}
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+          
+          {/* Live Clock Pill */}
+          <div className="hidden sm:flex items-center space-x-1.5 bg-white px-3 py-1.5 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] sm:text-xs font-semibold text-neutral-800 font-mono tracking-tight">
+              {currentTime || '3:27 PM'}
+            </span>
           </div>
 
-          {/* Quick Notification Bell */}
-          <Link
-            href="/inbox"
-            className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl transition-colors"
-            title="Unified Inbox Notifications"
-          >
-            <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white"></span>
-          </Link>
+          {/* Status Tracker Pill - Only shown on ultra-wide 2xl screens to prevent horizontal overflow */}
+          <div className="hidden 2xl:flex items-center space-x-2.5 bg-white px-3.5 py-1.5 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)] text-xs">
+            <div className="flex items-center space-x-1.5 font-medium text-neutral-700">
+              <span className="font-bold text-neutral-950">5 active</span>
+              <span className="text-neutral-300">•</span>
+              <span className="text-emerald-600 font-semibold">4 sync</span>
+              <span className="text-neutral-300">•</span>
+              <span className="text-orange-600 font-semibold">1 queue</span>
+            </div>
+            <div className="w-10 h-1.5 rounded-full bg-neutral-200 overflow-hidden flex">
+              <div className="bg-emerald-500 w-3/4 h-full" />
+              <div className="bg-orange-500 w-1/4 h-full" />
+            </div>
+          </div>
 
-          {/* User Profile Dropdown */}
+          {/* User Profile Capsule - Always pinned & visible on the far right */}
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-slate-100/80 transition-colors"
+              className="flex items-center space-x-1.5 sm:space-x-2 p-1 pl-2 bg-white hover:bg-neutral-50 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-950 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <span className="text-xs font-semibold text-neutral-800 hidden sm:inline max-w-[85px] lg:max-w-[110px] truncate">
+                {user?.name || 'Admin'}
+              </span>
+              <div className="w-7 h-7 rounded-full bg-neutral-950 text-white flex items-center justify-center font-bold text-xs">
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'OS'}
               </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold text-slate-900 leading-none">{user?.name || 'Administrator'}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5 leading-none font-mono">{user?.role || 'AGENCY_ADMIN'}</p>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50">
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-xs font-bold text-slate-900">{user?.name}</p>
-                  <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
-                  <span className="inline-block mt-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {user?.role}
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-2 border-b border-neutral-100">
+                  <p className="text-xs font-bold text-neutral-900 truncate">{user?.name}</p>
+                  <p className="text-[11px] text-neutral-500 truncate">{user?.email}</p>
+                  <span className="inline-block mt-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
+                    {user?.role || 'AGENCY_ADMIN'}
                   </span>
                 </div>
 
@@ -183,32 +260,32 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
                   <Link
                     href="/settings"
                     onClick={() => setShowUserMenu(false)}
-                    className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="block px-4 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
                   >
-                    Workspace Settings & BYOK
+                    Organization Settings
                   </Link>
                   <Link
                     href="/team"
                     onClick={() => setShowUserMenu(false)}
-                    className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="block px-4 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
                   >
-                    Team Members & Roles
+                    Team & Collaborators
                   </Link>
-                  {user?.role === 'SUPER_ADMIN' && (
+                  {user?.role === 'SUPERADMIN' && (
                     <Link
                       href="/superadmin"
                       onClick={() => setShowUserMenu(false)}
-                      className="block px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors"
+                      className="block px-4 py-2 text-xs text-amber-900 font-bold hover:bg-amber-50 transition-colors"
                     >
-                      Super Admin Portal
+                      ★ Platform Governance
                     </Link>
                   )}
                 </div>
 
-                <div className="border-t border-slate-100 pt-1">
+                <div className="border-t border-neutral-100 pt-1">
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center space-x-2 transition-colors"
+                    className="w-full text-left px-4 py-2 text-xs text-rose-600 font-semibold hover:bg-rose-50 transition-colors flex items-center space-x-1.5 cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>
@@ -217,7 +294,9 @@ export default function Navbar({ currentBrandId, onBrandChange }: NavbarProps) {
               </div>
             )}
           </div>
+
         </div>
+
       </div>
     </header>
   );

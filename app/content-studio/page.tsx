@@ -293,27 +293,31 @@ export default function ContentStudioPage() {
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6 max-w-7xl mx-auto pb-16">
-        {/* TOP UX COMMAND BAR WITH STICKY ACTION BUTTONS */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 bg-[#fafaf9]/80 backdrop-blur-md sticky top-0 z-30 pt-1">
+        {/* CADRA SUB-HEADER WITH CLEAN BREADCRUMB & CAPSULE ACTIONS */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 pt-1">
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
-                [ POST COMPOSER // OMNICHANNEL SUITE ]
-              </span>
-              <span className="text-xs text-slate-400 font-mono">• Direct Meta Publishing</span>
+            <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
+              <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
+              <span>›</span>
+              <span className="hover:text-neutral-700 cursor-pointer">Creative</span>
+              <span>›</span>
+              <span className="text-neutral-900 font-semibold">AI Studio</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1">
               AI Creative Studio
             </h1>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Multi-platform viral copywriting, visual staging & instant Meta Graph dispatch.
+            </p>
           </div>
 
-          {/* PRIMARY COMPLETION ACTIONS (Right at the top where UX eye tracks) */}
-          <div className="flex items-center space-x-2.5 shrink-0">
+          {/* PRIMARY COMPLETION CAPSULES */}
+          <div className="flex items-center space-x-3 shrink-0">
             <button
               type="button"
               onClick={() => handleSavePost(false)}
               disabled={submitting}
-              className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-xl shadow-2xs hover:shadow-xs transition-all disabled:opacity-50"
+              className="px-5 py-2.5 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all disabled:opacity-50"
             >
               {scheduledFor ? 'Schedule to Calendar' : 'Save Draft'}
             </button>
@@ -321,7 +325,7 @@ export default function ContentStudioPage() {
               type="button"
               onClick={() => handleSavePost(true)}
               disabled={submitting || selectedAccountIds.length === 0}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-indigo-600 rounded-xl shadow-md hover:shadow-indigo-500/20 flex items-center space-x-2 transition-all disabled:opacity-50"
+              className="px-6 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{submitting ? 'Transmitting...' : 'Publish Now to Meta'}</span>

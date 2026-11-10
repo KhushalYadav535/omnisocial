@@ -25,7 +25,8 @@ import confetti from 'canvas-confetti';
 import { Facebook, Instagram } from '../Icons';
 
 export function InteractiveConsole() {
-  const [activeTab, setActiveTab] = useState<'connect' | 'inbox' | 'studio' | 'hierarchy'>('connect');
+  const [activeTab, setActiveTab] = useState<'cadra' | 'connect' | 'inbox' | 'studio' | 'hierarchy'>('cadra');
+  const [hoveredSplineMonth, setHoveredSplineMonth] = useState<number>(1);
 
   // Tab 1 state
   const [connectingStep, setConnectingStep] = useState<number>(0);
@@ -126,53 +127,249 @@ export function InteractiveConsole() {
         </div>
 
         {/* Tab Pills */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-200/70 border border-slate-300/40 text-xs font-semibold">
+        <div className="flex items-center p-1 rounded-full bg-neutral-200/80 border border-neutral-300/50 text-xs font-semibold">
+          <button
+            onClick={() => setActiveTab('cadra')}
+            className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'cadra'
+                ? 'bg-[#111215] text-white shadow-xs font-bold'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Cadra Overview</span>
+          </button>
           <button
             onClick={() => setActiveTab('connect')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
               activeTab === 'connect'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#111215] text-white shadow-xs font-bold'
+                : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
             1-Click Meta Connect
           </button>
           <button
             onClick={() => setActiveTab('inbox')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
               activeTab === 'inbox'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#111215] text-white shadow-xs font-bold'
+                : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
             Unified AI Inbox
           </button>
           <button
             onClick={() => setActiveTab('studio')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
               activeTab === 'studio'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#111215] text-white shadow-xs font-bold'
+                : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
             Post Studio
-          </button>
-          <button
-            onClick={() => setActiveTab('hierarchy')}
-            className={`px-3 py-1.5 rounded-lg transition-all hidden sm:inline-block ${
-              activeTab === 'hierarchy'
-                ? 'bg-white text-indigo-700 shadow-xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Multi-Tenant Tree
           </button>
         </div>
       </div>
 
       {/* Main Tab Views with AnimatePresence */}
-      <div className="p-6 sm:p-8 bg-gradient-to-b from-white to-slate-50/70">
+      <div className="p-6 sm:p-8 bg-[#F4F5F7]">
         <AnimatePresence mode="wait">
+          {/* TAB 0: CADRA LIVE OVERVIEW SIMULATOR (EXACT SCREENSHOT UI) */}
+          {activeTab === 'cadra' && (
+            <motion.div
+              key="cadra"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-5"
+            >
+              {/* Cadra Inner Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
+                <div>
+                  <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
+                    <span>Larkspur</span>
+                    <span>›</span>
+                    <span>Reporting</span>
+                    <span>›</span>
+                    <span className="text-neutral-900 font-semibold">Overview</span>
+                  </div>
+                  <div className="flex items-center space-x-3 mt-1.5">
+                    <h3 className="text-2xl font-extrabold text-[#0F1012]">Overview</h3>
+                    <div className="bg-[#E5E7EB] p-1 rounded-full text-xs font-semibold inline-flex items-center space-x-1">
+                      <span className="bg-white px-3 py-0.5 rounded-full text-neutral-900 shadow-2xs">Overview</span>
+                      <span className="px-3 py-0.5 text-neutral-500">Report builder</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2.5">
+                  <div className="flex items-center space-x-2 bg-white px-3 py-1 rounded-full border border-black/[0.06] text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>3:27 PM</span>
+                  </div>
+                  <div className="bg-[#111215] text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+                    <span>+ Build a report</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cadra 4-Card Bento Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Jet Black Hero */}
+                <div className="bg-[#111215] text-white rounded-[24px] p-5 border border-neutral-800 flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between text-xs text-neutral-400">
+                    <span>Revenue, year to date</span>
+                    <TrendingUp className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight my-2 font-sans">$1,721,974</p>
+                  <div>
+                    <span className="text-[10px] font-semibold bg-neutral-800 text-neutral-300 px-2.5 py-0.5 rounded-full">
+                      Best: Jun $220k
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Soft Blue */}
+                <div className="bg-[#E8F1FD] text-neutral-900 rounded-[24px] p-5 border border-[#D5E3FA] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-neutral-600">
+                    <span>Bikes shipped</span>
+                    <Share2 className="w-3.5 h-3.5 text-blue-700" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight my-2">916</p>
+                  <div>
+                    <span className="text-[10px] font-semibold bg-white/80 text-blue-800 px-2.5 py-0.5 rounded-full border border-blue-200/50">
+                      98 a month
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Pure White */}
+                <div className="bg-white text-neutral-900 rounded-[24px] p-5 border border-black/[0.06] flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between text-xs text-neutral-500">
+                    <span>% Gross margin</span>
+                    <span>%</span>
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight my-2">51.8%</p>
+                  <div>
+                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      +4.2% AI voice margin
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Pure White with Amber Badge */}
+                <div className="bg-white text-neutral-900 rounded-[24px] p-5 border border-black/[0.06] flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between text-xs text-neutral-500">
+                    <span>On time in November</span>
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                  </div>
+                  <p className="text-3xl font-extrabold tracking-tight my-2">91%</p>
+                  <div>
+                    <span className="text-[10px] font-semibold bg-[#FEF3C7] text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-200/80">
+                      -2 pts vs Oct
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cadra Spline Curve + Speedometer Gauge Panel */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Left 2/3: Spline Wave Area Chart */}
+                <div className="lg:col-span-2 bg-white rounded-[24px] p-5 border border-black/[0.06] shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-3">
+                    <span className="text-xs font-bold text-neutral-900">Revenue</span>
+                    <div className="flex items-center space-x-3 text-xs font-medium">
+                      <span className="flex items-center gap-1.5 text-neutral-700">
+                        <span className="w-2 h-2 rounded-full bg-blue-600" /> Revenue
+                      </span>
+                      <span className="flex items-center gap-1.5 text-neutral-400">
+                        <span className="w-3 h-0.5 border-t border-dashed border-blue-400" /> Cost of goods
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="relative w-full h-[180px]">
+                    <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] font-mono text-neutral-400">
+                      <span>$250k</span>
+                      <span>$125k</span>
+                      <span>$0</span>
+                    </div>
+                    <div className="pl-10 h-full relative">
+                      <svg className="w-full h-[150px] overflow-visible" viewBox="0 0 600 150" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="consoleSplineGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2563EB" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M 10,120 C 60,110 110,105 160,90 C 220,70 280,30 340,30 C 400,30 460,50 510,75 C 560,95 580,110 590,120 L 590,145 L 10,145 Z"
+                          fill="url(#consoleSplineGrad)"
+                        />
+                        <path
+                          d="M 10,120 C 60,110 110,105 160,90 C 220,70 280,30 340,30 C 400,30 460,50 510,75 C 560,95 580,110 590,120"
+                          fill="none"
+                          stroke="#2563EB"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M 10,135 C 60,130 110,125 160,115 C 220,100 280,75 340,75 C 400,75 460,90 510,105 C 560,120 580,130 590,135"
+                          fill="none"
+                          stroke="#60A5FA"
+                          strokeWidth="1.5"
+                          strokeDasharray="3 3"
+                        />
+                        {/* Interactive Point on Jan */}
+                        <line x1="80" y1="5" x2="80" y2="145" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2 2" />
+                        <circle cx="80" cy="112" r="4" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2" />
+                      </svg>
+                      {/* Tooltip on Jan */}
+                      <div className="absolute top-6 left-16 bg-white/95 rounded-xl p-2 border border-neutral-200 shadow-md text-[10px]">
+                        <p className="font-bold text-neutral-900">Jan</p>
+                        <p className="text-neutral-500">Revenue: <strong className="text-neutral-900">$81k</strong></p>
+                        <p className="text-neutral-500">Cost: <strong className="text-neutral-900">$42k</strong></p>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 text-[10px] font-medium text-neutral-400">
+                        {['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'].map((m) => (
+                          <span key={m}>{m}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right 1/3: Speedometer Radial Gauge */}
+                <div className="bg-white rounded-[24px] p-5 border border-black/[0.06] shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-neutral-900">On-time delivery</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <div className="relative w-44 h-24 flex items-end justify-center">
+                      <svg className="w-44 h-24 overflow-visible" viewBox="0 0 160 90">
+                        <path d="M 15 80 A 65 65 0 0 1 145 80" fill="none" stroke="#E5E7EB" strokeWidth="14" strokeLinecap="round" />
+                        <path d="M 15 80 A 65 65 0 0 1 135 44" fill="none" stroke="#558B2F" strokeWidth="14" strokeLinecap="round" />
+                        <g transform="translate(80, 80)">
+                          <circle cx="0" cy="0" r="5" fill="#111215" />
+                          <line x1="0" y1="0" x2="44" y2="-34" stroke="#111215" strokeWidth="3" strokeLinecap="round" />
+                        </g>
+                      </svg>
+                      <div className="absolute -bottom-1 flex flex-col items-center">
+                        <span className="text-2xl font-extrabold text-[#0F1012]">91%</span>
+                        <span className="text-[10px] text-neutral-400">November so far</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-neutral-100 text-center text-[10px] text-neutral-500">
+                    Target <span className="font-bold text-neutral-800">92%</span> • 12-mo avg <span className="font-bold text-neutral-800">91.3%</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* TAB 1: 1-Click Connect Simulator */}
           {activeTab === 'connect' && (
             <motion.div

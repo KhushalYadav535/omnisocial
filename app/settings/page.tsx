@@ -95,19 +95,20 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="pb-2 border-b border-slate-200/80">
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
-              [ TENANT GOVERNANCE // BYOK CREDENTIAL VAULT ]
-            </span>
-            <span className="text-xs text-slate-400 font-mono">• AES-256 Encrypted</span>
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & FILTER CAPSULES */}
+        <div className="pb-2 pt-1">
+          <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
+            <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
+            <span>›</span>
+            <span className="hover:text-neutral-700 cursor-pointer">Configuration</span>
+            <span>›</span>
+            <span className="text-neutral-900 font-semibold">Settings & BYOK Vault</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1 flex items-center space-x-2">
             <span>Workspace Settings & BYOK Keys</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-neutral-500 mt-0.5">
             Configure agency details, Bring-Your-Own-Key (BYOK) Meta credentials, and platform webhook endpoints.
           </p>
         </div>
@@ -123,7 +124,7 @@ export default function SettingsPage() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* General Workspace Profile */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-7 space-y-4">
+          <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 sm:p-7 space-y-4">
             <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
               <Building2 className="w-4 h-4 text-indigo-600" />
               <h3 className="text-sm font-bold text-slate-900">Agency / Organization Profile</h3>

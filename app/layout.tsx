@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full antialiased light selection:bg-indigo-500/20 selection:text-indigo-950">
-      <body className="min-h-full flex flex-col bg-[#fafaf9] text-slate-900 font-sans relative">
+    <html lang="en" className="antialiased light selection:bg-neutral-900 selection:text-white">
+      <body className="bg-[#F4F5F7] text-[#0F1012] font-sans relative">
         <SmoothScroll>
           <CursorGlow />
           <NoiseOverlay />

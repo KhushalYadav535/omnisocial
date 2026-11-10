@@ -58,37 +58,37 @@ function CallbackContent() {
   }, [searchParams, router]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 max-w-md w-full">
+    <div className="min-h-screen bg-[#F4F5F7] flex flex-col items-center justify-center p-6 text-center">
+      <div className="bg-white rounded-[28px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-black/[0.06] p-8 max-w-md w-full">
         {status === 'loading' && (
           <div className="flex flex-col items-center">
-            <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Connecting to Meta...</h2>
-            <p className="text-sm text-slate-500">Exchanging credentials and verifying permissions with Facebook & Instagram.</p>
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+            <h2 className="text-lg font-extrabold text-slate-900 mb-1.5">Connecting to Meta Graph...</h2>
+            <p className="text-xs text-slate-500">Exchanging credentials and verifying permissions with Facebook & Instagram.</p>
           </div>
         )}
 
         {status === 'success' && (
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Meta Account Verified!</h2>
-            <p className="text-sm text-slate-500 mb-4">Returning to Social Accounts dashboard to discover your Facebook Pages and Instagram accounts...</p>
-            <p className="text-xs text-slate-400">This window will close automatically.</p>
+            <h2 className="text-lg font-extrabold text-slate-900 mb-1.5">Meta Account Verified!</h2>
+            <p className="text-xs text-slate-500 mb-3">Returning to Social Accounts dashboard to discover your Facebook Pages and Instagram accounts...</p>
+            <p className="text-[11px] text-slate-400 font-medium">This window will close automatically.</p>
           </div>
         )}
 
         {status === 'error' && (
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-rose-600" />
+            <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6 text-rose-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Connection Failed</h2>
-            <p className="text-sm text-rose-600 mb-6 bg-rose-50 p-3 rounded-lg border border-rose-100">{errorMessage}</p>
+            <h2 className="text-lg font-extrabold text-slate-900 mb-1.5">Connection Failed</h2>
+            <p className="text-xs text-rose-600 mb-5 bg-rose-50/80 p-3 rounded-2xl border border-rose-100">{errorMessage}</p>
             <button
               onClick={() => router.push('/accounts')}
-              className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition"
+              className="px-5 py-2.5 bg-[#0A0D12] text-white rounded-full text-xs font-bold hover:bg-neutral-800 transition cursor-pointer shadow-sm"
             >
               Return to Accounts
             </button>
@@ -99,15 +99,10 @@ function CallbackContent() {
   );
 }
 
-export default function MetaCallbackPage() {
+export default function CallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-[#F4F5F7] flex items-center justify-center text-xs text-slate-400">Processing OAuth token...</div>}>
       <CallbackContent />
     </Suspense>
   );
 }
-

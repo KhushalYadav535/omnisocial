@@ -144,20 +144,21 @@ export default function BrandsPage() {
       const b = brands.find(item => item.id === id);
       if (b) selectBrandItem(b);
     }}>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200/80">
+      <div className="space-y-6 pb-12">
+        {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & FILTER CAPSULES */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/80">
-                [ BRAND VOICE SENTINEL // ZERO HALLUCINATIONS ]
-              </span>
-              <span className="text-xs text-slate-400 font-mono">• Persona Rulebook</span>
+            <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
+              <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
+              <span>›</span>
+              <span className="hover:text-neutral-700 cursor-pointer">Configuration</span>
+              <span>›</span>
+              <span className="text-neutral-900 font-semibold">Brand Voice Master</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1.5 flex items-center space-x-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1 flex items-center space-x-2">
               <span>Brand Guidelines & Voice Master</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-neutral-500 mt-0.5">
               Organize multiple client enterprises, define AI persona guardrails, tone, FAQs, and banned words.
             </p>
           </div>
@@ -165,9 +166,9 @@ export default function BrandsPage() {
           <div className="flex items-center space-x-2.5">
             <button
               onClick={() => setShowNewBizModal(true)}
-              className="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-4 py-2.5 rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-center space-x-1.5"
+              className="text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] px-4 py-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all flex items-center space-x-1.5"
             >
-              <Building2 className="w-3.5 h-3.5 text-slate-500" />
+              <Building2 className="w-3.5 h-3.5 text-neutral-500" />
               <span>+ New Business</span>
             </button>
             <button
@@ -175,7 +176,7 @@ export default function BrandsPage() {
                 if (businesses.length > 0) setNewBrandBizId(businesses[0].id);
                 setShowNewBrandModal(true);
               }}
-              className="text-xs font-bold text-white bg-slate-900 hover:bg-indigo-600 px-4 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/20 transition-all flex items-center space-x-1.5"
+              className="text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 px-5 py-2 rounded-full shadow-md transition-all flex items-center space-x-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>+ New Brand</span>
@@ -196,30 +197,30 @@ export default function BrandsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Businesses & Brands (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6">
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
                 Client Brands Catalog ({brands.length})
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {brands.map(b => (
                   <button
                     key={b.id}
                     onClick={() => selectBrandItem(b)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all flex items-center space-x-3 ${
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center space-x-3 cursor-pointer ${
                       selectedBrand?.id === b.id
-                        ? 'border-indigo-600 bg-indigo-50/60 shadow-2xs'
-                        : 'border-slate-200 hover:bg-slate-50'
+                        ? 'border-neutral-900 bg-neutral-900/5 shadow-xs font-bold'
+                        : 'border-neutral-200/80 hover:bg-neutral-50'
                     }`}
                   >
                     <img
                       src={b.logoUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                      className="w-10 h-10 rounded-full object-cover border border-neutral-200 shrink-0"
                       alt=""
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-900 truncate">{b.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{b.businessName}</p>
-                      <span className="inline-block mt-1 text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.2 rounded-sm border border-indigo-100">
+                      <p className="text-xs font-bold text-neutral-900 truncate">{b.name}</p>
+                      <p className="text-[10px] text-neutral-400 truncate">{b.businessName}</p>
+                      <span className="inline-block mt-1 text-[10px] font-semibold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-full border border-neutral-200">
                         {b.accountsCount || 0} Accounts Connected
                       </span>
                     </div>
@@ -230,17 +231,19 @@ export default function BrandsPage() {
           </div>
 
           {/* Right Column: AI Voice & Persona Profile Editor (8 cols) */}
-          <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-2xs p-6 space-y-5">
+          <div className="lg:col-span-8 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 sm:p-7 space-y-5">
             {selectedBrand ? (
               <>
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                  <div className="flex items-center space-x-2">
-                    <Bot className="w-5 h-5 text-indigo-600" />
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-900">
+                      <Bot className="w-4 h-4" />
+                    </div>
                     <div>
-                      <h2 className="text-sm font-bold text-slate-900">
+                      <h2 className="text-sm font-bold text-neutral-900">
                         AI Persona & Voice Profile: {selectedBrand.name}
                       </h2>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-neutral-500">
                         These instructions govern all AI suggestions generated in the Unified Inbox and Content Studio.
                       </p>
                     </div>
@@ -248,7 +251,7 @@ export default function BrandsPage() {
                   <button
                     onClick={handleSaveVoice}
                     disabled={savingVoice}
-                    className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs flex items-center space-x-1.5 transition-colors disabled:opacity-50"
+                    className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>{savingVoice ? 'Saving...' : 'Save Voice Profile'}</span>
