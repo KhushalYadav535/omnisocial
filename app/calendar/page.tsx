@@ -777,7 +777,7 @@ export default function CalendarPage() {
               {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </span>
 
-            {/* 1-Click Quick Post/Reel Studio Button (Intern Friendly) */}
+            {/* 1-Click Quick Post/Reel Studio Button */}
             <button
               onClick={() => {
                 setShowInstantModal(true);
@@ -816,7 +816,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Quick Cheatsheet for Interns & Non-Marketers */}
+        {/* Quick Cheatsheet for Content Creation */}
         <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-emerald-50/70 border border-indigo-200/60 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div className="flex items-center space-x-3.5">
             <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
@@ -826,9 +826,6 @@ export default function CalendarPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-extrabold text-slate-900">
                   Zero Marketing Knowledge? Launch Content in 30 Seconds:
-                </span>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase tracking-wider">
-                  Intern Friendly
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
@@ -1265,7 +1262,7 @@ export default function CalendarPage() {
         )}
 
         {/* ===================================================================== */}
-        {/* INSTANT 1-CLICK POST & REEL STUDIO (START FROM ZERO FOR INTERNS)     */}
+        {/* INSTANT 1-CLICK POST & REEL STUDIO (START FROM ZERO)                */}
         {/* ===================================================================== */}
         {showInstantModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
@@ -1285,9 +1282,6 @@ export default function CalendarPage() {
                   <div>
                     <div className="flex items-center space-x-2">
                       <h2 className="text-xl font-black tracking-tight text-white">1-Click Quick Post &amp; Reel Studio</h2>
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">
-                        Intern Friendly
-                      </span>
                     </div>
                     <p className="text-xs text-emerald-200 mt-0.5">
                       Create 1 viral post or vertical reel for today in 10 seconds — complete with captions, AI visuals, and Midjourney/Runway prompts!
