@@ -89,6 +89,7 @@ export default function Navbar({
     { name: 'DMs', href: '/inbox?type=DIRECT_MESSAGE', count: dmsCount },
     { name: 'Studio', href: '/content-studio' },
     { name: 'Calendar', href: '/calendar' },
+    { name: 'Funnels', href: '/automations' },
     { name: 'Channels', href: '/accounts' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Settings', href: '/settings' },

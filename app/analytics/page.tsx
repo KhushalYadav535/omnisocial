@@ -99,6 +99,30 @@ export default function AnalyticsPage() {
     }
   };
 
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const handleDownloadClientReportPdf = async () => {
+    if (!activeBrandId) {
+      setNotice({ type: 'error', text: 'Please select an active brand first.' });
+      return;
+    }
+    setGeneratingPdf(true);
+    setNotice(null);
+    try {
+      const res = await apiRequest(`/analytics/client-report-pdf?brandId=${activeBrandId}&period=month`);
+      if (res.report?.pdfUrl) {
+        window.open(res.report.pdfUrl, '_blank');
+        setNotice({ type: 'success', text: 'Executive Client Report PDF generated and opened!' });
+      } else {
+        throw new Error('PDF generation failed');
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to generate Client Report PDF' });
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       <div className="space-y-6 pb-12">
@@ -162,6 +186,16 @@ export default function AnalyticsPage() {
             >
               <Download className="w-3.5 h-3.5 text-neutral-500" />
               <span>{exporting ? 'Exporting...' : 'Export CSV'}</span>
+            </button>
+
+            {/* Feature 3B: Executive Client Report PDF */}
+            <button
+              onClick={handleDownloadClientReportPdf}
+              disabled={generatingPdf || !activeBrandId}
+              className="text-xs font-semibold text-white bg-gradient-to-r from-indigo-600 to-sky-600 hover:opacity-95 px-4 py-2 rounded-full shadow-xs flex items-center space-x-1.5 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${generatingPdf ? 'animate-spin' : ''}`} />
+              <span>{generatingPdf ? 'Compiling AI Report...' : 'Client Report (PDF)'}</span>
             </button>
           </div>
         </div>
