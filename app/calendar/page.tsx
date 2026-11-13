@@ -46,9 +46,158 @@ import {
   Globe,
   TrendingUp,
   BarChart3,
-  CalendarDays
+  CalendarDays,
+  User as UserIcon
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
+
+export interface FestivalEvent {
+  date: string; // YYYY-MM-DD
+  name: string;
+  emoji: string;
+  tag: string;
+  category: 'FESTIVAL' | 'CULTURAL' | 'COMMERCE';
+  leadTimeDays: number;
+  pitchBrief: string;
+}
+
+export const INDIAN_FESTIVALS_CALENDAR: FestivalEvent[] = [
+  {
+    date: '2026-10-20',
+    name: 'Dhanteras',
+    emoji: '🪔',
+    tag: 'Gold & Prosperity',
+    category: 'FESTIVAL',
+    leadTimeDays: 14,
+    pitchBrief: 'Brand: [YourBrandName]\nDhanteras festive drop celebrating wealth, prosperity, and auspicious purchases with limited-time festive perks.'
+  },
+  {
+    date: '2026-10-22',
+    name: 'Diwali / Deepavali',
+    emoji: '🪔',
+    tag: 'Mega Festive Drop',
+    category: 'FESTIVAL',
+    leadTimeDays: 21,
+    pitchBrief: 'Brand: [YourBrandName]\nGrand Diwali festival campaign with light, joy, gifting boxes, and celebratory seasonal savings.'
+  },
+  {
+    date: '2026-10-24',
+    name: 'Bhai Dooj',
+    emoji: '🎁',
+    tag: 'Sibling Gifting',
+    category: 'FESTIVAL',
+    leadTimeDays: 10,
+    pitchBrief: 'Brand: [YourBrandName]\nBhai Dooj sibling celebration and heartfelt gift bundle drop.'
+  },
+  {
+    date: '2026-10-27',
+    name: 'Chhath Puja',
+    emoji: '🌅',
+    tag: 'Sun God Blessings',
+    category: 'CULTURAL',
+    leadTimeDays: 10,
+    pitchBrief: 'Brand: [YourBrandName]\nChhath Puja sacred celebrations, purity, and family togetherness greetings.'
+  },
+  {
+    date: '2026-11-14',
+    name: "Children's Day",
+    emoji: '🎈',
+    tag: 'Kids & Family Special',
+    category: 'CULTURAL',
+    leadTimeDays: 7,
+    pitchBrief: "Brand: [YourBrandName]\nChildren's Day celebration with fun family bundles, nostalgia, and special treats."
+  },
+  {
+    date: '2026-11-27',
+    name: 'Black Friday',
+    emoji: '🛍️',
+    tag: 'Annual Mega Sale',
+    category: 'COMMERCE',
+    leadTimeDays: 14,
+    pitchBrief: 'Brand: [YourBrandName]\nBlack Friday mega sale sprint with deepest discounts of the year, countdown urgency, and VIP early access.'
+  },
+  {
+    date: '2026-11-30',
+    name: 'Cyber Monday',
+    emoji: '💻',
+    tag: 'Tech & Digital Flash',
+    category: 'COMMERCE',
+    leadTimeDays: 10,
+    pitchBrief: 'Brand: [YourBrandName]\nCyber Monday final clearance rush for digital offers, online software, and instant delivery packages.'
+  },
+  {
+    date: '2026-12-25',
+    name: 'Christmas Day',
+    emoji: '🎄',
+    tag: 'Holiday Gifting',
+    category: 'FESTIVAL',
+    leadTimeDays: 14,
+    pitchBrief: 'Brand: [YourBrandName]\nChristmas holiday cheer, seasonal gifting guides, and year-end customer appreciation specials.'
+  },
+  {
+    date: '2026-12-31',
+    name: "New Year's Eve",
+    emoji: '🎉',
+    tag: 'Year-End Countdown',
+    category: 'COMMERCE',
+    leadTimeDays: 10,
+    pitchBrief: "Brand: [YourBrandName]\nNew Year's Eve countdown drop celebrating year-end wins, reflections, and midnight flash specials."
+  },
+  {
+    date: '2027-01-01',
+    name: 'New Year 2027',
+    emoji: '✨',
+    tag: 'Fresh Start / Resolutions',
+    category: 'CULTURAL',
+    leadTimeDays: 14,
+    pitchBrief: 'Brand: [YourBrandName]\nNew Year fresh start transformation campaign focused on resolutions, fresh goals, and modern solutions.'
+  },
+  {
+    date: '2027-01-14',
+    name: 'Makar Sankranti & Pongal',
+    emoji: '🪁',
+    tag: 'Harvest & Hope',
+    category: 'FESTIVAL',
+    leadTimeDays: 10,
+    pitchBrief: 'Brand: [YourBrandName]\nMakar Sankranti, Lohri, and Pongal harvest celebration honoring prosperity, tradition, and regional sweetness.'
+  },
+  {
+    date: '2027-01-16',
+    name: 'National Startup Day',
+    emoji: '🚀',
+    tag: 'Entrepreneurship Drop',
+    category: 'CULTURAL',
+    leadTimeDays: 7,
+    pitchBrief: 'Brand: [YourBrandName]\nNational Startup Day honoring homegrown founders, hustle stories, and local innovation.'
+  },
+  {
+    date: '2027-01-26',
+    name: 'Republic Day',
+    emoji: '🇮🇳',
+    tag: 'Patriotism & Tri-Color',
+    category: 'CULTURAL',
+    leadTimeDays: 14,
+    pitchBrief: 'Brand: [YourBrandName]\nRepublic Day celebration celebrating Indian pride, sovereign freedom, and patriotic customer drops.'
+  },
+  {
+    date: '2027-03-08',
+    name: "International Women's Day",
+    emoji: '👩',
+    tag: 'Empowerment Special',
+    category: 'CULTURAL',
+    leadTimeDays: 14,
+    pitchBrief: "Brand: [YourBrandName]\nInternational Women's Day drop celebrating inspiring women leaders, special gifts, and self-care."
+  },
+  {
+    date: '2027-03-24',
+    name: 'Holi Festival of Colors',
+    emoji: '🎨',
+    tag: 'Colors & Joy',
+    category: 'FESTIVAL',
+    leadTimeDays: 21,
+    pitchBrief: 'Brand: [YourBrandName]\nVibrant Holi campaign celebrating colors, organic joy, friendship, and festive product drops.'
+  }
+];
 
 export const INDUSTRY_QUICK_TEMPLATES = [
   {
@@ -160,7 +309,7 @@ export const INDUSTRY_QUICK_TEMPLATES = [
 export default function CalendarPage() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
   const [events, setEvents] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST'>('MONTH');
+  const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST' | 'GRID'>('MONTH');
   const [currentDate, setCurrentDate] = useState(() => new Date('2026-10-01T00:00:00Z'));
   const [today, setToday] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
@@ -174,6 +323,87 @@ export default function CalendarPage() {
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<string>('ALL');
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+
+  // Share Calendar Magic Review Link States
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareData, setShareData] = useState<{ reviewUrl: string; shareToken: string; brandName: string } | null>(null);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+
+  const handleOpenShareModal = async () => {
+    setShowShareModal(true);
+    setShareLoading(true);
+    setCopiedShareLink(false);
+    try {
+      const res = await apiRequest('/client-review/generate-token', {
+        method: 'POST',
+        body: JSON.stringify({
+          brandId: activeBrandId || undefined,
+          name: 'Executive Calendar Review Portal'
+        })
+      });
+      if (res.success && res.reviewUrl) {
+        const url = res.reviewUrl.startsWith('http')
+          ? res.reviewUrl
+          : `${typeof window !== 'undefined' ? window.location.origin : ''}/review/${res.shareToken}`;
+        setShareData({
+          reviewUrl: url,
+          shareToken: res.shareToken,
+          brandName: res.brandName || 'Your Brand'
+        });
+      } else {
+        throw new Error(res.error || 'Failed to generate review link');
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to generate review link' });
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!shareData) return;
+    navigator.clipboard.writeText(shareData.reviewUrl);
+    setCopiedShareLink(true);
+    setTimeout(() => setCopiedShareLink(false), 3000);
+  };
+
+  const handleLaunchFestiveCampaign = (fest: FestivalEvent) => {
+    setArchitectProductDesc(fest.pitchBrief);
+    setArchitectGoal('SALES');
+    setArchitectDuration(7);
+    setShowArchitectModal(true);
+    setWizardStep(1);
+    setNotice({
+      type: 'success',
+      text: `Loaded festive blueprint for "${fest.name}"! Replace brand placeholder and launch.`
+    });
+  };
+
+  const getFestivalForDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    return INDIAN_FESTIVALS_CALENDAR.find(f => f.date === dateStr) || null;
+  };
+
+  const getUpcomingFestival = () => {
+    if (!today) return null;
+    const sorted = [...INDIAN_FESTIVALS_CALENDAR]
+      .map(f => {
+        const festDate = new Date(f.date + 'T00:00:00');
+        const diffMs = festDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        return { ...f, diffDays };
+      })
+      .filter(f => f.diffDays >= 0 && f.diffDays <= 35)
+      .sort((a, b) => a.diffDays - b.diffDays);
+
+    return sorted[0] || null;
+  };
+
+  const upcomingFest = getUpcomingFestival();
 
   const handleQuickScheduleOnDate = (d: Date) => {
     const year = d.getFullYear();
@@ -920,17 +1150,18 @@ export default function CalendarPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             {/* View Mode Switcher in Apple/Linear Segmented Capsule */}
             <div className="flex items-center bg-[#E5E7EB]/80 p-1 rounded-full border border-black/[0.04] text-xs font-semibold text-neutral-600 shadow-inner backdrop-blur-md">
-              {(['MONTH', 'WEEK', 'DAY', 'LIST'] as const).map(mode => (
+              {(['MONTH', 'WEEK', 'DAY', 'LIST', 'GRID'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                  className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center space-x-1.5 ${
                     viewMode === mode
                       ? 'bg-white text-neutral-950 font-black shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
                       : 'hover:text-neutral-900 font-medium'
                   }`}
                 >
-                  {mode.charAt(0) + mode.slice(1).toLowerCase()}
+                  {mode === 'GRID' && <Instagram className="w-3 h-3 text-pink-600 shrink-0" />}
+                  <span>{mode === 'GRID' ? 'Grid (IG)' : mode.charAt(0) + mode.slice(1).toLowerCase()}</span>
                 </button>
               ))}
             </div>
@@ -964,6 +1195,16 @@ export default function CalendarPage() {
             <span className="text-xs font-black text-neutral-900 min-w-32 text-center bg-white px-3.5 py-2 rounded-full border border-black/[0.07] shadow-xs">
               {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </span>
+
+            {/* Share Calendar Magic Review Link Button */}
+            <button
+              type="button"
+              onClick={handleOpenShareModal}
+              className="text-xs font-bold text-neutral-700 hover:text-neutral-900 bg-white hover:bg-neutral-50 border border-neutral-200/90 px-3.5 py-2 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            >
+              <Share2 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Share Calendar</span>
+            </button>
 
             {/* 1-Click Quick Post/Reel Studio Button */}
             <button
@@ -1003,6 +1244,42 @@ export default function CalendarPage() {
             </a>
           </div>
         </div>
+
+        {/* ===================================================================== */}
+        {/* FESTIVE & HOLIDAY LEAD-TIME SPRINT BANNER                             */}
+        {/* ===================================================================== */}
+        {upcomingFest && (
+          <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-200/80 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center text-xl shrink-0 shadow-md">
+                {upcomingFest.emoji}
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 font-mono">
+                    {upcomingFest.diffDays === 0 ? 'Today!' : `${upcomingFest.diffDays} Days Away`}
+                  </span>
+                  <span className="text-xs font-black text-neutral-900">
+                    Upcoming Festival: {upcomingFest.name} ({upcomingFest.tag})
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-600 mt-0.5 leading-relaxed">
+                  Lead-time alert: Start scheduling celebratory drops, festival discounts, and reels now to capture peak holiday reach.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleLaunchFestiveCampaign(upcomingFest)}
+                className="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 rounded-full shadow-md transition-all flex items-center space-x-1.5 cursor-pointer transform hover:-translate-y-0.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                <span>Auto-Plan {upcomingFest.name} Drop</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ===================================================================== */}
         {/* SPOTLIGHT ASSISTANT BANNER (ZERO MARKETING KNOWLEDGE)                */}
@@ -1129,6 +1406,7 @@ export default function CalendarPage() {
                   {monthDays.map((dayItem, idx) => {
                     const isToday = today ? isSameDay(dayItem.date, today) : false;
                     const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), dayItem.date));
+                    const cellFestival = dayItem.isCurrentMonth ? getFestivalForDate(dayItem.date) : null;
 
                     return (
                       <div
@@ -1144,31 +1422,52 @@ export default function CalendarPage() {
                         }`}
                       >
                         {/* Day Cell Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1">
-                            <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                              isToday
-                                ? 'bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-black shadow-[0_2px_8px_rgba(79,70,229,0.35)] ring-2 ring-indigo-200'
-                                : 'text-neutral-700 group-hover/cell:text-indigo-600'
-                            }`}>
-                              {dayItem.date.getDate()}
-                            </span>
-                            {isToday && (
-                              <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider hidden sm:inline">
-                                Today
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1">
+                              <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                                isToday
+                                  ? 'bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-black shadow-[0_2px_8px_rgba(79,70,229,0.35)] ring-2 ring-indigo-200'
+                                  : 'text-neutral-700 group-hover/cell:text-indigo-600'
+                              }`}>
+                                {dayItem.date.getDate()}
                               </span>
-                            )}
+                              {isToday && (
+                                <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider hidden sm:inline">
+                                  Today
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Quick '+' Button on Cell Hover */}
+                            <button
+                              type="button"
+                              onClick={() => handleQuickScheduleOnDate(dayItem.date)}
+                              title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
+                              className="w-5 h-5 rounded-md bg-neutral-100 hover:bg-indigo-600 hover:text-white text-neutral-500 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
                           </div>
 
-                          {/* Quick '+' Button on Cell Hover */}
-                          <button
-                            type="button"
-                            onClick={() => handleQuickScheduleOnDate(dayItem.date)}
-                            title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
-                            className="w-5 h-5 rounded-md bg-neutral-100 hover:bg-indigo-600 hover:text-white text-neutral-500 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                          {/* Indian/Global Festival Badge */}
+                          {cellFestival && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLaunchFestiveCampaign(cellFestival);
+                              }}
+                              title={`${cellFestival.name} (${cellFestival.tag}) - Click to auto-generate campaign blueprint`}
+                              className="w-full mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-between transition-all group/fest cursor-pointer shadow-2xs text-left"
+                            >
+                              <span className="truncate flex items-center space-x-1">
+                                <span>{cellFestival.emoji}</span>
+                                <span className="truncate font-semibold">{cellFestival.name}</span>
+                              </span>
+                              <Sparkles className="w-2.5 h-2.5 text-amber-600 opacity-60 group-hover/fest:opacity-100 shrink-0 ml-0.5" />
+                            </button>
+                          )}
                         </div>
 
                         {/* Event Cards with Drag and Drop */}
@@ -1432,6 +1731,178 @@ export default function CalendarPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* INSTAGRAM 9-GRID PREVIEW (FEED PLANNER) */}
+            {viewMode === 'GRID' && (
+              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden p-6 space-y-6">
+                {/* Instagram Mockup Profile Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-neutral-100 gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 shadow-md">
+                        <div className="w-full h-full rounded-full bg-white p-0.5 flex items-center justify-center">
+                          <div className="w-full h-full rounded-full bg-neutral-900 text-white flex items-center justify-center font-black text-xl">
+                            OS
+                          </div>
+                        </div>
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-base font-black text-neutral-900 tracking-tight">@omnisocial_brand</h3>
+                        <span className="w-4 h-4 rounded-full bg-sky-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">✓</span>
+                        <span className="text-[10px] bg-neutral-100 text-neutral-600 font-bold px-2 py-0.5 rounded-full">Visual Planner</span>
+                      </div>
+                      <p className="text-xs text-neutral-500 mt-0.5">Cadra Visual Studio • Multi-Channel Visual Dropping</p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs">
+                        <span><strong className="text-neutral-900 font-black">{filteredEvents.filter(e => e.platform?.toUpperCase() === 'INSTAGRAM' || !e.platform).length}</strong> drops</span>
+                        <span><strong className="text-neutral-900 font-black">14.8K</strong> followers</span>
+                        <span><strong className="text-neutral-900 font-black">219</strong> following</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feed Aesthetic Control & Quick Action */}
+                  <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2">
+                    <div className="text-right hidden sm:block">
+                      <span className="text-[10px] uppercase font-mono font-extrabold text-neutral-400">Aesthetic Rhythm</span>
+                      <p className="text-xs font-bold text-emerald-600 flex items-center space-x-1 justify-end">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Harmonious 3x3 Balance</span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowInstantModal(true);
+                        setGeneratedInstantPost(null);
+                        setInstantTopic('');
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 hover:opacity-90 rounded-full shadow-md flex items-center space-x-1.5 cursor-pointer transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Add Drop to Grid</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3x3 Visual Feed Grid */}
+                <div>
+                  <div className="flex items-center justify-between pb-3">
+                    <div className="flex items-center space-x-2 text-xs font-bold text-neutral-700">
+                      <Instagram className="w-4 h-4 text-pink-600" />
+                      <span>Next 9 Scheduled & Recent Posts</span>
+                    </div>
+                    <span className="text-[11px] text-neutral-400">Chronological feed order (Left-to-right, Top-to-bottom)</span>
+                  </div>
+
+                  {(() => {
+                    const gridPosts = filteredEvents
+                      .filter(e => e.platform?.toUpperCase() === 'INSTAGRAM' || e.platform?.toUpperCase() === 'ALL' || !e.platform)
+                      .slice(0, 9);
+                    const emptySlotsCount = Math.max(0, 9 - gridPosts.length);
+
+                    return (
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 p-3 bg-neutral-50/80 rounded-2xl border border-neutral-200/60">
+                        {gridPosts.map((post, pIdx) => {
+                          const hasMedia = post.mediaUrls && post.mediaUrls[0];
+                          const formatEmoji = post.format === 'REEL' ? '🎬 REEL' : post.format === 'CAROUSEL' ? '📑 CAROUSEL' : '📸 PHOTO';
+
+                          return (
+                            <div
+                              key={post.id || pIdx}
+                              onClick={() => {
+                                setSelectedEvent(post);
+                                setIsEditing(false);
+                                setEditTitle(post.title);
+                                setEditCaption(post.caption);
+                              }}
+                              className="group relative aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-black/10 cursor-pointer shadow-xs transition-all hover:shadow-lg hover:scale-[1.01]"
+                            >
+                              {hasMedia ? (
+                                <img
+                                  src={post.mediaUrls[0]}
+                                  alt={post.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="w-full h-full p-3 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 flex flex-col justify-between text-white">
+                                  <span className="text-xl">{post.format === 'REEL' ? '🎬' : '📸'}</span>
+                                  <div>
+                                    <p className="text-[11px] font-bold line-clamp-2 leading-snug">{post.title}</p>
+                                    <p className="text-[9px] text-neutral-400 mt-0.5 line-clamp-1">{post.caption}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Corner Badges */}
+                              <div className="absolute top-2 right-2">
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs font-mono">
+                                  {formatEmoji}
+                                </span>
+                              </div>
+
+                              <div className="absolute bottom-2 left-2">
+                                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-xs">
+                                  {new Date(post.scheduledFor).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+
+                              <div className="absolute bottom-2 right-2">
+                                <span className={`w-2 h-2 rounded-full inline-block ${
+                                  post.status === 'PUBLISHED' ? 'bg-emerald-400' : post.status === 'QUEUED' ? 'bg-indigo-400' : 'bg-rose-400'
+                                }`} />
+                              </div>
+
+                              {/* Hover Overlay with Action Pill */}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 text-white text-center space-y-2">
+                                <p className="text-xs font-bold line-clamp-2">{post.title}</p>
+                                <span className="px-3 py-1 bg-white text-neutral-900 rounded-full text-[10px] font-bold shadow-md">
+                                  Inspect & Reschedule
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Empty Slots */}
+                        {Array.from({ length: emptySlotsCount }).map((_, eIdx) => (
+                          <div
+                            key={`empty-${eIdx}`}
+                            onClick={() => {
+                              setShowInstantModal(true);
+                              setGeneratedInstantPost(null);
+                              setInstantTopic('');
+                            }}
+                            className="aspect-square rounded-xl border-2 border-dashed border-neutral-300 hover:border-indigo-400 bg-white hover:bg-indigo-50/30 transition-all flex flex-col items-center justify-center p-3 text-center cursor-pointer group/slot"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-neutral-100 group-hover/slot:bg-indigo-100 text-neutral-400 group-hover/slot:text-indigo-600 flex items-center justify-center transition-colors">
+                              <Plus className="w-4 h-4" />
+                            </div>
+                            <span className="text-[10px] font-bold text-neutral-500 group-hover/slot:text-indigo-700 mt-2">
+                              Slot #{gridPosts.length + eIdx + 1}
+                            </span>
+                            <span className="text-[9px] text-neutral-400 group-hover/slot:text-indigo-500">Plan Visual</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Aesthetic Feed Optimization Tip Footer */}
+                <div className="p-3.5 bg-gradient-to-r from-pink-50 via-purple-50 to-indigo-50 border border-purple-100 rounded-2xl flex items-center justify-between text-xs text-purple-900">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-pink-600 shrink-0" />
+                    <p className="text-[11px] leading-relaxed">
+                      <strong>Cadra Feed Tip:</strong> Alternate high-contrast product photos with educational Reels or Carousels in a chessboard layout to boost profile visitor conversions.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -3030,6 +3501,127 @@ export default function CalendarPage() {
               >
                 View My Scheduled Calendar
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* SHARE CALENDAR / MAGIC CLIENT REVIEW LINK MODAL (PLANABLE STYLE)      */}
+        {/* ===================================================================== */}
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl border border-neutral-200 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-xs">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-900 tracking-tight">
+                      Share Calendar Review Portal
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Zero-login review link for clients and leadership (Planable style)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {shareLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                  <RefreshCw className="w-6 h-6 text-indigo-600 animate-spin" />
+                  <p className="text-xs font-bold text-neutral-600">Generating secure review link...</p>
+                </div>
+              ) : shareData ? (
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-xs text-indigo-900 space-y-1">
+                    <div className="flex items-center space-x-1.5 font-bold text-indigo-950">
+                      <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>Frictionless Client Feedback</span>
+                    </div>
+                    <p className="text-[11px] text-indigo-800/80 leading-relaxed">
+                      Anyone with this link can preview upcoming posts, click &ldquo;Approve&rdquo;, or submit one-click change requests directly without needing an account.
+                    </p>
+                  </div>
+
+                  {/* Copy Link Input Bar */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold uppercase text-neutral-400 tracking-wider">
+                      Magic Public Link
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={shareData.reviewUrl}
+                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs text-neutral-700 font-mono select-all focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopyShareLink}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer"
+                      >
+                        {copiedShareLink ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Shortcuts */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <a
+                      href={shareData.reviewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 rounded-2xl border border-neutral-200 hover:border-indigo-300 bg-white hover:bg-indigo-50/20 text-xs font-bold text-neutral-800 hover:text-indigo-900 flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <ExternalLink className="w-4 h-4 text-indigo-600" />
+                      <span>Preview Portal</span>
+                    </a>
+
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Hi! Here is the latest social media content calendar for your review: ${shareData.reviewUrl}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 text-xs font-bold text-emerald-800 flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <span>💬 Share WhatsApp</span>
+                    </a>
+                  </div>
+
+                  {/* Security Note */}
+                  <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[10px] text-neutral-400">
+                    <span>Permissions: Read & Comment only</span>
+                    <span>Token: Active</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6 space-y-3">
+                  <p className="text-xs text-neutral-500">Failed to generate review link.</p>
+                  <button
+                    onClick={handleOpenShareModal}
+                    className="px-4 py-1.5 bg-neutral-900 text-white rounded-full text-xs font-bold"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
