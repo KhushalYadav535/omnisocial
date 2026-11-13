@@ -43,6 +43,7 @@ import {
   Image as ImageIcon,
   Zap,
   Mic,
+  FileText,
   Globe,
   TrendingUp,
   BarChart3,
@@ -308,6 +309,45 @@ export const INDUSTRY_QUICK_TEMPLATES = [
     fullPrompt: 'Brand: [ClearTax Corporate Advisors]\nService: End-to-end GST filing, corporate income tax planning, and virtual CFO consulting for SMEs that legally saves up to 40% in tax liabilities and ensures 100% compliance.',
     businessType: 'B2B_SERVICE' as const,
     goal: 'LEADS' as const
+  },
+  {
+    id: 'diwali_mega_sale',
+    category: 'FESTIVE',
+    categoryLabel: 'Festivals & Events',
+    icon: '🪔',
+    badge: 'Festive Sprint',
+    title: 'Diwali Festive Mega Launch & Dhanteras Dhamaka',
+    shortDesc: 'Pre-festive teaser, Dhanteras gifting guide, Laxmi Puja wishes & flash festive sale.',
+    brandPlaceholder: '[Aura Living]',
+    fullPrompt: 'Brand: [Aura Living]\nCampaign: 7-Day Grand Diwali Festive Dhamaka. Day 1 Pre-festive warm-up & cleansing, Day 2 Dhanteras auspicious gifting recommendations, Day 3 Behind-the-scenes Diwali studio preparations, Day 4 Laxmi Puja blessings & festive collection drop, Day 5 Verified customer gifting reviews, Day 6 Post-Diwali gifting FAQs, Day 7 Final 24-hour midnight festive discount.',
+    businessType: 'PHYSICAL_PRODUCT' as const,
+    goal: 'SALES' as const
+  },
+  {
+    id: 'holi_spring_viral',
+    category: 'FESTIVE',
+    categoryLabel: 'Festivals & Events',
+    icon: '🎨',
+    badge: 'Trending Event',
+    title: 'Holi Organic Colors & Festive Flash Drop',
+    shortDesc: 'Vibrant color reels, safe organic celebration tips & festive discount code.',
+    brandPlaceholder: '[RangDe Organics]',
+    fullPrompt: 'Brand: [RangDe Organics]\nCampaign: Vibrant Holi festive sprint celebrating chemical-free herbal gulal, festive friendship, joyful colorful reels, and a limited-time 48-hour festive discount code "HOLI50".',
+    businessType: 'PHYSICAL_PRODUCT' as const,
+    goal: 'SALES' as const
+  },
+  {
+    id: 'ipl_trendjacking',
+    category: 'FESTIVE',
+    categoryLabel: 'Festivals & Events',
+    icon: '🏏',
+    badge: 'Trend-Jacking',
+    title: 'Cricket Season & IPL Viral Engagement Sprint',
+    shortDesc: 'Match-day excitement, victory flash sale & fan community prediction polls.',
+    brandPlaceholder: '[GameDay Fuel]',
+    fullPrompt: 'Brand: [GameDay Fuel]\nCampaign: High-octane cricket season sprint tapping into national match-day excitement, viral prediction contests, energy-boosting reels, and celebration flash sales whenever our favorite team wins.',
+    businessType: 'LOCAL_BUSINESS' as const,
+    goal: 'AWARENESS' as const
   }
 ];
 
@@ -943,6 +983,11 @@ export default function CalendarPage() {
 
   // Active prompt tab per post card in Campaign Architect
   const [cardActivePromptTab, setCardActivePromptTab] = useState<{ [postIdx: number]: 'MIDJOURNEY' | 'RUNWAY' | 'CAPCUT' | 'CANVA' }>({});
+  // Multi-Channel Preview Switcher in Campaign Architect
+  const [cardActivePlatformPreview, setCardActivePlatformPreview] = useState<{ [postIdx: number]: 'INSTAGRAM' | 'LINKEDIN' | 'TWITTER' | 'FACEBOOK' }>({});
+  const [enableUtmTracking, setEnableUtmTracking] = useState(true);
+  const [showExportDeckModal, setShowExportDeckModal] = useState(false);
+  const [copiedDeckStatus, setCopiedDeckStatus] = useState(false);
 
   const handleCopyPromptWithKey = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -1119,6 +1164,93 @@ export default function CalendarPage() {
       posts: updated
     });
     setNotice({ type: 'success', text: `Switched Day ${idx + 1} to ${newFormat} format!` });
+  };
+
+  const handleShiftCampaignStartDate = (newStartDateStr: string) => {
+    if (!generatedRoadmap || !newStartDateStr) return;
+    const newStart = new Date(newStartDateStr);
+    const durationDays = generatedRoadmap.posts.length;
+    const newEnd = new Date(newStart.getTime() + (durationDays - 1) * 86400000);
+
+    const updatedPosts = generatedRoadmap.posts.map((post: any, idx: number) => {
+      const postDate = new Date(newStart.getTime() + idx * (durationDays / generatedRoadmap.posts.length) * 86400000);
+      const isReel = post.format === 'REEL';
+      if (isReel) {
+        postDate.setHours(19, 30, 0, 0);
+      } else if (post.format === 'CAROUSEL') {
+        postDate.setHours(12, 30, 0, 0);
+      } else {
+        postDate.setHours(17, 0, 0, 0);
+      }
+      return {
+        ...post,
+        scheduledDate: postDate.toISOString()
+      };
+    });
+
+    setGeneratedRoadmap({
+      ...generatedRoadmap,
+      campaignSummary: {
+        ...generatedRoadmap.campaignSummary,
+        startDate: newStart.toISOString(),
+        endDate: newEnd.toISOString()
+      },
+      posts: updatedPosts
+    });
+    setArchitectStartDate(newStartDateStr);
+    setNotice({ type: 'success', text: `Shifted entire campaign start date to ${newStart.toLocaleDateString()} with smart peak slot alignment!` });
+  };
+
+  const getPlatformOptimizedCaption = (post: any, targetPlat: 'INSTAGRAM' | 'LINKEDIN' | 'TWITTER' | 'FACEBOOK') => {
+    const rawCaption = post.caption || '';
+    const utmParam = enableUtmTracking ? `?utm_source=${targetPlat.toLowerCase()}&utm_medium=social&utm_campaign=launch_sprint&utm_content=day_${post.dayNumber}` : '';
+    
+    if (targetPlat === 'LINKEDIN') {
+      const lines = rawCaption.split('\n');
+      const hookLine = lines[0] || post.hook;
+      const bodyLines = lines.slice(1).filter((l: string) => !l.startsWith('#')).join('\n\n');
+      return `📌 ${hookLine}\n\n${bodyLines}\n\n---\n💬 What are your thoughts on this? Share below.\n\n#Leadership #Innovation #SocialGrowth`;
+    }
+    
+    if (targetPlat === 'TWITTER') {
+      const hookLine = post.hook;
+      return `1/3 🧵 ${hookLine}\n\nHere is what you need to know:\n\n2/3 💡 ${rawCaption.slice(0, 180).replace(/\n/g, ' ')}...\n\n3/3 🎯 Comment "${post.ctaKeyword || 'GO'}" below for the complete link ${utmParam}!`;
+    }
+    
+    if (targetPlat === 'FACEBOOK') {
+      return `${rawCaption}\n\n👉 Direct Link: https://yourbrand.com/offer${utmParam}\n\nDrop a comment below if you have any questions!`;
+    }
+
+    return rawCaption;
+  };
+
+  const handleExportCampaignDeck = () => {
+    if (!generatedRoadmap) return;
+    const summary = generatedRoadmap.campaignSummary;
+    let deck = `# 🚀 ${summary?.name || 'OmniSocial Marketing Campaign Roadmap'}\n`;
+    deck += `**Framework:** ${summary?.framework || 'Eugene Schwartz 5 Stages of Awareness'}\n`;
+    deck += `**Duration:** ${summary?.durationDays || 7} Days | **Goal:** ${summary?.primaryGoal} | **Model:** ${summary?.businessType}\n`;
+    deck += `**Timeline:** ${new Date(summary?.startDate).toLocaleDateString()} to ${new Date(summary?.endDate).toLocaleDateString()}\n\n`;
+    deck += `## 📊 Projected Performance Metrics:\n`;
+    deck += `- Estimated Impressions: 18,500 – 45,000\n`;
+    deck += `- Projected Inbound Leads: 35 – 90 Inquiries\n`;
+    deck += `- Funnel Balance: 70% Value / 30% Offer\n\n`;
+    deck += `## 🗓️ Day-by-Day Editorial Roadmap:\n\n`;
+
+    generatedRoadmap.posts.forEach((p: any) => {
+      deck += `### Day ${p.dayNumber}: [${p.phaseLabel}] ${p.title}\n`;
+      deck += `- **Scheduled:** ${new Date(p.scheduledDate).toLocaleString()} (${p.format} on ${p.targetPlatform})\n`;
+      deck += `- **Why This Works:** ${p.whyThisPostWorks}\n`;
+      deck += `- **Hook:** "${p.hook}"\n`;
+      deck += `- **Photo/Video Guide:** ${p.photoUploadGuide || p.bRollGuide}\n`;
+      deck += `- **Lead Trigger:** Comment "${p.ctaKeyword || 'GO'}" for instant automated DM\n`;
+      deck += `\n**Full Caption:**\n\`\`\`\n${p.caption}\n\`\`\`\n\n---\n\n`;
+    });
+
+    navigator.clipboard.writeText(deck);
+    setCopiedDeckStatus(true);
+    setNotice({ type: 'success', text: '📋 Executive Campaign Deck copied to clipboard in formatted Markdown!' });
+    setTimeout(() => setCopiedDeckStatus(false), 3000);
   };
 
   const [generatingMediaIndex, setGeneratingMediaIndex] = useState<number | null>(null);
@@ -3822,6 +3954,7 @@ export default function CalendarPage() {
                       <div className="flex flex-wrap gap-1.5 pb-1">
                         {[
                           { id: 'ALL', label: '🌟 All Industries' },
+                          { id: 'FESTIVE', label: '🪔 Festivals & Trends' },
                           { id: 'SOFTWARE', label: '💻 Software & SaaS' },
                           { id: 'MARKETING', label: '📢 Marketing Agency' },
                           { id: 'ECOMMERCE', label: '🛍️ E-Commerce / D2C' },
@@ -4345,6 +4478,41 @@ export default function CalendarPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                        {/* 1-Click Shift Start Date Input */}
+                        <div className="flex items-center space-x-1.5 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-xs text-xs">
+                          <CalendarIcon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Shift Start:</span>
+                          <input
+                            type="date"
+                            value={new Date(generatedRoadmap.campaignSummary?.startDate || Date.now()).toISOString().split('T')[0]}
+                            onChange={(e) => handleShiftCampaignStartDate(e.target.value)}
+                            className="text-xs font-semibold text-slate-800 bg-transparent outline-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* UTM Tracking Parameter Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => setEnableUtmTracking(!enableUtmTracking)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-full border transition-all flex items-center space-x-1 cursor-pointer ${
+                            enableUtmTracking
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{enableUtmTracking ? '✓ UTM Active' : 'UTM Off'}</span>
+                        </button>
+
+                        {/* Export Campaign Presentation Deck */}
+                        <button
+                          type="button"
+                          onClick={handleExportCampaignDeck}
+                          className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{copiedDeckStatus ? '✓ Copied Deck!' : 'Export Deck'}</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={handleGenerateAllMedia}
@@ -4375,28 +4543,39 @@ export default function CalendarPage() {
                     </div>
 
                     {/* Dynamic Strategy & Performance Forecast */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
-                      <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Estimated Impressions</span>
-                        <span className="text-sm font-black text-indigo-600 mt-0.5 block">18.5k – 45.0k</span>
-                        <span className="text-[9px] text-emerald-600 font-semibold mt-0.5 block">↑ High Reach Velocity</span>
-                      </div>
-                      <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Projected DM Leads</span>
-                        <span className="text-sm font-black text-emerald-600 mt-0.5 block">35 – 90 Inquiries</span>
-                        <span className="text-[9px] text-slate-500 font-medium mt-0.5 block">Automated Keywords</span>
-                      </div>
-                      <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Conversion Readiness</span>
-                        <span className="text-sm font-black text-amber-600 mt-0.5 block">96 / 100</span>
-                        <span className="text-[9px] text-amber-700 font-semibold mt-0.5 block">StoryBrand Aligned</span>
-                      </div>
-                      <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Smart Slot Engine</span>
-                        <span className="text-sm font-black text-purple-600 mt-0.5 block">Optimal Peak Times</span>
-                        <span className="text-[9px] text-purple-700 font-semibold mt-0.5 block">Format-Aware Scheduling</span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const totalPosts = generatedRoadmap.posts.length;
+                      const valuePosts = generatedRoadmap.posts.filter((p: any) =>
+                        ['HOOK_PAIN', 'OLD_VS_NEW', 'BEHIND_SCENES', 'OBJECTION_BUSTER'].includes(p.phase)
+                      ).length;
+                      const valuePercent = Math.round((valuePosts / (totalPosts || 1)) * 100);
+                      const pitchPercent = 100 - valuePercent;
+
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
+                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Estimated Impressions</span>
+                            <span className="text-sm font-black text-indigo-600 mt-0.5 block">18.5k – 45.0k</span>
+                            <span className="text-[9px] text-emerald-600 font-semibold mt-0.5 block">↑ High Reach Velocity</span>
+                          </div>
+                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Projected DM Leads</span>
+                            <span className="text-sm font-black text-emerald-600 mt-0.5 block">35 – 90 Inquiries</span>
+                            <span className="text-[9px] text-slate-500 font-medium mt-0.5 block">Automated Keywords</span>
+                          </div>
+                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">80/20 Funnel Health</span>
+                            <span className="text-sm font-black text-amber-600 mt-0.5 block">{valuePercent}% Value / {pitchPercent}% Offer</span>
+                            <span className="text-[9px] text-amber-700 font-semibold mt-0.5 block">✓ Balanced Conversion Ratio</span>
+                          </div>
+                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Smart Slot Engine</span>
+                            <span className="text-sm font-black text-purple-600 mt-0.5 block">Optimal Peak Times</span>
+                            <span className="text-[9px] text-purple-700 font-semibold mt-0.5 block">Format-Aware Scheduling</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Sequential Day-by-Day Cards */}
                     <div className="space-y-3">
@@ -4892,11 +5071,45 @@ export default function CalendarPage() {
                                   <p className="text-[11px] leading-relaxed text-indigo-800">{post.bRollGuide}</p>
                                 </div>
 
-                                {/* Full Post Caption */}
-                                <div className="space-y-1">
-                                  <label className="text-[11px] font-bold text-slate-700 uppercase">Post Caption</label>
+                                {/* Platform-Adapted Copy & Preview Tabs */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                      <label className="text-[11px] font-bold text-slate-700 uppercase">Platform-Adapted Copy</label>
+                                      <span className="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-200/60">
+                                        Multi-Channel Repurpose
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-[10px] font-bold">
+                                      {[
+                                        { id: 'INSTAGRAM', label: '📸 IG' },
+                                        { id: 'LINKEDIN', label: '💼 LinkedIn' },
+                                        { id: 'TWITTER', label: '🐦 X / Thread' },
+                                        { id: 'FACEBOOK', label: '📘 FB' }
+                                      ].map(plat => {
+                                        const currentPlat = cardActivePlatformPreview[idx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
+                                        return (
+                                          <button
+                                            key={plat.id}
+                                            type="button"
+                                            onClick={() => setCardActivePlatformPreview(prev => ({ ...prev, [idx]: plat.id as any }))}
+                                            className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                                              currentPlat === plat.id ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                            }`}
+                                          >
+                                            {plat.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Dynamic Preview Box */}
                                   <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">
-                                    {post.caption}
+                                    {(() => {
+                                      const currentPlat = cardActivePlatformPreview[idx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
+                                      return getPlatformOptimizedCaption(post, currentPlat);
+                                    })()}
                                   </div>
                                 </div>
 
