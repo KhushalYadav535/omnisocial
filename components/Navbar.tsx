@@ -146,6 +146,18 @@ export default function Navbar({
                   <div className="px-3 py-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
                     Switch Workspace Brand
                   </div>
+                  <button
+                    onClick={() => {
+                      if (onBrandChange) onBrandChange('');
+                      setShowBrandMenu(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer ${
+                      !currentBrandId ? 'font-bold text-neutral-900 bg-neutral-100/70' : 'text-neutral-700 font-medium'
+                    }`}
+                  >
+                    <span className="truncate">✦ All Brands (Overview)</span>
+                    {!currentBrandId && <Check className="w-3.5 h-3.5 text-neutral-900" />}
+                  </button>
                   {brands.map(b => (
                     <button
                       key={b.id}

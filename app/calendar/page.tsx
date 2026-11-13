@@ -475,7 +475,7 @@ export default function CalendarPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST' | 'GRID'>('MONTH');
-  const [currentDate, setCurrentDate] = useState(() => new Date('2026-10-01T00:00:00Z'));
+  const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-01T00:00:00Z'));
   const [today, setToday] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
@@ -517,7 +517,6 @@ export default function CalendarPage() {
             if (bRes.brands && bRes.brands.length > 0) {
               setBrands(bRes.brands);
               resolvedBrandId = bRes.brands[0].id;
-              setActiveBrandId(resolvedBrandId);
             }
           } catch (_) {}
         }
@@ -1264,9 +1263,6 @@ export default function CalendarPage() {
       .then((res) => {
         if (res.brands && res.brands.length > 0) {
           setBrands(res.brands);
-          if (!activeBrandId) {
-            setActiveBrandId(res.brands[0].id);
-          }
         }
       })
       .catch(() => {});
