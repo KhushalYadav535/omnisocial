@@ -472,6 +472,7 @@ export const PILLAR_BADGE_CONFIG: Record<ContentPillar, { label: string; icon: s
 
 export default function CalendarPage() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [brands, setBrands] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST' | 'GRID'>('MONTH');
   const [currentDate, setCurrentDate] = useState(() => new Date('2026-10-01T00:00:00Z'));
@@ -499,10 +500,26 @@ export default function CalendarPage() {
     setShareLoading(true);
     setCopiedShareLink(false);
     try {
+      let resolvedBrandId = activeBrandId;
+      if (!resolvedBrandId) {
+        if (brands && brands.length > 0) {
+          resolvedBrandId = brands[0].id;
+        } else {
+          try {
+            const bRes = await apiRequest('/brands');
+            if (bRes.brands && bRes.brands.length > 0) {
+              setBrands(bRes.brands);
+              resolvedBrandId = bRes.brands[0].id;
+              setActiveBrandId(resolvedBrandId);
+            }
+          } catch (_) {}
+        }
+      }
+
       const res = await apiRequest('/client-review/generate-token', {
         method: 'POST',
         body: JSON.stringify({
-          brandId: activeBrandId || undefined,
+          brandId: resolvedBrandId || undefined,
           name: 'Executive Calendar Review Portal'
         })
       });
@@ -1234,6 +1251,18 @@ export default function CalendarPage() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     setArchitectStartDate(tomorrow.toISOString().split('T')[0]);
     setInstantScheduledDate(tomorrow.toISOString().split('T')[0]);
+
+    // Preload brands for seamless activeBrand fallback
+    apiRequest('/brands')
+      .then((res) => {
+        if (res.brands && res.brands.length > 0) {
+          setBrands(res.brands);
+          if (!activeBrandId) {
+            setActiveBrandId(res.brands[0].id);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const fetchCalendar = async () => {
