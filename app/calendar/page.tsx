@@ -1539,75 +1539,49 @@ export default function CalendarPage() {
   };
 
   const getEventCardStyle = (title: string, defaultStatus: string) => {
+    let accentBar = 'bg-indigo-500';
+    let dot = 'bg-indigo-500';
+    let badge = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+
     if (defaultStatus === 'PUBLISHED') {
-      return {
-        cardBg: 'bg-emerald-50/70 hover:bg-emerald-50/90 text-emerald-950 border-emerald-200/80',
-        barColor: 'bg-emerald-500',
-        badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-        dot: 'bg-emerald-500'
-      };
+      accentBar = 'bg-emerald-500';
+      dot = 'bg-emerald-500';
+      badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    } else if (defaultStatus === 'FAILED') {
+      accentBar = 'bg-rose-500';
+      dot = 'bg-rose-500';
+      badge = 'bg-rose-50 text-rose-700 border-rose-200';
+    } else if (defaultStatus === 'PUBLISHING') {
+      accentBar = 'bg-amber-500';
+      dot = 'bg-amber-500 animate-ping';
+      badge = 'bg-amber-50 text-amber-700 border-amber-200';
+    } else if (title.includes('Phase 1')) {
+      accentBar = 'bg-amber-500';
+      dot = 'bg-amber-500';
+      badge = 'bg-amber-50 text-amber-800 border-amber-200';
+    } else if (title.includes('Phase 2')) {
+      accentBar = 'bg-sky-500';
+      dot = 'bg-sky-500';
+      badge = 'bg-sky-50 text-sky-800 border-sky-200';
+    } else if (title.includes('Phase 3')) {
+      accentBar = 'bg-purple-500';
+      dot = 'bg-purple-500';
+      badge = 'bg-purple-50 text-purple-800 border-purple-200';
+    } else if (title.includes('Phase 4')) {
+      accentBar = 'bg-emerald-500';
+      dot = 'bg-emerald-500';
+      badge = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    } else if (title.includes('Phase 5')) {
+      accentBar = 'bg-rose-500';
+      dot = 'bg-rose-500';
+      badge = 'bg-rose-50 text-rose-800 border-rose-200';
     }
-    if (defaultStatus === 'PUBLISHING') {
-      return {
-        cardBg: 'bg-amber-50/80 hover:bg-amber-50 text-amber-950 border-amber-200/80 animate-pulse',
-        barColor: 'bg-amber-500',
-        badge: 'bg-amber-100 text-amber-800 border-amber-300',
-        dot: 'bg-amber-500 animate-ping'
-      };
-    }
-    if (defaultStatus === 'FAILED') {
-      return {
-        cardBg: 'bg-rose-50/80 hover:bg-rose-50 text-rose-950 border-rose-200/80',
-        barColor: 'bg-rose-500',
-        badge: 'bg-rose-100 text-rose-800 border-rose-300',
-        dot: 'bg-rose-500'
-      };
-    }
-    if (title.includes('Phase 1')) {
-      return {
-        cardBg: 'bg-amber-50/60 hover:bg-amber-50/85 text-amber-950 border-amber-200/70',
-        barColor: 'bg-amber-500',
-        badge: 'bg-amber-100 text-amber-900 border-amber-300',
-        dot: 'bg-amber-500'
-      };
-    }
-    if (title.includes('Phase 2')) {
-      return {
-        cardBg: 'bg-sky-50/60 hover:bg-sky-50/85 text-sky-950 border-sky-200/70',
-        barColor: 'bg-sky-500',
-        badge: 'bg-sky-100 text-sky-900 border-sky-300',
-        dot: 'bg-sky-500'
-      };
-    }
-    if (title.includes('Phase 3')) {
-      return {
-        cardBg: 'bg-purple-50/60 hover:bg-purple-50/85 text-purple-950 border-purple-200/70',
-        barColor: 'bg-purple-500',
-        badge: 'bg-purple-100 text-purple-900 border-purple-300',
-        dot: 'bg-purple-500'
-      };
-    }
-    if (title.includes('Phase 4')) {
-      return {
-        cardBg: 'bg-emerald-50/60 hover:bg-emerald-50/85 text-emerald-950 border-emerald-200/70',
-        barColor: 'bg-emerald-500',
-        badge: 'bg-emerald-100 text-emerald-900 border-emerald-300',
-        dot: 'bg-emerald-500'
-      };
-    }
-    if (title.includes('Phase 5')) {
-      return {
-        cardBg: 'bg-rose-50/60 hover:bg-rose-50/85 text-rose-950 border-rose-200/70',
-        barColor: 'bg-rose-500',
-        badge: 'bg-rose-100 text-rose-900 border-rose-300',
-        dot: 'bg-rose-500'
-      };
-    }
+
     return {
-      cardBg: 'bg-white hover:bg-slate-50/90 text-slate-900 border-slate-200/80',
-      barColor: 'bg-indigo-500',
-      badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      dot: 'bg-indigo-500'
+      cardBg: 'bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.03)] hover:shadow-md',
+      barColor: accentBar,
+      badge,
+      dot
     };
   };
 
@@ -2028,14 +2002,14 @@ export default function CalendarPage() {
           <div className="lg:col-span-3">
             {/* MONTH VIEW */}
             {viewMode === 'MONTH' && (
-              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
+              <div className="bg-white rounded-[28px] border border-neutral-200/80 shadow-[0_4px_30px_rgba(0,0,0,0.03)] overflow-hidden">
                 {/* Weekday Header */}
-                <div className="grid grid-cols-7 border-b border-neutral-100 bg-neutral-50/70 text-center text-[11px] font-bold tracking-wider text-neutral-400 uppercase py-3">
+                <div className="grid grid-cols-7 border-b border-neutral-200/80 bg-neutral-50/90 text-center text-[11px] font-extrabold tracking-widest text-neutral-500 uppercase py-3.5">
                   <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                 </div>
 
                 {/* Days Grid */}
-                <div className="grid grid-cols-7 divide-x divide-y divide-neutral-100/90 min-h-[580px]">
+                <div className="grid grid-cols-7 divide-x divide-y divide-neutral-200/70 min-h-[640px]">
                   {monthDays.map((dayItem, idx) => {
                     const isToday = today ? isSameDay(dayItem.date, today) : false;
                     const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), dayItem.date));
@@ -2046,52 +2020,56 @@ export default function CalendarPage() {
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
-                        className={`p-2 flex flex-col justify-between transition-all min-h-[110px] relative group/cell ${dayItem.isCurrentMonth
+                        className={`p-2.5 flex flex-col justify-between transition-all min-h-[135px] relative group/cell ${dayItem.isCurrentMonth
                             ? isToday
-                              ? 'bg-gradient-to-b from-indigo-50/50 via-white to-white ring-1 ring-inset ring-indigo-200/70'
-                              : 'bg-white hover:bg-indigo-50/25'
-                            : 'bg-neutral-50/40 text-neutral-400'
+                              ? 'bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-inset ring-indigo-500/20'
+                              : 'bg-white hover:bg-neutral-50/40'
+                            : 'bg-neutral-50/50 text-neutral-400'
                           }`}
                       >
                         {/* Day Cell Header */}
                         <div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-1">
-                              <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${isToday
-                                  ? 'bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-black shadow-[0_2px_8px_rgba(79,70,229,0.35)] ring-2 ring-indigo-200'
-                                  : 'text-neutral-700 group-hover/cell:text-indigo-600'
-                                }`}>
-                                {dayItem.date.getDate()}
-                              </span>
-                              {isToday && (
-                                <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider hidden sm:inline">
-                                  Today
+                            <div className="flex items-center space-x-1.5">
+                              {isToday ? (
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                                    {dayItem.date.getDate()}
+                                  </span>
+                                  <span className="text-[10px] font-black uppercase text-indigo-600 font-mono tracking-wider hidden sm:inline">
+                                    Today
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-bold text-neutral-800 group-hover/cell:text-neutral-950 font-mono w-6 h-6 flex items-center justify-center">
+                                  {dayItem.date.getDate()}
                                 </span>
                               )}
                             </div>
 
                             <div className="flex items-center space-x-1">
-                              {/* Optimal Peak Time Chip */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleQuickScheduleOnDate(dayItem.date);
-                                  setNotice({ type: 'success', text: `Auto-filled 7:30 PM prime peak slot for ${dayItem.date.toLocaleDateString()}!` });
-                                }}
-                                title="Optimal peak posting hour (7:30 PM - 96% Reach). Click to schedule."
-                                className="text-[8px] font-black text-amber-900 bg-amber-50 hover:bg-amber-100 px-1 py-0.2 rounded border border-amber-200/80 font-mono transition-all cursor-pointer opacity-70 group-hover/cell:opacity-100 hidden sm:inline-flex items-center space-x-0.5"
-                              >
-                                <span>🔥</span>
-                                <span>7:30P</span>
-                              </button>
+                              {/* Optimal Peak Time Chip (Only on empty days to avoid clutter) */}
+                              {dayEvents.length === 0 && dayItem.isCurrentMonth && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickScheduleOnDate(dayItem.date);
+                                  }}
+                                  title="AI Peak Window (7:30 PM - 96% Reach). Click to schedule."
+                                  className="text-[8px] font-bold text-amber-800/80 bg-amber-50/80 hover:bg-amber-100 px-1.5 py-0.5 rounded-full border border-amber-200/60 font-mono transition-all cursor-pointer hidden sm:inline-flex items-center space-x-0.5"
+                                >
+                                  <span>🔥</span>
+                                  <span>7:30P</span>
+                                </button>
+                              )}
 
                               {/* Quick '+' Button on Cell Hover */}
                               <button
                                 type="button"
                                 onClick={() => handleQuickScheduleOnDate(dayItem.date)}
                                 title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
-                                className="w-5 h-5 rounded-md bg-neutral-100 hover:bg-indigo-600 hover:text-white text-neutral-500 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
+                                className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-600 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
@@ -2106,8 +2084,8 @@ export default function CalendarPage() {
                                 e.stopPropagation();
                                 handleLaunchFestiveCampaign(cellFestival);
                               }}
-                              title={`${cellFestival.name} (${cellFestival.tag}) - Click to auto-generate campaign blueprint`}
-                              className="w-full mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-between transition-all group/fest cursor-pointer shadow-2xs text-left"
+                              title={`${cellFestival.name} (${cellFestival.tag}) - 1-Click Festive Sprint`}
+                              className="w-full mt-1.5 px-2 py-0.5 rounded-lg text-[9px] font-bold bg-gradient-to-r from-amber-50 to-orange-50 text-amber-900 border border-amber-200/80 flex items-center justify-between transition-all group/fest cursor-pointer shadow-2xs hover:border-amber-300 text-left"
                             >
                               <span className="truncate flex items-center space-x-1">
                                 <span>{cellFestival.emoji}</span>
@@ -2118,8 +2096,8 @@ export default function CalendarPage() {
                           )}
                         </div>
 
-                        {/* Event Cards with Drag and Drop */}
-                        <div className="space-y-1.5 my-1.5 overflow-y-auto max-h-24 pr-0.5">
+                        {/* Event Cards with Drag and Drop - Clean & Invisible Scrollbar */}
+                        <div className="space-y-1.5 my-2 overflow-y-auto max-h-36 pr-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden">
                           {dayEvents.map(ev => {
                             const isDraggable = ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING';
                             const style = getEventCardStyle(ev.title, ev.status);
@@ -2141,18 +2119,19 @@ export default function CalendarPage() {
                                   nextWeek.setHours(18, 30, 0, 0);
                                   setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
                                 }}
-                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5' : 'cursor-pointer hover:shadow-sm'
-                                  } ${style.cardBg}`}
+                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-md hover:-translate-y-0.5 ${
+                                  isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                                }`}
                               >
                                 {/* Left colored accent bar */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.barColor}`} />
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.barColor} rounded-l-xl`} />
 
                                 <div className="pl-1.5 space-y-1">
                                   {/* Top meta row */}
                                   <div className="flex items-center justify-between gap-1">
                                     <div className="flex items-center space-x-1.5">
                                       <PlatformMicroIcon platform={ev.platform} />
-                                      <span className="font-mono text-[9px] font-bold text-slate-500">
+                                      <span className="font-mono text-[9px] font-semibold text-neutral-500">
                                         {formatPostTime(ev.scheduledFor)}
                                       </span>
                                       {(() => {
@@ -2193,7 +2172,7 @@ export default function CalendarPage() {
                                         {ev.format === 'REEL' ? '🎬' : ev.format === 'CAROUSEL' ? '📑' : '📸'}
                                       </span>
                                     )}
-                                    <p className="font-bold text-slate-900 truncate leading-tight text-[10px] flex-1">
+                                    <p className="font-bold text-neutral-900 truncate leading-snug text-[10px] flex-1">
                                       {ev.title}
                                     </p>
                                   </div>
@@ -2220,7 +2199,14 @@ export default function CalendarPage() {
 
                         {/* Cell Footer */}
                         <div className="flex items-center justify-between text-[9px] text-neutral-400 pt-0.5">
-                          <span>{dayEvents.length > 0 ? `${dayEvents.length} drop${dayEvents.length > 1 ? 's' : ''}` : ''}</span>
+                          {dayEvents.length > 0 ? (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-neutral-100/80 text-neutral-600 font-mono font-bold text-[9px]">
+                              <span>{dayEvents.length}</span>
+                              <span>{dayEvents.length === 1 ? 'post' : 'posts'}</span>
+                            </span>
+                          ) : (
+                            <span />
+                          )}
                         </div>
                       </div>
                     );
