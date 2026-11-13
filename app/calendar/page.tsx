@@ -47,7 +47,12 @@ import {
   TrendingUp,
   BarChart3,
   CalendarDays,
-  User as UserIcon
+  User as UserIcon,
+  Bookmark,
+  Repeat,
+  Star,
+  Tag,
+  Hash
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
@@ -306,6 +311,106 @@ export const INDUSTRY_QUICK_TEMPLATES = [
   }
 ];
 
+export const VIRAL_HASHTAG_PACKS = [
+  {
+    id: 'desi_local',
+    title: '🇮🇳 Desi Vocal For Local',
+    category: 'Commerce / Retail',
+    description: 'Proven tags for Indian local businesses, D2C brands, and retail shops.',
+    tags: ['#VocalForLocal', '#MadeInIndia', '#SupportSmallBusiness', '#IndianStartup', '#DesiHustle', '#Aatmanirbhar']
+  },
+  {
+    id: 'tech_startups',
+    title: '🚀 India Tech & Startups',
+    category: 'SaaS / B2B',
+    description: 'High-reach community tags for founders, developers, and tech solutions.',
+    tags: ['#IndianTech', '#BuildInPublic', '#StartupIndia', '#SaaSGrowth', '#FounderLife', '#TechLeadership']
+  },
+  {
+    id: 'festive_flash',
+    title: '🛍️ Festival & Mega Sale Deals',
+    category: 'Offers & Discounts',
+    description: 'Urgency tags for clearance sales, festival promotions, and holiday drops.',
+    tags: ['#FestivalSale', '#LimitedDeal', '#MegaDiscount', '#ShopOnlineIndia', '#FlashOffer', '#DiwaliSavings']
+  },
+  {
+    id: 'clinic_wellness',
+    title: '🩺 Health, Clinic & Transformations',
+    category: 'Health & Wellness',
+    description: 'Trust-building tags for doctors, dental clinics, coaches, and gyms.',
+    tags: ['#HealthyHabits', '#DoctorAdvice', '#SelfCareSunday', '#TransformationTuesday', '#WellnessJourney']
+  },
+  {
+    id: 'foodie_cafe',
+    title: '🍔 Foodie, Cafe & Cloud Kitchen',
+    category: 'Hospitality',
+    description: 'Viral food tags for restaurants, bakeries, cafes, and street food creators.',
+    tags: ['#FoodiesOfInstagram', '#DelhiFoodie', '#MumbaiEats', '#DesiTaste', '#CafeCulture', '#StreetFoodLove']
+  },
+  {
+    id: 'edtech_coaching',
+    title: '🎓 EdTech, Mentorship & Learning',
+    category: 'Education & Coaching',
+    description: 'Educational authority tags for tutors, courses, academies, and coaches.',
+    tags: ['#SkillBuilding', '#CareerAdvice', '#OnlineCoaching', '#StudySmart', '#DailyTip', '#GrowthMindset']
+  }
+];
+
+export const DEFAULT_QUICK_SNIPPETS = [
+  {
+    id: 'store_address',
+    title: '📍 Store / Clinic Address & Timings',
+    content: '📍 Visit Us: [Your Store/Clinic Address]\n⏰ Open: Mon–Sat 10:00 AM – 8:30 PM\n📞 Helpline: +91 98765 43210'
+  },
+  {
+    id: 'whatsapp_order',
+    title: '💬 Instant WhatsApp Ordering',
+    content: '💬 Quick Order / Booking: Tap the link in our bio or send us a WhatsApp message at +91 98765 43210 for priority dispatch!'
+  },
+  {
+    id: 'pan_india_shipping',
+    title: '📦 Pan-India Shipping & COD',
+    content: '⚡ Free Express Shipping across all Indian pincodes on orders over ₹499. Cash on Delivery (COD) & UPI accepted.'
+  },
+  {
+    id: 'dm_lead_hook',
+    title: '🎁 Comment "VIP" for Instant DM Link',
+    content: 'Drop a comment with "VIP" below and our AI bot will instantly send you the private link and coupon code in your DMs! 📩'
+  }
+];
+
+export interface ContentIdea {
+  id: string;
+  title: string;
+  format: 'REEL' | 'CAROUSEL' | 'POST';
+  hook: string;
+  createdAt: string;
+}
+
+export const DEFAULT_CONTENT_IDEAS: ContentIdea[] = [
+  {
+    id: 'idea-1',
+    title: '3 Costly Mistakes Customers Make Before Choosing a Provider',
+    format: 'REEL',
+    hook: 'Stop wasting money on cheap alternatives. Here is what 90% of buyers ignore.',
+    createdAt: '2026-10-20'
+  },
+  {
+    id: 'idea-2',
+    title: 'Behind-the-Scenes: How We Pack & Ship 100 Orders Daily',
+    format: 'REEL',
+    hook: 'A day in the life at our dispatch studio — packaging perfection with zero damages.',
+    createdAt: '2026-10-21'
+  },
+  {
+    id: 'idea-3',
+    title: 'Customer Transformation: From Doubtful to 100% Convinced',
+    format: 'CAROUSEL',
+    hook: 'Here is what happened when a skeptic client tried our solution after 3 failed attempts.',
+    createdAt: '2026-10-22'
+  }
+];
+
 export default function CalendarPage() {
   const [activeBrandId, setActiveBrandId] = useState<string>('');
   const [events, setEvents] = useState<any[]>([]);
@@ -404,6 +509,160 @@ export default function CalendarPage() {
   };
 
   const upcomingFest = getUpcomingFestival();
+
+  // Sprint 2: Saved Libraries & Ideas Board States
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
+  const [libraryTab, setLibraryTab] = useState<'HASHTAGS' | 'SNIPPETS' | 'IDEAS'>('HASHTAGS');
+  const [copiedSnippetId, setCopiedSnippetId] = useState<string | null>(null);
+  const [copiedHashtagPackId, setCopiedHashtagPackId] = useState<string | null>(null);
+  const [ideas, setIdeas] = useState<ContentIdea[]>(DEFAULT_CONTENT_IDEAS);
+  const [newIdeaTitle, setNewIdeaTitle] = useState('');
+  const [newIdeaHook, setNewIdeaHook] = useState('');
+  const [newIdeaFormat, setNewIdeaFormat] = useState<'REEL' | 'CAROUSEL' | 'POST'>('REEL');
+
+  // Sprint 2: Evergreen Queue & Gap-Filler States
+  const [isAutoFillingGaps, setIsAutoFillingGaps] = useState(false);
+  const [selectedEventIsEvergreen, setSelectedEventIsEvergreen] = useState(false);
+  const [selectedEventRecycleInterval, setSelectedEventRecycleInterval] = useState(60);
+
+  // Sprint 2: Duplicate / Performance Repeat States
+  const [duplicateTargetDate, setDuplicateTargetDate] = useState('');
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
+  // Load ideas from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('omnisocial_saved_ideas');
+      if (stored) {
+        setIdeas(JSON.parse(stored));
+      }
+    } catch {}
+  }, []);
+
+  const handleSaveNewIdea = () => {
+    if (!newIdeaTitle.trim()) return;
+    const newIdea: ContentIdea = {
+      id: 'idea-' + Date.now(),
+      title: newIdeaTitle.trim(),
+      hook: newIdeaHook.trim() || 'Key hook or talking point...',
+      format: newIdeaFormat,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    const updated = [newIdea, ...ideas];
+    setIdeas(updated);
+    try {
+      localStorage.setItem('omnisocial_saved_ideas', JSON.stringify(updated));
+    } catch {}
+    setNewIdeaTitle('');
+    setNewIdeaHook('');
+    setNotice({ type: 'success', text: `Captured idea: "${newIdea.title}"!` });
+  };
+
+  const handleDeleteIdea = (id: string) => {
+    const updated = ideas.filter(i => i.id !== id);
+    setIdeas(updated);
+    try {
+      localStorage.setItem('omnisocial_saved_ideas', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleConvertIdeaToPost = (idea: ContentIdea) => {
+    setShowLibraryModal(false);
+    setInstantTopic(`${idea.title} - ${idea.hook}`);
+    setInstantPostType(idea.format === 'POST' ? 'IMAGE' : idea.format);
+    setShowInstantModal(true);
+    setGeneratedInstantPost(null);
+    setNotice({ type: 'success', text: `Loaded idea into 1-Click Studio! Click Generate to create drop.` });
+  };
+
+  const handleCopySnippet = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSnippetId(id);
+    setTimeout(() => setCopiedSnippetId(null), 2500);
+  };
+
+  const handleCopyHashtagPack = (id: string, tags: string[]) => {
+    navigator.clipboard.writeText(tags.join(' '));
+    setCopiedHashtagPackId(id);
+    setTimeout(() => setCopiedHashtagPackId(null), 2500);
+  };
+
+  const handleAutoFillGaps = async () => {
+    setIsAutoFillingGaps(true);
+    try {
+      const res = await apiRequest('/calendar/evergreen/auto-fill-gaps', {
+        method: 'POST',
+        body: JSON.stringify({
+          brandId: activeBrandId || undefined,
+          daysAhead: 14
+        })
+      });
+      if (res.success) {
+        setNotice({
+          type: 'success',
+          text: res.message || `Filled ${res.filledCount} calendar gaps with Evergreen content!`
+        });
+        await fetchCalendar();
+      } else {
+        throw new Error(res.error || 'Failed to auto-fill gaps');
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to auto-fill gaps' });
+    } finally {
+      setIsAutoFillingGaps(false);
+    }
+  };
+
+  const handleDuplicateEvent = async (event: any, targetDate: string) => {
+    if (!targetDate) return;
+    setIsDuplicating(true);
+    try {
+      const res = await apiRequest(`/calendar/events/${event.id || event.publicationId}/duplicate`, {
+        method: 'POST',
+        body: JSON.stringify({
+          targetDate
+        })
+      });
+      if (res.success) {
+        setNotice({
+          type: 'success',
+          text: `Successfully duplicated post to ${new Date(targetDate).toLocaleDateString()}!`
+        });
+        setSelectedEvent(null);
+        await fetchCalendar();
+      } else {
+        throw new Error(res.error || 'Failed to duplicate post');
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to duplicate post' });
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleToggleEvergreen = async (event: any, isEvergreen: boolean, interval: number) => {
+    try {
+      const res = await apiRequest(`/calendar/events/${event.id || event.publicationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          isEvergreen,
+          recycleIntervalDays: interval
+        })
+      });
+      if (res.success) {
+        setNotice({
+          type: 'success',
+          text: isEvergreen
+            ? `Post marked as Evergreen ♻️! Will automatically recycle every ${interval} days.`
+            : 'Evergreen status disabled for this post.'
+        });
+        setSelectedEvent((prev: any) => prev ? { ...prev, isEvergreen, recycleIntervalDays: interval } : null);
+        await fetchCalendar();
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Failed to update evergreen status' });
+    }
+  };
 
   const handleQuickScheduleOnDate = (d: Date) => {
     const year = d.getFullYear();
@@ -1154,11 +1413,10 @@ export default function CalendarPage() {
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    viewMode === mode
+                  className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center space-x-1.5 ${viewMode === mode
                       ? 'bg-white text-neutral-950 font-black shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
                       : 'hover:text-neutral-900 font-medium'
-                  }`}
+                    }`}
                 >
                   {mode === 'GRID' && <Instagram className="w-3 h-3 text-pink-600 shrink-0" />}
                   <span>{mode === 'GRID' ? 'Grid (IG)' : mode.charAt(0) + mode.slice(1).toLowerCase()}</span>
@@ -1195,6 +1453,27 @@ export default function CalendarPage() {
             <span className="text-xs font-black text-neutral-900 min-w-32 text-center bg-white px-3.5 py-2 rounded-full border border-black/[0.07] shadow-xs">
               {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </span>
+
+            {/* Saved Libraries & Ideas Button */}
+            <button
+              type="button"
+              onClick={() => setShowLibraryModal(true)}
+              className="text-xs font-bold text-neutral-700 hover:text-neutral-900 bg-white hover:bg-neutral-50 border border-neutral-200/90 px-3.5 py-2 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-purple-600" />
+              <span>Libraries &amp; Ideas</span>
+            </button>
+
+            {/* Evergreen Auto-Fill Gaps Button */}
+            <button
+              type="button"
+              onClick={handleAutoFillGaps}
+              disabled={isAutoFillingGaps}
+              className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/90 px-3.5 py-2 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Repeat className={`w-3.5 h-3.5 text-emerald-600 ${isAutoFillingGaps ? 'animate-spin' : ''}`} />
+              <span>{isAutoFillingGaps ? 'Filling Gaps...' : 'Auto-Fill Gaps ♻️'}</span>
+            </button>
 
             {/* Share Calendar Magic Review Link Button */}
             <button
@@ -1338,16 +1617,14 @@ export default function CalendarPage() {
                 key={p.id}
                 type="button"
                 onClick={() => setFilterPlatform(p.id)}
-                className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer flex items-center space-x-1.5 border ${
-                  filterPlatform === p.id
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer flex items-center space-x-1.5 border ${filterPlatform === p.id
                     ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
                     : 'bg-white text-neutral-600 border-neutral-200/80 hover:bg-neutral-50'
-                }`}
+                  }`}
               >
                 <span>{p.label}</span>
-                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                  filterPlatform === p.id ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'
-                }`}>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${filterPlatform === p.id ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'
+                  }`}>
                   {p.count}
                 </span>
               </button>
@@ -1366,11 +1643,10 @@ export default function CalendarPage() {
                 key={s.id}
                 type="button"
                 onClick={() => setFilterStatus(s.id)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all cursor-pointer border ${
-                  filterStatus === s.id
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all cursor-pointer border ${filterStatus === s.id
                     ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
                     : 'bg-white text-neutral-500 border-neutral-200/80 hover:bg-neutral-50'
-                }`}
+                  }`}
               >
                 {s.label}
               </button>
@@ -1379,9 +1655,8 @@ export default function CalendarPage() {
         </div>
 
         {notice && (
-          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 animate-in fade-in duration-200 ${
-            notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-          }`}>
+          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 animate-in fade-in duration-200 ${notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <span>{notice.text}</span>
           </div>
@@ -1413,23 +1688,21 @@ export default function CalendarPage() {
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
-                        className={`p-2 flex flex-col justify-between transition-all min-h-[110px] relative group/cell ${
-                          dayItem.isCurrentMonth
+                        className={`p-2 flex flex-col justify-between transition-all min-h-[110px] relative group/cell ${dayItem.isCurrentMonth
                             ? isToday
                               ? 'bg-gradient-to-b from-indigo-50/50 via-white to-white ring-1 ring-inset ring-indigo-200/70'
                               : 'bg-white hover:bg-indigo-50/25'
                             : 'bg-neutral-50/40 text-neutral-400'
-                        }`}
+                          }`}
                       >
                         {/* Day Cell Header */}
                         <div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-1">
-                              <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${
-                                isToday
+                              <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${isToday
                                   ? 'bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-black shadow-[0_2px_8px_rgba(79,70,229,0.35)] ring-2 ring-indigo-200'
                                   : 'text-neutral-700 group-hover/cell:text-indigo-600'
-                              }`}>
+                                }`}>
                                 {dayItem.date.getDate()}
                               </span>
                               {isToday && (
@@ -1486,10 +1759,15 @@ export default function CalendarPage() {
                                   setIsEditing(false);
                                   setEditTitle(ev.title);
                                   setEditCaption(ev.caption);
+                                  setSelectedEventIsEvergreen(ev.isEvergreen || false);
+                                  setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
+                                  const nextWeek = new Date();
+                                  nextWeek.setDate(nextWeek.getDate() + 7);
+                                  nextWeek.setHours(18, 30, 0, 0);
+                                  setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
                                 }}
-                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group border ${
-                                  isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5' : 'cursor-pointer'
-                                } ${style.cardBg}`}
+                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group border ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5' : 'cursor-pointer'
+                                  } ${style.cardBg}`}
                               >
                                 {/* Left colored accent bar */}
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.barColor}`} />
@@ -1503,7 +1781,19 @@ export default function CalendarPage() {
                                         {formatPostTime(ev.scheduledFor)}
                                       </span>
                                     </div>
-                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
+                                    <div className="flex items-center space-x-1">
+                                      {ev.status === 'PUBLISHED' && (
+                                        <span className="text-[8px] font-black text-amber-700 bg-amber-100/90 px-1 py-0.2 rounded font-mono">
+                                          ★ {ev.viralityScore ? `${ev.viralityScore}` : 'Top'}
+                                        </span>
+                                      )}
+                                      {ev.isEvergreen && (
+                                        <span title="Evergreen Asset" className="text-[8px] font-black text-emerald-700 bg-emerald-100/90 px-1 py-0.2 rounded font-mono">
+                                          ♻️
+                                        </span>
+                                      )}
+                                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
+                                    </div>
                                   </div>
 
                                   {/* Title & Thumbnail row */}
@@ -1529,6 +1819,21 @@ export default function CalendarPage() {
                           })}
                         </div>
 
+                        {/* Empty Gap Detector & 1-Click Evergreen Auto-fill */}
+                        {dayEvents.length === 0 && dayItem.isCurrentMonth && today && dayItem.date > today && (
+                          <div className="py-2 text-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleAutoFillGaps()}
+                              title="Empty date - Auto-fill from Evergreen Library or click + to add"
+                              className="text-[9px] font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 px-1.5 py-0.5 rounded border border-dashed border-slate-200 hover:border-emerald-300 transition-all cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
+                            >
+                              <span>⚠ Gap</span>
+                              <span className="text-emerald-600">Auto-fill ♻️</span>
+                            </button>
+                          </div>
+                        )}
+
                         {/* Cell Footer */}
                         <div className="flex items-center justify-between text-[9px] text-neutral-400 pt-0.5">
                           <span>{dayEvents.length > 0 ? `${dayEvents.length} drop${dayEvents.length > 1 ? 's' : ''}` : ''}</span>
@@ -1552,9 +1857,8 @@ export default function CalendarPage() {
                           {d.toLocaleDateString('en-US', { weekday: 'short' })}
                         </p>
                         <div className="flex items-center justify-center">
-                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black ${
-                            isDayToday ? 'bg-indigo-600 text-white shadow-sm' : 'text-neutral-900'
-                          }`}>
+                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black ${isDayToday ? 'bg-indigo-600 text-white shadow-sm' : 'text-neutral-900'
+                            }`}>
                             {d.getDate()}
                           </span>
                         </div>
@@ -1853,9 +2157,8 @@ export default function CalendarPage() {
                               </div>
 
                               <div className="absolute bottom-2 right-2">
-                                <span className={`w-2 h-2 rounded-full inline-block ${
-                                  post.status === 'PUBLISHED' ? 'bg-emerald-400' : post.status === 'QUEUED' ? 'bg-indigo-400' : 'bg-rose-400'
-                                }`} />
+                                <span className={`w-2 h-2 rounded-full inline-block ${post.status === 'PUBLISHED' ? 'bg-emerald-400' : post.status === 'QUEUED' ? 'bg-indigo-400' : 'bg-rose-400'
+                                  }`} />
                               </div>
 
                               {/* Hover Overlay with Action Pill */}
@@ -2005,13 +2308,12 @@ export default function CalendarPage() {
               <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
                 <div className="flex items-center space-x-2">
                   <PlatformPill platform={selectedEvent.platform} />
-                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                    selectedEvent.status === 'PUBLISHED'
+                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${selectedEvent.status === 'PUBLISHED'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : selectedEvent.status === 'QUEUED'
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                      : 'bg-rose-50 text-rose-700 border border-rose-200'
-                  }`}>
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
                     {selectedEvent.status}
                   </span>
                 </div>
@@ -2083,6 +2385,105 @@ export default function CalendarPage() {
                       <span className="font-bold text-neutral-800">{selectedEvent.publishedAt ? new Date(selectedEvent.publishedAt).toLocaleString() : 'Not published yet'}</span>
                     </div>
                   </div>
+
+                  {/* Evergreen Asset Controls */}
+                  <div className="p-3 bg-neutral-50/80 rounded-2xl border border-neutral-100 flex items-center justify-between gap-3">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                        ♻️
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-neutral-800">Evergreen Asset</p>
+                        <p className="text-[10px] text-neutral-500">Auto-fills calendar gaps &amp; recycles timeless content</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {selectedEventIsEvergreen && (
+                        <select
+                          value={selectedEventRecycleInterval}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setSelectedEventRecycleInterval(val);
+                            handleToggleEvergreen(selectedEvent, true, val);
+                          }}
+                          className="text-[11px] font-bold bg-white border border-neutral-200 rounded-lg px-2 py-1 outline-none cursor-pointer"
+                        >
+                          <option value={30}>Every 30d</option>
+                          <option value={60}>Every 60d</option>
+                          <option value={90}>Every 90d</option>
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextState = !selectedEventIsEvergreen;
+                          setSelectedEventIsEvergreen(nextState);
+                          handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                          selectedEventIsEvergreen
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+                        }`}
+                      >
+                        {selectedEventIsEvergreen ? 'Active ♻️' : 'Turn On'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Performance Overlay & 1-Click Repeat for Published Drops */}
+                  {selectedEvent.status === 'PUBLISHED' && (
+                    <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-200/80 rounded-2xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5 font-bold text-xs text-amber-900">
+                          <Star className="w-4 h-4 text-amber-600 fill-amber-500" />
+                          <span>Performance &amp; Virality Score</span>
+                        </div>
+                        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900">
+                          {selectedEvent.viralityScore ? `${selectedEvent.viralityScore}/100 High Reach` : '★ 88/100 Top Performer'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-600 leading-snug">
+                        Repeat what worked! Schedule this exact high-performing post to a future date or let AI remix the hook.
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                        <div className="flex-1 flex items-center space-x-1">
+                          <input
+                            type="datetime-local"
+                            value={duplicateTargetDate}
+                            onChange={(e) => setDuplicateTargetDate(e.target.value)}
+                            className="w-full text-xs border border-amber-200 bg-white rounded-xl p-1.5 outline-none font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateEvent(selectedEvent, duplicateTargetDate)}
+                            disabled={isDuplicating || !duplicateTargetDate}
+                            className="px-3 py-1.5 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl shrink-0 transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1"
+                          >
+                            <Repeat className={`w-3 h-3 ${isDuplicating ? 'animate-spin' : ''}`} />
+                            <span>{isDuplicating ? 'Queuing...' : 'Repeat ♻️'}</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEvent(null);
+                            setInstantTopic(`${selectedEvent.title} - Fresh angle remix`);
+                            setInstantPostType(selectedEvent.format === 'POST' ? 'IMAGE' : (selectedEvent.format || 'REEL'));
+                            setShowInstantModal(true);
+                            setGeneratedInstantPost(null);
+                            setNotice({ type: 'success', text: 'Loaded into 1-Click Studio for fresh AI Remix!' });
+                          }}
+                          className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1 shrink-0"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>AI-Remix</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2201,11 +2602,10 @@ export default function CalendarPage() {
                             key={fmt.id}
                             type="button"
                             onClick={() => setInstantPostType(fmt.id as any)}
-                            className={`p-3 text-left rounded-xl border transition-all cursor-pointer ${
-                              instantPostType === fmt.id
+                            className={`p-3 text-left rounded-xl border transition-all cursor-pointer ${instantPostType === fmt.id
                                 ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-400/20 shadow-xs'
                                 : 'bg-white border-slate-200 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span className="text-base">{fmt.icon}</span>
                             <p className="text-xs font-bold text-slate-900 mt-1">{fmt.label}</p>
@@ -2231,11 +2631,10 @@ export default function CalendarPage() {
                             key={pre.id}
                             type="button"
                             onClick={() => setInstantPreset(pre.id)}
-                            className={`p-2.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${
-                              instantPreset === pre.id
+                            className={`p-2.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${instantPreset === pre.id
                                 ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs'
                                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
+                              }`}
                           >
                             <div className="text-sm mb-1">{pre.icon}</div>
                             <div className="font-bold text-[11px] leading-tight">{pre.label}</div>
@@ -2457,16 +2856,14 @@ export default function CalendarPage() {
                                   key={tab.id}
                                   type="button"
                                   onClick={() => setInstantActivePromptTab(tab.id as any)}
-                                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 cursor-pointer ${
-                                    instantActivePromptTab === tab.id
+                                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 cursor-pointer ${instantActivePromptTab === tab.id
                                       ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                  }`}
+                                    }`}
                                 >
                                   <span>{tab.label}</span>
-                                  <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                                    instantActivePromptTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                                  }`}>
+                                  <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${instantActivePromptTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                    }`}>
                                     {tab.badge}
                                   </span>
                                 </button>
@@ -2571,13 +2968,12 @@ export default function CalendarPage() {
                   ].map(s => (
                     <div
                       key={s.step}
-                      className={`py-1.5 px-2 rounded-full transition-all border ${
-                        wizardStep === s.step
+                      className={`py-1.5 px-2 rounded-full transition-all border ${wizardStep === s.step
                           ? 'bg-white text-indigo-950 font-bold border-white shadow-sm'
                           : wizardStep > s.step
-                          ? 'bg-white/20 text-white border-white/30'
-                          : 'bg-white/5 text-slate-400 border-white/10'
-                      }`}
+                            ? 'bg-white/20 text-white border-white/30'
+                            : 'bg-white/5 text-slate-400 border-white/10'
+                        }`}
                     >
                       {s.label}
                     </div>
@@ -2632,11 +3028,10 @@ export default function CalendarPage() {
                             key={cat.id}
                             type="button"
                             onClick={() => setSelectedTemplateCategory(cat.id)}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                              selectedTemplateCategory === cat.id
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${selectedTemplateCategory === cat.id
                                 ? 'bg-indigo-600 text-white shadow-sm font-bold scale-[1.02]'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                            }`}
+                              }`}
                           >
                             {cat.label}
                           </button>
@@ -2654,11 +3049,10 @@ export default function CalendarPage() {
                                 key={tpl.id}
                                 type="button"
                                 onClick={() => handleApplyIndustryTemplate(tpl)}
-                                className={`p-3 text-left rounded-xl border transition-all relative flex flex-col justify-between ${
-                                  isCurrent
+                                className={`p-3 text-left rounded-xl border transition-all relative flex flex-col justify-between ${isCurrent
                                     ? 'bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-400/30 shadow-sm'
                                     : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
-                                }`}
+                                  }`}
                               >
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
@@ -2820,11 +3214,10 @@ export default function CalendarPage() {
                               key={model.id}
                               type="button"
                               onClick={() => setArchitectBusinessType(model.id as any)}
-                              className={`p-4 text-left rounded-2xl border transition-all flex items-start space-x-3 ${
-                                isSelected
+                              className={`p-4 text-left rounded-2xl border transition-all flex items-start space-x-3 ${isSelected
                                   ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
                                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <div className={`p-2 rounded-xl shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
                                 <IconComp className="w-5 h-5" />
@@ -2873,11 +3266,10 @@ export default function CalendarPage() {
                               key={goal.id}
                               type="button"
                               onClick={() => setArchitectGoal(goal.id as any)}
-                              className={`p-3.5 text-left rounded-2xl border transition-all ${
-                                isSelected
+                              className={`p-3.5 text-left rounded-2xl border transition-all ${isSelected
                                   ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
                                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <GoalIcon className={`w-4 h-4 mb-1.5 ${goal.color}`} />
                               <p className="text-xs font-bold text-slate-900">{goal.title}</p>
@@ -2944,11 +3336,10 @@ export default function CalendarPage() {
                             key={sprint.days}
                             type="button"
                             onClick={() => setArchitectDuration(sprint.days as any)}
-                            className={`p-4 text-left rounded-2xl border transition-all relative ${
-                              isSelected
+                            className={`p-4 text-left rounded-2xl border transition-all relative ${isSelected
                                 ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
                                 : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-900 text-white mb-2 inline-block">
                               {sprint.badge}
@@ -2980,11 +3371,10 @@ export default function CalendarPage() {
                                   setArchitectPlatforms([...architectPlatforms, plat]);
                                 }
                               }}
-                              className={`px-4 py-2 rounded-full text-xs font-bold border transition-all flex items-center space-x-1.5 ${
-                                isChecked
+                              className={`px-4 py-2 rounded-full text-xs font-bold border transition-all flex items-center space-x-1.5 ${isChecked
                                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                                   : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
                               <span>{plat}</span>
@@ -3101,19 +3491,18 @@ export default function CalendarPage() {
                           post.phaseBadgeColor === 'amber'
                             ? 'bg-amber-100 text-amber-900 border-amber-300'
                             : post.phaseBadgeColor === 'blue'
-                            ? 'bg-sky-100 text-sky-900 border-sky-300'
-                            : post.phaseBadgeColor === 'purple'
-                            ? 'bg-purple-100 text-purple-900 border-purple-300'
-                            : post.phaseBadgeColor === 'emerald'
-                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                            : 'bg-rose-100 text-rose-900 border-rose-300';
+                              ? 'bg-sky-100 text-sky-900 border-sky-300'
+                              : post.phaseBadgeColor === 'purple'
+                                ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                : post.phaseBadgeColor === 'emerald'
+                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : 'bg-rose-100 text-rose-900 border-rose-300';
 
                         return (
                           <div
                             key={idx}
-                            className={`rounded-2xl border transition-all overflow-hidden ${
-                              isExpanded ? 'border-indigo-400 bg-white shadow-md' : 'border-slate-200 bg-slate-50/50 hover:bg-white'
-                            }`}
+                            className={`rounded-2xl border transition-all overflow-hidden ${isExpanded ? 'border-indigo-400 bg-white shadow-md' : 'border-slate-200 bg-slate-50/50 hover:bg-white'
+                              }`}
                           >
                             {/* Card Accordion Header */}
                             <div
@@ -3228,16 +3617,14 @@ export default function CalendarPage() {
                                               key={tab.id}
                                               type="button"
                                               onClick={() => setTab(tab.id as any)}
-                                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 ${
-                                                currentTab === tab.id
+                                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 ${currentTab === tab.id
                                                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
                                                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                              }`}
+                                                }`}
                                             >
                                               <span>{tab.label}</span>
-                                              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                                                currentTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                                              }`}>
+                                              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${currentTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                                }`}>
                                                 {tab.badge}
                                               </span>
                                             </button>
@@ -3622,6 +4009,273 @@ export default function CalendarPage() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* SAVED LIBRARIES & IDEAS SCRATCHPAD MODAL (SPRINT 2)                   */}
+        {/* ===================================================================== */}
+        {showLibraryModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl border border-neutral-200 shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="p-5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 text-purple-600 flex items-center justify-center shadow-xs">
+                    <Bookmark className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-neutral-900 tracking-tight">
+                      Saved Libraries &amp; Ideas Scratchpad
+                    </h3>
+                    <p className="text-xs text-neutral-500">
+                      1-Tap viral hashtag sets, quick business snippets &amp; 5-second ideas capture
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLibraryModal(false)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Segmented Tab Switcher */}
+              <div className="px-5 pt-3 pb-2 border-b border-neutral-100 flex items-center space-x-2 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setLibraryTab('HASHTAGS')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    libraryTab === 'HASHTAGS'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <Hash className="w-3.5 h-3.5" />
+                  <span>Viral Hashtag Packs ({VIRAL_HASHTAG_PACKS.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLibraryTab('SNIPPETS')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    libraryTab === 'SNIPPETS'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Quick Snippets ({DEFAULT_QUICK_SNIPPETS.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLibraryTab('IDEAS')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                    libraryTab === 'IDEAS'
+                      ? 'bg-neutral-900 text-white shadow-xs'
+                      : 'text-neutral-600 hover:bg-neutral-100'
+                  }`}
+                >
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Ideas Board ({ideas.length})</span>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {/* TAB 1: HASHTAGS */}
+                {libraryTab === 'HASHTAGS' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {VIRAL_HASHTAG_PACKS.map(pack => (
+                      <div
+                        key={pack.id}
+                        className="p-4 rounded-2xl border border-neutral-200/80 bg-neutral-50/50 hover:bg-white hover:border-purple-200 transition-all space-y-2.5 shadow-2xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-neutral-900">{pack.title}</h4>
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 font-mono">
+                            {pack.category}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500 leading-snug">{pack.description}</p>
+                        
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {pack.tags.map((tag, tIdx) => (
+                            <span key={tIdx} className="text-[10px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-md font-mono">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyHashtagPack(pack.id, pack.tags)}
+                            className="text-xs font-bold text-neutral-700 hover:text-neutral-900 flex items-center space-x-1 cursor-pointer"
+                          >
+                            {copiedHashtagPackId === pack.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-emerald-700 font-black">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                                <span>Copy All Tags</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowLibraryModal(false);
+                              setInstantTopic(`Campaign with ${pack.tags.slice(0, 3).join(' ')}`);
+                              setShowInstantModal(true);
+                              setGeneratedInstantPost(null);
+                            }}
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
+                          >
+                            <span>⚡ Use in Studio</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* TAB 2: QUICK SNIPPETS */}
+                {libraryTab === 'SNIPPETS' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {DEFAULT_QUICK_SNIPPETS.map(snippet => (
+                      <div
+                        key={snippet.id}
+                        className="p-4 rounded-2xl border border-neutral-200/80 bg-neutral-50/50 hover:bg-white hover:border-indigo-200 transition-all space-y-2.5 shadow-2xs flex flex-col justify-between"
+                      >
+                        <div className="space-y-1.5">
+                          <h4 className="text-xs font-black text-neutral-900">{snippet.title}</h4>
+                          <div className="p-2.5 bg-white rounded-xl border border-neutral-100 text-xs text-neutral-700 font-sans whitespace-pre-wrap leading-relaxed">
+                            {snippet.content}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCopySnippet(snippet.id, snippet.content)}
+                            className="px-3.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs"
+                          >
+                            {copiedSnippetId === snippet.id ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-300" />
+                                <span>Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copy Snippet</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* TAB 3: KANBAN IDEAS BOARD */}
+                {libraryTab === 'IDEAS' && (
+                  <div className="space-y-5">
+                    {/* Quick Idea Capture Bar */}
+                    <div className="p-4 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50/60 to-indigo-50/60 space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Lightbulb className="w-4 h-4 text-purple-600" />
+                        <h4 className="text-xs font-black text-neutral-900">
+                          Got a Content Hook or Photo Idea? Capture in 5 Seconds:
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Idea title (e.g. 3 mistakes before buying...)"
+                          value={newIdeaTitle}
+                          onChange={(e) => setNewIdeaTitle(e.target.value)}
+                          className="sm:col-span-2 text-xs bg-white border border-neutral-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        <select
+                          value={newIdeaFormat}
+                          onChange={(e: any) => setNewIdeaFormat(e.target.value)}
+                          className="text-xs bg-white border border-neutral-200 rounded-xl px-3 py-2 outline-none font-bold"
+                        >
+                          <option value="REEL">🎬 Reel (9:16)</option>
+                          <option value="CAROUSEL">📑 Carousel</option>
+                          <option value="POST">📸 Photo Drop</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleSaveNewIdea}
+                          disabled={!newIdeaTitle.trim()}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-xs"
+                        >
+                          + Save Idea
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Optional hook / talking point (e.g. Stop wasting money on cheap knockoffs...)"
+                        value={newIdeaHook}
+                        onChange={(e) => setNewIdeaHook(e.target.value)}
+                        className="w-full text-xs bg-white border border-neutral-200 rounded-xl px-3 py-1.5 outline-none focus:ring-2 focus:ring-purple-400"
+                      />
+                    </div>
+
+                    {/* Idea Cards List */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {ideas.map(idea => (
+                        <div
+                          key={idea.id}
+                          className="p-3.5 rounded-2xl border border-neutral-200 bg-white hover:border-purple-200 transition-all flex flex-col justify-between space-y-3 shadow-2xs group"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 font-mono">
+                                {idea.format === 'REEL' ? '🎬 Reel' : idea.format === 'CAROUSEL' ? '📑 Carousel' : '📸 Photo'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteIdea(idea.id)}
+                                className="text-neutral-300 hover:text-rose-500 transition-colors p-1"
+                                title="Remove idea"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <h5 className="text-xs font-bold text-neutral-900 leading-snug">{idea.title}</h5>
+                            <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">{idea.hook}</p>
+                          </div>
+
+                          <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
+                            <span className="text-[9px] font-mono text-neutral-400">{idea.createdAt}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleConvertIdeaToPost(idea)}
+                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition-all shadow-xs"
+                            >
+                              <Zap className="w-3 h-3 text-amber-300" />
+                              <span>⚡ Drop</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
