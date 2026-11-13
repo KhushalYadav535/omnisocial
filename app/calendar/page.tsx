@@ -42,9 +42,13 @@ import {
   Copy,
   Image as ImageIcon,
   Zap,
-  Mic
+  Mic,
+  Globe,
+  TrendingUp,
+  BarChart3,
+  CalendarDays
 } from 'lucide-react';
-import { Facebook, Instagram } from '../../components/Icons';
+import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
 export const INDUSTRY_QUICK_TEMPLATES = [
   {
@@ -168,6 +172,18 @@ export default function CalendarPage() {
   const [saving, setSaving] = useState(false);
   const [draggedEventId, setDraggedEventId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [filterPlatform, setFilterPlatform] = useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+
+  const handleQuickScheduleOnDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setInstantScheduledDate(`${year}-${month}-${day}`);
+    setShowInstantModal(true);
+    setGeneratedInstantPost(null);
+    setInstantTopic('');
+  };
 
   // AI Campaign Architect Wizard States
   const [showArchitectModal, setShowArchitectModal] = useState(false);
@@ -714,17 +730,172 @@ export default function CalendarPage() {
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate();
 
+  // Filtered events based on platform and status filters
+  const filteredEvents = events.filter(e => {
+    if (filterPlatform !== 'ALL' && e.platform?.toUpperCase() !== filterPlatform) return false;
+    if (filterStatus !== 'ALL' && e.status?.toUpperCase() !== filterStatus) return false;
+    return true;
+  });
+
   // Upcoming publications for sidebar
   const upcomingPosts = events
     .filter(e => e.status === 'QUEUED')
     .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
     .slice(0, 5);
 
+  const formatPostTime = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch {
+      return '';
+    }
+  };
+
+  const PlatformMicroIcon = ({ platform }: { platform: string }) => {
+    const p = platform?.toUpperCase() || 'INSTAGRAM';
+    if (p === 'INSTAGRAM') {
+      return (
+        <span className="w-3.5 h-3.5 rounded-[4px] bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+          <Instagram className="w-2 h-2 text-white" />
+        </span>
+      );
+    }
+    if (p === 'LINKEDIN') {
+      return (
+        <span className="w-3.5 h-3.5 rounded-[4px] bg-[#0A66C2] text-white flex items-center justify-center shrink-0 shadow-2xs">
+          <LinkedIn className="w-2 h-2 text-white" />
+        </span>
+      );
+    }
+    if (p === 'FACEBOOK') {
+      return (
+        <span className="w-3.5 h-3.5 rounded-[4px] bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow-2xs">
+          <Facebook className="w-2 h-2 text-white" />
+        </span>
+      );
+    }
+    return (
+      <span className="w-3.5 h-3.5 rounded-[4px] bg-neutral-900 text-white flex items-center justify-center shrink-0 shadow-2xs font-mono text-[7px] font-black">
+        𝕏
+      </span>
+    );
+  };
+
+  const PlatformPill = ({ platform }: { platform: string }) => {
+    const p = platform?.toUpperCase() || 'INSTAGRAM';
+    if (p === 'INSTAGRAM') {
+      return (
+        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-pink-50 via-purple-50 to-amber-50 text-pink-700 border border-pink-200/60 font-bold text-[10px]">
+          <Instagram className="w-2.5 h-2.5 text-pink-600" />
+          <span>Instagram</span>
+        </span>
+      );
+    }
+    if (p === 'LINKEDIN') {
+      return (
+        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-blue-50 text-[#0A66C2] border border-blue-200/60 font-bold text-[10px]">
+          <LinkedIn className="w-2.5 h-2.5 text-[#0A66C2]" />
+          <span>LinkedIn</span>
+        </span>
+      );
+    }
+    if (p === 'FACEBOOK') {
+      return (
+        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-50 text-[#1877F2] border border-sky-200/60 font-bold text-[10px]">
+          <Facebook className="w-2.5 h-2.5 text-[#1877F2]" />
+          <span>Facebook</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200/60 font-bold text-[10px]">
+        <span className="font-mono text-[9px] font-black">𝕏</span>
+        <span>Twitter</span>
+      </span>
+    );
+  };
+
+  const getEventCardStyle = (title: string, defaultStatus: string) => {
+    if (defaultStatus === 'PUBLISHED') {
+      return {
+        cardBg: 'bg-emerald-50/70 hover:bg-emerald-50/90 text-emerald-950 border-emerald-200/80',
+        barColor: 'bg-emerald-500',
+        badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        dot: 'bg-emerald-500'
+      };
+    }
+    if (defaultStatus === 'PUBLISHING') {
+      return {
+        cardBg: 'bg-amber-50/80 hover:bg-amber-50 text-amber-950 border-amber-200/80 animate-pulse',
+        barColor: 'bg-amber-500',
+        badge: 'bg-amber-100 text-amber-800 border-amber-300',
+        dot: 'bg-amber-500 animate-ping'
+      };
+    }
+    if (defaultStatus === 'FAILED') {
+      return {
+        cardBg: 'bg-rose-50/80 hover:bg-rose-50 text-rose-950 border-rose-200/80',
+        barColor: 'bg-rose-500',
+        badge: 'bg-rose-100 text-rose-800 border-rose-300',
+        dot: 'bg-rose-500'
+      };
+    }
+    if (title.includes('Phase 1')) {
+      return {
+        cardBg: 'bg-amber-50/60 hover:bg-amber-50/85 text-amber-950 border-amber-200/70',
+        barColor: 'bg-amber-500',
+        badge: 'bg-amber-100 text-amber-900 border-amber-300',
+        dot: 'bg-amber-500'
+      };
+    }
+    if (title.includes('Phase 2')) {
+      return {
+        cardBg: 'bg-sky-50/60 hover:bg-sky-50/85 text-sky-950 border-sky-200/70',
+        barColor: 'bg-sky-500',
+        badge: 'bg-sky-100 text-sky-900 border-sky-300',
+        dot: 'bg-sky-500'
+      };
+    }
+    if (title.includes('Phase 3')) {
+      return {
+        cardBg: 'bg-purple-50/60 hover:bg-purple-50/85 text-purple-950 border-purple-200/70',
+        barColor: 'bg-purple-500',
+        badge: 'bg-purple-100 text-purple-900 border-purple-300',
+        dot: 'bg-purple-500'
+      };
+    }
+    if (title.includes('Phase 4')) {
+      return {
+        cardBg: 'bg-emerald-50/60 hover:bg-emerald-50/85 text-emerald-950 border-emerald-200/70',
+        barColor: 'bg-emerald-500',
+        badge: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        dot: 'bg-emerald-500'
+      };
+    }
+    if (title.includes('Phase 5')) {
+      return {
+        cardBg: 'bg-rose-50/60 hover:bg-rose-50/85 text-rose-950 border-rose-200/70',
+        barColor: 'bg-rose-500',
+        badge: 'bg-rose-100 text-rose-900 border-rose-300',
+        dot: 'bg-rose-500'
+      };
+    }
+    return {
+      cardBg: 'bg-white hover:bg-slate-50/90 text-slate-900 border-slate-200/80',
+      barColor: 'bg-indigo-500',
+      badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      dot: 'bg-indigo-500'
+    };
+  };
+
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
-      <div className="space-y-6 pb-12">
-        {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & FILTER CAPSULES */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
+      <div className="space-y-6 pb-14">
+        {/* ===================================================================== */}
+        {/* ULTRA-PREMIUM SUB-HEADER: BREADCRUMBS, TITLE & CONTROL CAPSULES      */}
+        {/* ===================================================================== */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-2 pt-1 border-b border-neutral-200/60">
           <div>
             <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
               <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
@@ -732,24 +903,31 @@ export default function CalendarPage() {
               <span className="hover:text-neutral-700 cursor-pointer">Editorial</span>
               <span>›</span>
               <span className="text-neutral-900 font-semibold">Content Calendar</span>
+              <span className="text-neutral-300">•</span>
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[10px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>PostgreSQL Sync</span>
+              </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1 flex items-center space-x-2">
-              <span>Multi-Platform Content Calendar</span>
+            <h1 className="text-3xl sm:text-4xl font-black text-[#0F1012] tracking-tight mt-1.5 flex items-center space-x-2.5">
+              <span>Editorial &amp; Social Calendar</span>
             </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Drag and drop posts to reschedule. Timezone-aware background execution verified with PostgreSQL persistence.
+            <p className="text-xs text-neutral-500 mt-1 max-w-2xl leading-relaxed">
+              Drag-and-drop visual timeline with timezone-aware background execution and 1-click AI generation.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* View Mode Switcher in Capsule Pill */}
-            <div className="flex items-center bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] text-xs font-semibold text-neutral-600">
+            {/* View Mode Switcher in Apple/Linear Segmented Capsule */}
+            <div className="flex items-center bg-[#E5E7EB]/80 p-1 rounded-full border border-black/[0.04] text-xs font-semibold text-neutral-600 shadow-inner backdrop-blur-md">
               {(['MONTH', 'WEEK', 'DAY', 'LIST'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`px-3.5 py-1 rounded-full transition-all ${
-                    viewMode === mode ? 'bg-white text-neutral-900 shadow-xs' : 'hover:text-neutral-900'
+                  className={`px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                    viewMode === mode
+                      ? 'bg-white text-neutral-950 font-black shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                      : 'hover:text-neutral-900 font-medium'
                   }`}
                 >
                   {mode.charAt(0) + mode.slice(1).toLowerCase()}
@@ -758,22 +936,32 @@ export default function CalendarPage() {
             </div>
 
             {/* Navigation Buttons in Rounded Capsule */}
-            <div className="flex items-center space-x-1.5 bg-white border border-black/[0.07] p-1 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-              <button onClick={prevPeriod} className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-600">
+            <div className="flex items-center space-x-1 bg-white border border-black/[0.08] p-1 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+              <button
+                onClick={prevPeriod}
+                title="Previous Period"
+                className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-600 transition-colors cursor-pointer"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={jumpToToday}
-                className="px-3 py-1 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 rounded-full"
+                className="px-3 py-1 text-xs font-bold text-neutral-800 hover:bg-neutral-100 rounded-full flex items-center space-x-1.5 transition-colors cursor-pointer"
               >
-                Today
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                <span>Today</span>
               </button>
-              <button onClick={nextPeriod} className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-600">
+              <button
+                onClick={nextPeriod}
+                title="Next Period"
+                className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-600 transition-colors cursor-pointer"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
-            <span className="text-xs font-bold text-neutral-900 min-w-28 text-center bg-white px-3 py-1.5 rounded-full border border-black/[0.06]">
+            {/* Month-Year Selector Chip */}
+            <span className="text-xs font-black text-neutral-900 min-w-32 text-center bg-white px-3.5 py-2 rounded-full border border-black/[0.07] shadow-xs">
               {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </span>
 
@@ -784,12 +972,12 @@ export default function CalendarPage() {
                 setGeneratedInstantPost(null);
                 setInstantTopic('');
               }}
-              className="text-xs font-black text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-teal-700 px-4 py-2 rounded-full shadow-[0_2px_10px_rgba(16,185,129,0.3)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+              className="text-xs font-black text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-teal-700 px-4 py-2 rounded-full shadow-[0_4px_14px_rgba(16,185,129,0.28)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5 text-amber-300" />
-              <span>⚡ 1-Click Quick Post / Reel (10s)</span>
+              <span>⚡ 1-Click Studio</span>
               <span className="text-[9px] bg-white/25 text-white px-1.5 py-0.2 rounded-full font-mono uppercase">
-                Fast
+                10s
               </span>
             </button>
 
@@ -799,16 +987,16 @@ export default function CalendarPage() {
                 setShowArchitectModal(true);
                 setWizardStep(1);
               }}
-              className="text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 px-4 py-2 rounded-full shadow-[0_2px_10px_rgba(99,102,241,0.3)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+              className="text-xs font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 px-4 py-2 rounded-full shadow-[0_4px_14px_rgba(99,102,241,0.28)] flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>✨ 7-30 Day Campaign Architect</span>
+              <span>✨ Campaign Architect</span>
             </button>
 
             {/* Create Post Action Button */}
             <a
               href="/content-studio"
-              className="text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 px-4 py-2 rounded-full shadow-md flex items-center space-x-1.5 transition-all"
+              className="text-xs font-semibold text-white bg-[#0F1012] hover:bg-neutral-800 px-4 py-2 rounded-full shadow-md flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Schedule Drop</span>
@@ -816,22 +1004,24 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Quick Cheatsheet for Content Creation */}
-        <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-emerald-50/70 border border-indigo-200/60 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        {/* ===================================================================== */}
+        {/* SPOTLIGHT ASSISTANT BANNER (ZERO MARKETING KNOWLEDGE)                */}
+        {/* ===================================================================== */}
+        <div className="bg-gradient-to-r from-slate-900/[0.03] via-indigo-500/[0.04] to-emerald-500/[0.03] backdrop-blur-md border border-neutral-200/80 rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div className="flex items-center space-x-3.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-[0_4px_12px_rgba(79,70,229,0.3)]">
               ⚡
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-extrabold text-slate-900">
-                  Zero Marketing Knowledge? Launch Content in 30 Seconds:
+                <span className="text-xs font-extrabold text-neutral-900 tracking-tight">
+                  Zero Marketing Knowledge? Launch Proven Campaigns in Seconds:
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                <span className="font-bold text-indigo-700">1. Instant Creator:</span> Click <b>"⚡ 1-Click Quick Post/Reel"</b> for today's post •{' '}
-                <span className="font-bold text-purple-700">2. External AI Prompts:</span> 1-Click copy prompts for Midjourney, Runway Gen-3, Kling, or CapCut voiceover •{' '}
-                <span className="font-bold text-emerald-700">3. Full Sprints:</span> Click <b>"✨ Campaign Architect"</b> for 7-day automated sequential launches.
+              <p className="text-[11px] text-neutral-600 mt-0.5 leading-relaxed">
+                <span className="font-bold text-indigo-700">1. Instant Creator:</span> Click <b>"⚡ 1-Click Studio"</b> for today's post or reel •{' '}
+                <span className="font-bold text-purple-700">2. External AI Prompts:</span> 1-Click copy prompts for Midjourney, Runway Gen-3, Kling, or CapCut •{' '}
+                <span className="font-bold text-emerald-700">3. Full Sprints:</span> Click <b>"✨ Campaign Architect"</b> for 7 to 30-day automated sequential launches.
               </p>
             </div>
           </div>
@@ -842,16 +1032,77 @@ export default function CalendarPage() {
                 setGeneratedInstantPost(null);
                 setInstantTopic('');
               }}
-              className="px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all flex items-center space-x-1"
+              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
             >
-              <Zap className="w-3 h-3 text-amber-300" />
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
               <span>Try 1-Click Studio</span>
             </button>
           </div>
         </div>
 
+        {/* ===================================================================== */}
+        {/* INTERACTIVE FILTER CAPSULES BAR (PLATFORM & STATUS)                   */}
+        {/* ===================================================================== */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          {/* Platform Filters */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-extrabold uppercase text-neutral-400 mr-1 flex items-center space-x-1">
+              <Filter className="w-3 h-3 text-neutral-400" />
+              <span>Platform:</span>
+            </span>
+            {[
+              { id: 'ALL', label: 'All Channels', count: events.length },
+              { id: 'INSTAGRAM', label: 'Instagram', count: events.filter(e => e.platform?.toUpperCase() === 'INSTAGRAM').length },
+              { id: 'LINKEDIN', label: 'LinkedIn', count: events.filter(e => e.platform?.toUpperCase() === 'LINKEDIN').length },
+              { id: 'FACEBOOK', label: 'Facebook', count: events.filter(e => e.platform?.toUpperCase() === 'FACEBOOK').length },
+              { id: 'TWITTER', label: 'Twitter / X', count: events.filter(e => e.platform?.toUpperCase() === 'TWITTER').length }
+            ].map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setFilterPlatform(p.id)}
+                className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer flex items-center space-x-1.5 border ${
+                  filterPlatform === p.id
+                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                    : 'bg-white text-neutral-600 border-neutral-200/80 hover:bg-neutral-50'
+                }`}
+              >
+                <span>{p.label}</span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
+                  filterPlatform === p.id ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-500'
+                }`}>
+                  {p.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Status Filters */}
+          <div className="flex items-center space-x-1.5">
+            {[
+              { id: 'ALL', label: 'All Status' },
+              { id: 'QUEUED', label: 'Queued', color: 'bg-indigo-500' },
+              { id: 'PUBLISHED', label: 'Published', color: 'bg-emerald-500' },
+              { id: 'FAILED', label: 'Failed', color: 'bg-rose-500' }
+            ].map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setFilterStatus(s.id)}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all cursor-pointer border ${
+                  filterStatus === s.id
+                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                    : 'bg-white text-neutral-500 border-neutral-200/80 hover:bg-neutral-50'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {notice && (
-          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 ${
+          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 animate-in fade-in duration-200 ${
             notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
           }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
@@ -859,43 +1110,73 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* Main Content Area */}
+        {/* ===================================================================== */}
+        {/* MAIN CALENDAR GRID & BENTO SIDEBAR AREA                               */}
+        {/* ===================================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Calendar Grid Area (3 Cols) */}
           <div className="lg:col-span-3">
             {/* MONTH VIEW */}
             {viewMode === 'MONTH' && (
-              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-[11px] font-bold text-slate-600 py-2.5">
+              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
+                {/* Weekday Header */}
+                <div className="grid grid-cols-7 border-b border-neutral-100 bg-neutral-50/70 text-center text-[11px] font-bold tracking-wider text-neutral-400 uppercase py-3">
                   <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                 </div>
 
-                <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 min-h-[560px]">
+                {/* Days Grid */}
+                <div className="grid grid-cols-7 divide-x divide-y divide-neutral-100/90 min-h-[580px]">
                   {monthDays.map((dayItem, idx) => {
                     const isToday = today ? isSameDay(dayItem.date, today) : false;
-                    const dayEvents = events.filter(e => isSameDay(new Date(e.scheduledFor), dayItem.date));
+                    const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), dayItem.date));
 
                     return (
                       <div
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
-                        className={`p-1.5 flex flex-col justify-between transition-colors min-h-[95px] ${
-                          dayItem.isCurrentMonth ? 'bg-white' : 'bg-slate-50/50 text-slate-400'
-                        } hover:bg-indigo-50/20`}
+                        className={`p-2 flex flex-col justify-between transition-all min-h-[110px] relative group/cell ${
+                          dayItem.isCurrentMonth
+                            ? isToday
+                              ? 'bg-gradient-to-b from-indigo-50/50 via-white to-white ring-1 ring-inset ring-indigo-200/70'
+                              : 'bg-white hover:bg-indigo-50/25'
+                            : 'bg-neutral-50/40 text-neutral-400'
+                        }`}
                       >
+                        {/* Day Cell Header */}
                         <div className="flex items-center justify-between">
-                          <span className={`text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center ${
-                            isToday ? 'bg-indigo-600 text-white font-black' : 'text-slate-700'
-                          }`}>
-                            {dayItem.date.getDate()}
-                          </span>
+                          <div className="flex items-center space-x-1">
+                            <span className={`text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                              isToday
+                                ? 'bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-black shadow-[0_2px_8px_rgba(79,70,229,0.35)] ring-2 ring-indigo-200'
+                                : 'text-neutral-700 group-hover/cell:text-indigo-600'
+                            }`}>
+                              {dayItem.date.getDate()}
+                            </span>
+                            {isToday && (
+                              <span className="text-[9px] font-black uppercase text-indigo-600 tracking-wider hidden sm:inline">
+                                Today
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Quick '+' Button on Cell Hover */}
+                          <button
+                            type="button"
+                            onClick={() => handleQuickScheduleOnDate(dayItem.date)}
+                            title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
+                            className="w-5 h-5 rounded-md bg-neutral-100 hover:bg-indigo-600 hover:text-white text-neutral-500 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
                         </div>
 
-                        {/* Event Pills with Drag and Drop */}
-                        <div className="space-y-1 my-1 overflow-y-auto max-h-24">
+                        {/* Event Cards with Drag and Drop */}
+                        <div className="space-y-1.5 my-1.5 overflow-y-auto max-h-24 pr-0.5">
                           {dayEvents.map(ev => {
                             const isDraggable = ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING';
+                            const style = getEventCardStyle(ev.title, ev.status);
+
                             return (
                               <div
                                 key={ev.id}
@@ -907,21 +1188,51 @@ export default function CalendarPage() {
                                   setEditTitle(ev.title);
                                   setEditCaption(ev.caption);
                                 }}
-                                className={`w-full text-left p-1 rounded text-[10px] font-semibold truncate block transition-all cursor-pointer border ${
-                                  isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-2xs' : 'cursor-pointer'
-                                } ${getPhaseBadgeStyle(ev.title, ev.status)}`}
+                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group border ${
+                                  isDraggable ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5' : 'cursor-pointer'
+                                } ${style.cardBg}`}
                               >
-                                <span className="font-bold mr-1">
-                                  [{ev.platform.slice(0, 2)}]
-                                </span>
-                                {ev.title}
+                                {/* Left colored accent bar */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.barColor}`} />
+
+                                <div className="pl-1 space-y-1">
+                                  {/* Top meta row */}
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center space-x-1">
+                                      <PlatformMicroIcon platform={ev.platform} />
+                                      <span className="font-mono text-[9px] font-semibold text-slate-500">
+                                        {formatPostTime(ev.scheduledFor)}
+                                      </span>
+                                    </div>
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
+                                  </div>
+
+                                  {/* Title & Thumbnail row */}
+                                  <div className="flex items-center space-x-1.5">
+                                    {ev.mediaUrls && ev.mediaUrls[0] ? (
+                                      <img
+                                        src={ev.mediaUrls[0]}
+                                        alt=""
+                                        className="w-4 h-4 rounded object-cover shrink-0 border border-black/10"
+                                      />
+                                    ) : (
+                                      <span className="text-[10px] shrink-0 opacity-80">
+                                        {ev.format === 'REEL' ? '🎬' : ev.format === 'CAROUSEL' ? '📑' : '📸'}
+                                      </span>
+                                    )}
+                                    <p className="font-bold text-slate-900 truncate leading-tight text-[10px]">
+                                      {ev.title}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             );
                           })}
                         </div>
 
-                        <div className="text-right text-[9px] text-slate-300">
-                          {dayEvents.length > 0 && `${dayEvents.length} post(s)`}
+                        {/* Cell Footer */}
+                        <div className="flex items-center justify-between text-[9px] text-neutral-400 pt-0.5">
+                          <span>{dayEvents.length > 0 ? `${dayEvents.length} drop${dayEvents.length > 1 ? 's' : ''}` : ''}</span>
                         </div>
                       </div>
                     );
@@ -932,47 +1243,63 @@ export default function CalendarPage() {
 
             {/* WEEK VIEW */}
             {viewMode === 'WEEK' && (
-              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-bold text-slate-700 py-3">
-                  {weekDays.map((d, i) => (
-                    <div key={i} className="space-y-0.5">
-                      <p className="text-[11px] text-slate-500">{d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                      <p className={`text-sm font-black ${today && isSameDay(d, today) ? 'text-indigo-600' : 'text-slate-900'}`}>{d.getDate()}</p>
-                    </div>
-                  ))}
+              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
+                <div className="grid grid-cols-7 border-b border-neutral-100 bg-neutral-50/70 text-center text-xs font-bold text-neutral-700 py-3">
+                  {weekDays.map((d, i) => {
+                    const isDayToday = today && isSameDay(d, today);
+                    return (
+                      <div key={i} className="space-y-0.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                          {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </p>
+                        <div className="flex items-center justify-center">
+                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black ${
+                            isDayToday ? 'bg-indigo-600 text-white shadow-sm' : 'text-neutral-900'
+                          }`}>
+                            {d.getDate()}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <div className="grid grid-cols-7 divide-x divide-slate-100 min-h-[480px]">
+                <div className="grid grid-cols-7 divide-x divide-neutral-100 min-h-[500px]">
                   {weekDays.map((d, i) => {
-                    const dayEvents = events.filter(e => isSameDay(new Date(e.scheduledFor), d));
+                    const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), d));
                     return (
                       <div
                         key={i}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, d)}
-                        className="p-2 space-y-2 hover:bg-indigo-50/20 transition-colors"
+                        className="p-2 space-y-2.5 hover:bg-indigo-50/20 transition-colors"
                       >
-                        {dayEvents.map(ev => (
-                          <div
-                            key={ev.id}
-                            draggable={ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING'}
-                            onDragStart={(e) => handleDragStart(e, ev)}
-                            onClick={() => {
-                              setSelectedEvent(ev);
-                              setIsEditing(false);
-                              setEditTitle(ev.title);
-                              setEditCaption(ev.caption);
-                            }}
-                            className={`p-2 rounded-lg text-xs font-semibold cursor-pointer border shadow-2xs space-y-1 ${getPhaseBadgeStyle(ev.title, ev.status)}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase">{ev.platform}</span>
-                              <span className="text-[9px] font-bold">{new Date(ev.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {dayEvents.map(ev => {
+                          const style = getEventCardStyle(ev.title, ev.status);
+                          return (
+                            <div
+                              key={ev.id}
+                              draggable={ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING'}
+                              onDragStart={(e) => handleDragStart(e, ev)}
+                              onClick={() => {
+                                setSelectedEvent(ev);
+                                setIsEditing(false);
+                                setEditTitle(ev.title);
+                                setEditCaption(ev.caption);
+                              }}
+                              className={`p-2.5 rounded-2xl text-xs cursor-pointer border shadow-xs space-y-1.5 transition-all hover:shadow-md hover:-translate-y-0.5 ${style.cardBg}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <PlatformPill platform={ev.platform} />
+                                <span className="font-mono text-[10px] font-bold text-neutral-500">
+                                  {formatPostTime(ev.scheduledFor)}
+                                </span>
+                              </div>
+                              <p className="font-bold text-neutral-900 line-clamp-1">{ev.title}</p>
+                              <p className="text-[11px] text-neutral-500 line-clamp-2 leading-snug">{ev.caption}</p>
                             </div>
-                            <p className="font-bold truncate">{ev.title}</p>
-                            <p className="text-[10px] text-slate-500 line-clamp-2">{ev.caption}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })}
@@ -982,121 +1309,165 @@ export default function CalendarPage() {
 
             {/* DAY VIEW */}
             {viewMode === 'DAY' && (
-              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 space-y-4">
-                <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900">
-                    Schedule for {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                  </h3>
-                  <span className="text-xs text-slate-500">
-                    {events.filter(e => isSameDay(new Date(e.scheduledFor), currentDate)).length} scheduled item(s)
+              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] p-6 space-y-5">
+                <div className="pb-4 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-lg font-black text-neutral-900 tracking-tight">
+                      Agenda for {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Review all scheduled drops and execution times for today.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full w-fit">
+                    {filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), currentDate)).length} scheduled drop(s)
                   </span>
                 </div>
 
                 <div className="space-y-3">
-                  {events
+                  {filteredEvents
                     .filter(e => isSameDay(new Date(e.scheduledFor), currentDate))
-                    .map(ev => (
-                      <div
-                        key={ev.id}
-                        onClick={() => {
-                          setSelectedEvent(ev);
-                          setIsEditing(false);
-                          setEditTitle(ev.title);
-                          setEditCaption(ev.caption);
-                        }}
-                        className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer flex items-center justify-between bg-white shadow-2xs"
-                      >
-                        <div className="flex items-start space-x-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                            ev.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                          }`}>
-                            {ev.platform.slice(0, 2)}
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-900">{ev.title}</h4>
-                            <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{ev.caption}</p>
-                            <div className="mt-1 flex items-center space-x-2 text-[10px] text-slate-400">
-                              <span>Time: {new Date(ev.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              <span>• {ev.accountName}</span>
+                    .map(ev => {
+                      const style = getEventCardStyle(ev.title, ev.status);
+                      return (
+                        <div
+                          key={ev.id}
+                          onClick={() => {
+                            setSelectedEvent(ev);
+                            setIsEditing(false);
+                            setEditTitle(ev.title);
+                            setEditCaption(ev.caption);
+                          }}
+                          className="p-4 rounded-2xl border border-neutral-200/90 hover:border-indigo-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white shadow-xs hover:shadow-md"
+                        >
+                          <div className="flex items-start space-x-3.5">
+                            {ev.mediaUrls && ev.mediaUrls[0] ? (
+                              <img
+                                src={ev.mediaUrls[0]}
+                                alt=""
+                                className="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-lg shrink-0">
+                                {ev.format === 'REEL' ? '🎬' : '📸'}
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <PlatformPill platform={ev.platform} />
+                                <span className="font-mono text-xs font-bold text-neutral-600">
+                                  {formatPostTime(ev.scheduledFor)}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-bold text-neutral-900 mt-1">{ev.title}</h4>
+                              <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">{ev.caption}</p>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                            ev.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                          }`}>
-                            {ev.status}
-                          </span>
+                          <div className="flex items-center space-x-2 shrink-0">
+                            <span className={`text-[10px] font-extrabold uppercase px-3 py-1 rounded-full border ${style.badge}`}>
+                              {ev.status}
+                            </span>
+                            <button
+                              type="button"
+                              className="px-3.5 py-1 text-xs font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-full transition-colors"
+                            >
+                              Inspect
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             )}
 
             {/* LIST VIEW */}
             {viewMode === 'LIST' && (
-              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] divide-y divide-neutral-100 overflow-hidden">
-                {events.map(ev => (
-                  <div key={ev.id} className="p-4.5 flex items-center justify-between hover:bg-neutral-50 transition-colors">
-                    <div className="flex items-start space-x-3.5">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                        ev.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {ev.platform.slice(0, 2)}
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-neutral-900">{ev.title}</h4>
-                        <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">{ev.caption}</p>
-                        <div className="mt-1 flex items-center space-x-2 text-[10px] text-neutral-400">
-                          <span>Scheduled: {new Date(ev.scheduledFor).toLocaleString()}</span>
-                          <span>• {ev.brandName}</span>
+              <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] divide-y divide-neutral-100 overflow-hidden">
+                {filteredEvents.map(ev => {
+                  const style = getEventCardStyle(ev.title, ev.status);
+                  return (
+                    <div key={ev.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50/70 transition-colors">
+                      <div className="flex items-start space-x-3.5">
+                        {ev.mediaUrls && ev.mediaUrls[0] ? (
+                          <img
+                            src={ev.mediaUrls[0]}
+                            alt=""
+                            className="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/10"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-xl bg-neutral-100 flex items-center justify-center text-base shrink-0">
+                            {ev.format === 'REEL' ? '🎬' : '📸'}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <PlatformPill platform={ev.platform} />
+                            <span className="font-mono text-[11px] text-neutral-500">
+                              {new Date(ev.scheduledFor).toLocaleDateString()} at {formatPostTime(ev.scheduledFor)}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-neutral-900 mt-1">{ev.title}</h4>
+                          <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">{ev.caption}</p>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                        ev.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'
-                      }`}>
-                        {ev.status}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setSelectedEvent(ev);
-                          setIsEditing(false);
-                          setEditTitle(ev.title);
-                          setEditCaption(ev.caption);
-                        }}
-                        className="text-xs text-neutral-800 hover:text-neutral-950 font-semibold px-3 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
-                      >
-                        Inspect
-                      </button>
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${style.badge}`}>
+                          {ev.status}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSelectedEvent(ev);
+                            setIsEditing(false);
+                            setEditTitle(ev.title);
+                            setEditCaption(ev.caption);
+                          }}
+                          className="text-xs text-neutral-800 hover:text-neutral-950 font-bold px-3 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors cursor-pointer"
+                        >
+                          Inspect
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Upcoming Publications Sidebar (1 Col) */}
+          {/* ===================================================================== */}
+          {/* BENTO SIDEBAR: UPCOMING PIPELINE & VELOCITY STATS                     */}
+          {/* ===================================================================== */}
           <div className="space-y-4">
-            <div className="bg-white p-6 rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-3.5">
+            {/* Bento Card 1: Upcoming Publications */}
+            <div className="bg-white p-5 rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.02)] space-y-3.5">
               <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
                 <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Clock className="w-3.5 h-3.5 text-neutral-600" />
-                  <span>Upcoming Publications</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Live Pipeline</span>
                 </h3>
-                <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full">
-                  {upcomingPosts.length}
+                <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full font-mono">
+                  {upcomingPosts.length} Queued
                 </span>
               </div>
 
               {upcomingPosts.length === 0 ? (
-                <p className="text-xs text-slate-400 py-3 text-center">No queued publications due.</p>
+                <div className="text-center py-6 space-y-2">
+                  <p className="text-xs text-neutral-400">No queued publications due.</p>
+                  <button
+                    onClick={() => {
+                      setShowInstantModal(true);
+                      setGeneratedInstantPost(null);
+                      setInstantTopic('');
+                    }}
+                    className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                  >
+                    + Schedule a quick post now
+                  </button>
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {upcomingPosts.map(post => (
                     <div
                       key={post.id}
@@ -1106,29 +1477,64 @@ export default function CalendarPage() {
                         setEditTitle(post.title);
                         setEditCaption(post.caption);
                       }}
-                      className="p-2.5 rounded-lg border border-slate-100 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/20 transition-all cursor-pointer space-y-1"
+                      className="p-3 rounded-2xl border border-neutral-100 hover:border-indigo-300 bg-neutral-50/60 hover:bg-indigo-50/20 transition-all cursor-pointer space-y-1.5"
                     >
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-slate-700">{post.platform}</span>
-                        <span className="text-slate-400">{new Date(post.scheduledFor).toLocaleDateString()}</span>
+                      <div className="flex items-center justify-between">
+                        <PlatformPill platform={post.platform} />
+                        <span className="font-mono text-[10px] font-semibold text-neutral-500">
+                          {formatPostTime(post.scheduledFor)}
+                        </span>
                       </div>
-                      <p className="text-xs font-bold text-slate-900 truncate">{post.title}</p>
-                      <p className="text-[10px] text-slate-500 line-clamp-1">{post.caption}</p>
+                      <p className="text-xs font-bold text-neutral-900 truncate">{post.title}</p>
+                      <p className="text-[10px] text-neutral-500 line-clamp-1">{post.caption}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Bento Card 2: Editorial Velocity & Health */}
+            <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white p-5 rounded-[28px] border border-indigo-800/40 shadow-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-indigo-300 tracking-wider">
+                  Editorial Velocity
+                </span>
+                <span className="text-[10px] bg-emerald-400/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                  Healthy
+                </span>
+              </div>
+              <div>
+                <p className="text-2xl font-black tracking-tight">{events.filter(e => e.status === 'QUEUED').length} Drops Scheduled</p>
+                <p className="text-[11px] text-indigo-200/80 mt-0.5">
+                  {events.filter(e => e.status === 'PUBLISHED').length} posts published • Consistent multi-channel presence.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInstantModal(true);
+                  setGeneratedInstantPost(null);
+                  setInstantTopic('');
+                }}
+                className="w-full py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>⚡ Auto-Fill With 1-Click Drop</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Event Detail & Reschedule Modal */}
+        {/* ===================================================================== */}
+        {/* EVENT DETAIL & RESCHEDULE MODAL (ULTRA-PREMIUM REDESIGN)             */}
+        {/* ===================================================================== */}
         {selectedEvent && (
-          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
                 <div className="flex items-center space-x-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  <PlatformPill platform={selectedEvent.platform} />
+                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
                     selectedEvent.status === 'PUBLISHED'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : selectedEvent.status === 'QUEUED'
@@ -1137,16 +1543,18 @@ export default function CalendarPage() {
                   }`}>
                     {selectedEvent.status}
                   </span>
-                  <span className="text-xs font-bold text-slate-500">{selectedEvent.platform} ({selectedEvent.accountName})</span>
                 </div>
-                <button onClick={() => setSelectedEvent(null)} className="text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Error Alert if Failed */}
               {selectedEvent.status === 'FAILED' && selectedEvent.errorMessage && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1">
                   <div className="flex items-center space-x-1.5 font-bold">
                     <AlertTriangle className="w-4 h-4 text-rose-600" />
                     <span>Publication Failed</span>
@@ -1159,57 +1567,69 @@ export default function CalendarPage() {
               {isEditing ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Title</label>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Title</label>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5"
+                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Caption</label>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Caption</label>
                     <textarea
                       rows={3}
                       value={editCaption}
                       onChange={(e) => setEditCaption(e.target.value)}
-                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5"
+                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-900">{selectedEvent.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">{selectedEvent.caption}</p>
-
-                  <div className="grid grid-cols-2 gap-2 pt-2 text-[11px]">
-                    <div className="p-2 bg-slate-50 rounded-lg">
-                      <span className="text-slate-400 block text-[10px]">Scheduled Time</span>
-                      <span className="font-bold text-slate-700">{new Date(selectedEvent.scheduledFor).toLocaleString()}</span>
+                <div className="space-y-3">
+                  {selectedEvent.mediaUrls && selectedEvent.mediaUrls[0] && (
+                    <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-900">
+                      <img
+                        src={selectedEvent.mediaUrls[0]}
+                        alt="Post media"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <div className="p-2 bg-slate-50 rounded-lg">
-                      <span className="text-slate-400 block text-[10px]">Published Time</span>
-                      <span className="font-bold text-slate-700">{selectedEvent.publishedAt ? new Date(selectedEvent.publishedAt).toLocaleString() : 'Not published'}</span>
+                  )}
+
+                  <h3 className="text-base font-extrabold text-neutral-900">{selectedEvent.title}</h3>
+                  <p className="text-xs text-neutral-600 leading-relaxed bg-neutral-50 p-3.5 rounded-2xl border border-neutral-100 whitespace-pre-wrap">
+                    {selectedEvent.caption}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                    <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <span className="text-neutral-400 block text-[10px] font-bold uppercase">Scheduled Time</span>
+                      <span className="font-bold text-neutral-800">{new Date(selectedEvent.scheduledFor).toLocaleString()}</span>
+                    </div>
+                    <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <span className="text-neutral-400 block text-[10px] font-bold uppercase">Published Time</span>
+                      <span className="font-bold text-neutral-800">{selectedEvent.publishedAt ? new Date(selectedEvent.publishedAt).toLocaleString() : 'Not published yet'}</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Reschedule Picker (Only available for QUEUED or FAILED posts) */}
+              {/* Reschedule Picker */}
               {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' && (
-                <div className="pt-2 border-t border-slate-100 space-y-2">
-                  <label className="block text-xs font-bold text-slate-700">Change Scheduled Date & Time</label>
+                <div className="pt-2 border-t border-neutral-100 space-y-2">
+                  <label className="block text-xs font-bold text-neutral-700">Change Scheduled Date &amp; Time</label>
                   <div className="flex items-center space-x-2">
                     <input
                       type="datetime-local"
                       value={rescheduleDate}
                       onChange={(e) => setRescheduleDate(e.target.value)}
-                      className="w-full text-xs border border-slate-200 rounded-lg p-2"
+                      className="w-full text-xs border border-neutral-200 rounded-xl p-2 outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <button
                       onClick={handleSaveModalReschedule}
                       disabled={saving || !rescheduleDate}
-                      className="px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shrink-0 disabled:opacity-50"
+                      className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
                     >
                       Save Date
                     </button>
@@ -1218,19 +1638,19 @@ export default function CalendarPage() {
               )}
 
               {/* Modal Footer Actions */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
                 {isEditing ? (
                   <div className="flex items-center space-x-2 w-full justify-end">
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800"
+                      className="px-3 py-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-800 cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSaveContentEdit}
                       disabled={saving}
-                      className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
+                      className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition-all cursor-pointer shadow-sm"
                     >
                       {saving ? 'Saving...' : 'Update Post'}
                     </button>
@@ -1240,7 +1660,7 @@ export default function CalendarPage() {
                     {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' ? (
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                         <span>Edit Content</span>
@@ -1250,7 +1670,7 @@ export default function CalendarPage() {
                     )}
                     <button
                       onClick={() => setSelectedEvent(null)}
-                      className="px-4 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-800 bg-slate-100 rounded-lg"
+                      className="px-4 py-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-800 bg-neutral-100 rounded-xl transition-colors cursor-pointer"
                     >
                       Close
                     </button>
