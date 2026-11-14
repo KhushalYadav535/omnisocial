@@ -32,6 +32,7 @@ import {
   Share2,
   Play,
   Lightbulb,
+  ShieldCheck,
   Store,
   Briefcase,
   GraduationCap,
@@ -971,6 +972,8 @@ export default function CalendarPage() {
   const [generatedRoadmap, setGeneratedRoadmap] = useState<{ campaignSummary: any; posts: any[] } | null>(null);
   const [isDeployingCampaign, setIsDeployingCampaign] = useState(false);
   const [expandedPostIndex, setExpandedPostIndex] = useState<number | null>(0);
+  const [expandAllRoadmapCards, setExpandAllRoadmapCards] = useState<boolean>(false);
+  const [roadmapPhaseFilter, setRoadmapPhaseFilter] = useState<string>('ALL');
   const [deploySuccessModal, setDeploySuccessModal] = useState<any | null>(null);
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
 
@@ -1175,12 +1178,12 @@ export default function CalendarPage() {
 
   const handleShiftCampaignStartDate = (newStartDateStr: string) => {
     if (!generatedRoadmap || !newStartDateStr) return;
-    const newStart = new Date(newStartDateStr);
+    const newStart = new Date(newStartDateStr + 'T00:00:00');
     const durationDays = generatedRoadmap.posts.length;
     const newEnd = new Date(newStart.getTime() + (durationDays - 1) * 86400000);
 
     const updatedPosts = generatedRoadmap.posts.map((post: any, idx: number) => {
-      const postDate = new Date(newStart.getTime() + idx * (durationDays / generatedRoadmap.posts.length) * 86400000);
+      const postDate = new Date(newStart.getTime() + idx * 86400000);
       const isReel = post.format === 'REEL';
       if (isReel) {
         postDate.setHours(19, 30, 0, 0);
@@ -4347,7 +4350,7 @@ export default function CalendarPage() {
         {/* ===================================================================== */}
         {showArchitectModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className={`bg-white rounded-3xl border border-slate-200 shadow-2xl w-full ${wizardStep === 4 ? 'max-w-5xl xl:max-w-6xl' : 'max-w-4xl'} max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200`}>
               {/* Modal Top Header */}
               <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white relative">
                 <button
@@ -4935,90 +4938,129 @@ export default function CalendarPage() {
                 {/* STEP 4: ROADMAP REVIEW & DEPLOY */}
                 {wizardStep === 4 && generatedRoadmap && (
                   <div className="space-y-6">
-                    {/* Campaign Header Overview */}
-                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs font-black uppercase text-indigo-700">Strategy Blueprint Ready</span>
-                          <span className="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded-full">
-                            {generatedRoadmap.posts.length} Posts Sequence
-                          </span>
+                    {/* Hero Campaign Command Header */}
+                    <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white p-5 sm:p-6 shadow-xl border border-indigo-900/60 relative overflow-hidden">
+                      {/* Decorative background glow circles */}
+                      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+
+                      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                        {/* Left: Campaign Identity & Strategy */}
+                        <div className="space-y-2.5 max-w-2xl">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-xs tracking-wider flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-amber-300" />
+                              <span>Strategy Blueprint Ready</span>
+                            </span>
+                            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-white/10 text-slate-200 border border-white/20">
+                              {generatedRoadmap.posts.length} Drops Sequence
+                            </span>
+                            {generatedRoadmap.campaignSummary?.primaryGoal && (
+                              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                Goal: {generatedRoadmap.campaignSummary.primaryGoal}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                            {generatedRoadmap.campaignSummary?.name || 'OmniSocial Marketing Campaign'}
+                          </h3>
+
+                          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-200 flex items-start space-x-2.5 backdrop-blur-xs">
+                            <Compass className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                            <p className="leading-relaxed text-[12px] text-slate-200 font-medium">
+                              {generatedRoadmap.campaignSummary?.framework || 'Eugene Schwartz 5 Stages of Awareness & Donald Miller StoryBrand Funnel'}
+                            </p>
+                          </div>
                         </div>
-                        <h4 className="text-base font-extrabold text-slate-900 mt-0.5">
-                          {generatedRoadmap.campaignSummary?.name}
-                        </h4>
-                        <p className="text-xs text-slate-600 mt-0.5 flex items-center space-x-1">
-                          <Compass className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>{generatedRoadmap.campaignSummary?.framework}</span>
-                        </p>
+
+                        {/* Right: High-Impact Action Pair (Never clipped, prominent, responsive) */}
+                        <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleGenerateAllMedia}
+                            disabled={generatingAllMedia || isDeployingCampaign}
+                            className="px-4 py-2.5 text-xs font-bold text-indigo-100 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl shadow-sm flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <Sparkles className={`w-4 h-4 text-amber-400 ${generatingAllMedia ? 'animate-spin' : ''}`} />
+                            <span>{generatingAllMedia ? 'Generating Visuals...' : 'Generate All AI Visuals'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleDeployCampaign}
+                            disabled={isDeployingCampaign || generatingAllMedia}
+                            className="px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-2xl shadow-lg shadow-emerald-950/40 flex items-center justify-center space-x-2 transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+                          >
+                            {isDeployingCampaign ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                <span>Deploying to Calendar...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Rocket className="w-4 h-4 text-white" />
+                                <span>🚀 1-Click Deploy to Calendar</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                        {/* 1-Click Shift Start Date Input */}
-                        <div className="flex items-center space-x-1.5 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-xs text-xs">
-                          <CalendarIcon className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          <span className="text-[10px] font-bold text-slate-500 uppercase">Shift Start:</span>
-                          <input
-                            type="date"
-                            value={new Date(generatedRoadmap.campaignSummary?.startDate || Date.now()).toISOString().split('T')[0]}
-                            onChange={(e) => handleShiftCampaignStartDate(e.target.value)}
-                            className="text-xs font-semibold text-slate-800 bg-transparent outline-none cursor-pointer"
-                          />
+                      {/* Smart Toolbar Row */}
+                      <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        {/* Left Toolbar: Date shifter, UTM toggle, Presentation deck */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* 1-Click Shift Start Date Input */}
+                          <div className="flex items-center space-x-2 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-white">
+                            <CalendarIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
+                            <span className="text-[10px] font-bold text-slate-300 uppercase">Start Date:</span>
+                            <input
+                              type="date"
+                              value={new Date(generatedRoadmap.campaignSummary?.startDate || Date.now()).toISOString().split('T')[0]}
+                              onChange={(e) => handleShiftCampaignStartDate(e.target.value)}
+                              className="text-xs font-bold text-white bg-transparent outline-none cursor-pointer [color-scheme:dark]"
+                            />
+                          </div>
+
+                          {/* UTM Tracking Parameter Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setEnableUtmTracking(!enableUtmTracking)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center space-x-1.5 cursor-pointer ${
+                              enableUtmTracking
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
+                                : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                            }`}
+                          >
+                            <span>{enableUtmTracking ? '✓ UTM Tracking Active' : 'UTM Tracking Off'}</span>
+                          </button>
+
+                          {/* Export Campaign Presentation Deck */}
+                          <button
+                            type="button"
+                            onClick={handleExportCampaignDeck}
+                            className="px-3.5 py-1.5 text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-indigo-300" />
+                            <span>{copiedDeckStatus ? '✓ Copied Deck!' : 'Export Deck'}</span>
+                          </button>
                         </div>
 
-                        {/* UTM Tracking Parameter Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => setEnableUtmTracking(!enableUtmTracking)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-full border transition-all flex items-center space-x-1 cursor-pointer ${
-                            enableUtmTracking
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          <span>{enableUtmTracking ? '✓ UTM Active' : 'UTM Off'}</span>
-                        </button>
-
-                        {/* Export Campaign Presentation Deck */}
-                        <button
-                          type="button"
-                          onClick={handleExportCampaignDeck}
-                          className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>{copiedDeckStatus ? '✓ Copied Deck!' : 'Export Deck'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleGenerateAllMedia}
-                          disabled={generatingAllMedia || isDeployingCampaign}
-                          className="px-4 py-2 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-white border border-indigo-200 hover:border-indigo-400 rounded-full shadow-xs flex items-center space-x-1.5 transition-all disabled:opacity-50"
-                        >
-                          <Sparkles className={`w-3.5 h-3.5 text-amber-500 ${generatingAllMedia ? 'animate-spin' : ''}`} />
-                          <span>{generatingAllMedia ? 'Generating All Visuals...' : 'Generate Visuals For All Days'}</span>
-                        </button>
-                        <button
-                          onClick={handleDeployCampaign}
-                          disabled={isDeployingCampaign || generatingAllMedia}
-                          className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-full shadow-lg flex items-center space-x-2 transition-all disabled:opacity-50"
-                        >
-                          {isDeployingCampaign ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              <span>Scheduling Posts into Calendar...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Rocket className="w-4 h-4" />
-                              <span>🚀 1-Click Deploy to Calendar</span>
-                            </>
-                          )}
-                        </button>
+                        {/* Right Toolbar: Expand/Collapse All toggle */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setExpandAllRoadmapCards(!expandAllRoadmapCards)}
+                            className="px-3 py-1.5 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/30 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
+                          >
+                            <span>{expandAllRoadmapCards ? '▲ Collapse All Cards' : '▼ Expand All Cards'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Dynamic Strategy & Performance Forecast */}
+                    {/* Executive Performance Forecast (Glassmorphic Telemetry Cards) */}
                     {(() => {
                       const totalPosts = generatedRoadmap.posts.length;
                       const valuePosts = generatedRoadmap.posts.filter((p: any) =>
@@ -5027,597 +5069,718 @@ export default function CalendarPage() {
                       const valuePercent = Math.round((valuePosts / (totalPosts || 1)) * 100);
                       const pitchPercent = 100 - valuePercent;
 
+                      const minReachK = Math.max(10, Math.round(totalPosts * 3.8));
+                      const maxReachK = Math.max(25, Math.round(totalPosts * 9.2));
+                      const minLeads = Math.max(15, totalPosts * 6);
+                      const maxLeads = Math.max(40, totalPosts * 16);
+
                       return (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Estimated Impressions</span>
-                            <span className="text-sm font-black text-indigo-600 mt-0.5 block">18.5k – 45.0k</span>
-                            <span className="text-[9px] text-emerald-600 font-semibold mt-0.5 block">↑ High Reach Velocity</span>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                          <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-slate-500 mb-1">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Estimated Reach</span>
+                              <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">📈</div>
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-slate-900">{minReachK}k – {maxReachK}k</div>
+                              <span className="text-[10px] text-emerald-600 font-bold mt-0.5 flex items-center gap-0.5">
+                                <span>↑ High Organic Velocity</span>
+                              </span>
+                            </div>
                           </div>
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Projected DM Leads</span>
-                            <span className="text-sm font-black text-emerald-600 mt-0.5 block">35 – 90 Inquiries</span>
-                            <span className="text-[9px] text-slate-500 font-medium mt-0.5 block">Automated Keywords</span>
+
+                          <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-slate-500 mb-1">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Projected DM Leads</span>
+                              <div className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">💬</div>
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-emerald-700">{minLeads} – {maxLeads} Leads</div>
+                              <span className="text-[10px] text-slate-500 font-medium mt-0.5 block">Comment Keywords Active</span>
+                            </div>
                           </div>
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">80/20 Funnel Health</span>
-                            <span className="text-sm font-black text-amber-600 mt-0.5 block">{valuePercent}% Value / {pitchPercent}% Offer</span>
-                            <span className="text-[9px] text-amber-700 font-semibold mt-0.5 block">✓ Balanced Conversion Ratio</span>
+
+                          <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-amber-300 transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-slate-500 mb-1">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">80/20 Funnel Health</span>
+                              <div className="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">⚖️</div>
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-slate-900">{valuePercent}% Value / {pitchPercent}% Offer</div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden flex">
+                                <div className="bg-indigo-500 h-full" style={{ width: `${valuePercent}%` }} />
+                                <div className="bg-amber-500 h-full" style={{ width: `${pitchPercent}%` }} />
+                              </div>
+                            </div>
                           </div>
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Smart Slot Engine</span>
-                            <span className="text-sm font-black text-purple-600 mt-0.5 block">Optimal Peak Times</span>
-                            <span className="text-[9px] text-purple-700 font-semibold mt-0.5 block">Format-Aware Scheduling</span>
+
+                          <div className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between">
+                            <div className="flex items-center justify-between text-slate-500 mb-1">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Smart Slot Engine</span>
+                              <div className="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">⏰</div>
+                            </div>
+                            <div>
+                              <div className="text-base font-black text-purple-700">Prime Peak Windows</div>
+                              <span className="text-[10px] text-purple-600 font-medium mt-0.5 block">7:30P Reels • 12:30P Carousels</span>
+                            </div>
                           </div>
                         </div>
                       );
                     })()}
 
-                    {/* Sequential Day-by-Day Cards */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                          Sequential Content Roadmap (Day 1 to Day {generatedRoadmap.posts.length})
-                        </h4>
-                        <span className="text-[11px] text-slate-500">
-                          Click any day to inspect shooting instructions & caption
-                        </span>
+                    {/* Section Header with Format / Phase Filters */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div>
+                          <h4 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center space-x-2">
+                            <span>Sequential Content Roadmap</span>
+                            <span className="text-xs font-bold text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                              Day 1 to Day {generatedRoadmap.posts.length}
+                            </span>
+                          </h4>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Click any day to inspect shooting instructions, swap dynamic hooks, or edit copy inline.
+                          </p>
+                        </div>
+
+                        {/* Format Filters */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {[
+                            { id: 'ALL', label: `All Drops (${generatedRoadmap.posts.length})` },
+                            { id: 'REEL', label: `🎬 Reels (${generatedRoadmap.posts.filter((p: any) => p.format === 'REEL').length})` },
+                            { id: 'CAROUSEL', label: `📑 Carousels (${generatedRoadmap.posts.filter((p: any) => p.format === 'CAROUSEL').length})` },
+                            { id: 'SINGLE_IMAGE', label: `📸 Photos (${generatedRoadmap.posts.filter((p: any) => p.format === 'SINGLE_IMAGE').length})` }
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setRoadmapPhaseFilter(tab.id)}
+                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                                roadmapPhaseFilter === tab.id
+                                  ? 'bg-slate-900 text-white shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                              }`}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      {generatedRoadmap.posts.map((post: any, idx: number) => {
-                        const isExpanded = expandedPostIndex === idx;
-                        const phaseColorClass =
-                          post.phaseBadgeColor === 'amber'
-                            ? 'bg-amber-100 text-amber-900 border-amber-300'
-                            : post.phaseBadgeColor === 'blue'
-                              ? 'bg-sky-100 text-sky-900 border-sky-300'
-                              : post.phaseBadgeColor === 'purple'
-                                ? 'bg-purple-100 text-purple-900 border-purple-300'
-                                : post.phaseBadgeColor === 'emerald'
-                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                                  : 'bg-rose-100 text-rose-900 border-rose-300';
+                      {/* Day Cards List */}
+                      {generatedRoadmap.posts
+                        .filter((post: any) => roadmapPhaseFilter === 'ALL' || post.format === roadmapPhaseFilter)
+                        .map((post: any, idx: number) => {
+                          const originalIdx = generatedRoadmap.posts.findIndex((p: any) => p.dayNumber === post.dayNumber);
+                          const currentIdx = originalIdx >= 0 ? originalIdx : idx;
+                          const isExpanded = expandAllRoadmapCards || expandedPostIndex === currentIdx;
+                          const phaseColorClass =
+                            post.phaseBadgeColor === 'amber'
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : post.phaseBadgeColor === 'blue'
+                                ? 'bg-sky-100 text-sky-900 border-sky-300'
+                                : post.phaseBadgeColor === 'purple'
+                                  ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                  : post.phaseBadgeColor === 'emerald'
+                                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                    : 'bg-rose-100 text-rose-900 border-rose-300';
 
-                        return (
-                          <div
-                            key={idx}
-                            className={`rounded-2xl border transition-all overflow-hidden ${isExpanded ? 'border-indigo-400 bg-white shadow-md' : 'border-slate-200 bg-slate-50/50 hover:bg-white'
-                              }`}
-                          >
-                            {/* Card Accordion Header */}
+                          return (
                             <div
-                              onClick={() => setExpandedPostIndex(isExpanded ? null : idx)}
-                              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
+                              key={currentIdx}
+                              className={`rounded-2xl border transition-all overflow-hidden ${
+                                isExpanded
+                                  ? 'border-indigo-400 bg-white shadow-md ring-1 ring-indigo-500/20'
+                                  : 'border-slate-200 bg-white hover:border-slate-300 shadow-2xs'
+                              }`}
                             >
-                              <div className="flex items-center space-x-3">
-                                <span className="w-8 h-8 rounded-full bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
-                                  D{post.dayNumber}
-                                </span>
-                                <div>
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${phaseColorClass}`}>
-                                      {post.phaseLabel}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">
-                                      [{post.format}] • {post.targetPlatform}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs font-bold text-slate-900 mt-1">{post.title}</p>
-                                </div>
-                              </div>
+                              {/* Card Accordion Header */}
+                              <div
+                                onClick={() => setExpandedPostIndex(isExpanded ? null : currentIdx)}
+                                className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 cursor-pointer hover:bg-slate-50/60 transition-colors"
+                              >
+                                {/* Left identity & hook */}
+                                <div className="flex items-start sm:items-center space-x-3.5 flex-1 min-w-0">
+                                  <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-900 to-indigo-950 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                                    D{post.dayNumber}
+                                  </span>
 
-                              <div className="flex flex-wrap items-center gap-2">
-                                {/* Format Switcher Pills */}
-                                <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-[10px] font-bold" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleTogglePostFormat(idx, 'REEL')}
-                                    className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${post.format === 'REEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
-                                  >
-                                    🎬 Reel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleTogglePostFormat(idx, 'CAROUSEL')}
-                                    className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${post.format === 'CAROUSEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
-                                  >
-                                    📑 Carousel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleTogglePostFormat(idx, 'SINGLE_IMAGE')}
-                                    className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${post.format === 'SINGLE_IMAGE' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
-                                  >
-                                    📸 Photo
-                                  </button>
-                                </div>
-
-                                {/* Quick Inline Edit Toggle */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (editingPostIndex === idx) {
-                                      handleSaveInlineEditPost(idx);
-                                    } else {
-                                      setExpandedPostIndex(idx);
-                                      handleStartInlineEditPost(idx, post);
-                                    }
-                                  }}
-                                  className={`px-2.5 py-1 text-[10px] font-bold rounded-full border transition-all cursor-pointer ${
-                                    editingPostIndex === idx
-                                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                                  }`}
-                                >
-                                  {editingPostIndex === idx ? '✓ Save' : '✏️ Edit'}
-                                </button>
-
-                                {/* 1-Click Single Post Regenerator */}
-                                <button
-                                  type="button"
-                                  disabled={regeneratingPostIndex === idx}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRegenerateSinglePost(idx);
-                                  }}
-                                  className="px-2.5 py-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-full border border-indigo-200 flex items-center space-x-1 transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                  <RefreshCw className={`w-3 h-3 ${regeneratingPostIndex === idx ? 'animate-spin' : ''}`} />
-                                  <span>{regeneratingPostIndex === idx ? 'Regenerating...' : '🔄 Rewrite'}</span>
-                                </button>
-
-                                <span className="text-[11px] font-semibold text-slate-400 tabular-nums">
-                                  {new Date(post.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                                <span className="text-xs text-indigo-600 font-bold">{isExpanded ? 'Hide ▲' : 'View ▼'}</span>
-                              </div>
-                            </div>
-
-                            {/* Card Expanded Details */}
-                            {isExpanded && (
-                              <div className="p-4 border-t border-slate-100 space-y-3.5 bg-slate-50/50">
-                                {/* Dynamic Hook Variations Swapper */}
-                                {post.hookVariations && post.hookVariations.length > 0 && (
-                                  <div className="p-3 bg-indigo-50/80 rounded-2xl border border-indigo-200/80 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[10px] font-extrabold text-indigo-900 uppercase tracking-wider flex items-center space-x-1">
-                                        <Sparkles className="w-3 h-3 text-indigo-600" />
-                                        <span>Dynamic Hook Variations (Click to Swap Active Hook):</span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                      <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${phaseColorClass}`}>
+                                        {post.phaseLabel}
                                       </span>
-                                      <span className="text-[10px] text-slate-400 font-mono font-bold">
-                                        Hook #{post.activeHookIndex !== undefined ? post.activeHookIndex + 1 : 1} Active
+                                      <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded-md">
+                                        {post.targetPlatform}
+                                      </span>
+                                      <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                                        <Flame className="w-3 h-3 text-amber-500" />
+                                        <span>{new Date(post.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {post.format === 'REEL' ? '7:30 PM Peak' : post.format === 'CAROUSEL' ? '12:30 PM Lunch' : '5:00 PM'}</span>
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                      {post.hookVariations.map((hVar: string, hIdx: number) => {
-                                        const isActive = post.activeHookIndex === hIdx || post.hook === hVar.replace(/^[A-Za-z\s]+:\s*/, '');
-                                        const label = hIdx === 0 ? 'Curiosity Hook' : hIdx === 1 ? 'Data/Contrast Hook' : 'Story Hook';
-                                        return (
-                                          <button
-                                            key={hIdx}
-                                            type="button"
-                                            onClick={() => handleSwapHookVariation(idx, hIdx, hVar)}
-                                            className={`p-2.5 text-left rounded-xl text-[11px] border transition-all cursor-pointer flex flex-col justify-between ${
-                                              isActive
-                                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs font-medium'
-                                                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                                            }`}
-                                          >
-                                            <span className={`text-[9px] font-extrabold uppercase tracking-wider mb-1 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>
-                                              {label}
-                                            </span>
-                                            <span className="line-clamp-2 leading-snug">{hVar}</span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
 
-                                {/* Inline Edit Form Mode */}
-                                {editingPostIndex === idx && editPostDraft && (
-                                  <div className="p-4 bg-white rounded-2xl border-2 border-indigo-500 shadow-md space-y-3 animate-in fade-in duration-150">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
-                                        <span>✏️ Live Editing Day {idx + 1} Post</span>
-                                      </span>
-                                      <div className="flex items-center space-x-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingPostIndex(null);
-                                            setEditPostDraft(null);
-                                          }}
-                                          className="px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleSaveInlineEditPost(idx)}
-                                          className="px-4 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full shadow-xs cursor-pointer"
-                                        >
-                                          ✓ Save Changes
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-slate-500 uppercase">Post Title</label>
-                                      <input
-                                        type="text"
-                                        value={editPostDraft.title}
-                                        onChange={(e) => setEditPostDraft({ ...editPostDraft, title: e.target.value })}
-                                        className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-                                      />
-                                    </div>
-
-                                    <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-slate-500 uppercase">Opening Hook</label>
-                                      <input
-                                        type="text"
-                                        value={editPostDraft.hook}
-                                        onChange={(e) => setEditPostDraft({ ...editPostDraft, hook: e.target.value })}
-                                        className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-                                      />
-                                    </div>
-
-                                    <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-slate-500 uppercase">Full Caption</label>
-                                      <textarea
-                                        rows={4}
-                                        value={editPostDraft.caption}
-                                        onChange={(e) => setEditPostDraft({ ...editPostDraft, caption: e.target.value })}
-                                        className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-sans"
-                                      />
-                                    </div>
-
-                                    <div className="space-y-1">
-                                      <label className="text-[10px] font-bold text-slate-500 uppercase">Lead Trigger Keyword (Comment-to-DM)</label>
-                                      <input
-                                        type="text"
-                                        value={editPostDraft.ctaKeyword}
-                                        onChange={(e) => setEditPostDraft({ ...editPostDraft, ctaKeyword: e.target.value })}
-                                        className="w-full sm:w-48 text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                                {/* Marketing Lesson Callout */}
-                                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
-                                  <div className="font-bold flex items-center space-x-1.5">
-                                    <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                                    <span>Why This Post Works (Marketing Rule for Beginners)</span>
-                                  </div>
-                                  <p className="text-[11px] leading-relaxed text-amber-800">{post.whyThisPostWorks}</p>
-                                </div>
-
-                                {/* Exact Photo to Shoot / Upload */}
-                                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-950 space-y-1">
-                                  <div className="font-bold flex items-center space-x-1.5 text-emerald-900">
-                                    <Camera className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Exact Photo to Shoot / Upload (Smartphone Guide)</span>
-                                  </div>
-                                  <p className="text-[11px] leading-relaxed text-emerald-800">
-                                    {post.photoUploadGuide || "Snap a clean photo in bright natural lighting matching this post's theme."}
-                                  </p>
-                                </div>
-
-                                {/* External AI Tools Prompt Studio */}
-                                <div className="p-4 bg-gradient-to-r from-purple-50 via-slate-50 to-indigo-50 rounded-2xl border border-purple-200/80 text-xs space-y-3">
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                    <div>
-                                      <div className="flex items-center space-x-1.5 font-black text-slate-900">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                        <span>External AI Tools Prompt Studio (1-Click Copy)</span>
-                                        <span className="text-[9px] bg-purple-200 text-purple-900 font-extrabold px-2 py-0.5 rounded-full uppercase">
-                                          Ready To Paste
-                                        </span>
-                                      </div>
-                                      <p className="text-[11px] text-slate-500 mt-0.5">
-                                        Prefer external tools like Midjourney, Runway, Kling, CapCut, or Canva? Copy tailored formulas below:
+                                    <h4 className="text-sm font-bold text-slate-900 leading-snug truncate">
+                                      {post.title}
+                                    </h4>
+                                    {post.hook && (
+                                      <p className="text-xs text-slate-500 italic truncate mt-0.5">
+                                        &ldquo;{post.hook}&rdquo;
                                       </p>
-                                    </div>
+                                    )}
+                                  </div>
+                                </div>
 
+                                {/* Right action buttons cluster */}
+                                <div className="flex flex-wrap items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  {/* Format Switcher Pills */}
+                                  <div className="flex items-center bg-slate-100 rounded-xl p-0.5 text-[10px] font-bold">
                                     <button
                                       type="button"
-                                      onClick={() => handleCopyAllPromptsForPost(post, `card_${idx}_all`)}
-                                      className="px-3 py-1.5 text-[11px] font-bold bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-lg shadow-xs flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer"
+                                      onClick={() => handleTogglePostFormat(currentIdx, 'REEL')}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                                        post.format === 'REEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                      }`}
                                     >
-                                      <Copy className="w-3.5 h-3.5 text-indigo-600" />
-                                      <span>{copiedPromptTab === `card_${idx}_all` ? '✓ Copied All 4!' : 'Copy All 4 Prompts'}</span>
+                                      🎬 Reel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTogglePostFormat(currentIdx, 'CAROUSEL')}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                                        post.format === 'CAROUSEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                      }`}
+                                    >
+                                      📑 Carousel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTogglePostFormat(currentIdx, 'SINGLE_IMAGE')}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                                        post.format === 'SINGLE_IMAGE' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                      }`}
+                                    >
+                                      📸 Photo
                                     </button>
                                   </div>
 
-                                  {/* Tabs for External AI Tools */}
-                                  {(() => {
-                                    const currentTab = cardActivePromptTab[idx] || 'MIDJOURNEY';
-                                    const setTab = (t: 'MIDJOURNEY' | 'RUNWAY' | 'CAPCUT' | 'CANVA') => {
-                                      setCardActivePromptTab(prev => ({ ...prev, [idx]: t }));
-                                    };
+                                  {/* Quick Inline Edit Toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (editingPostIndex === currentIdx) {
+                                        handleSaveInlineEditPost(currentIdx);
+                                      } else {
+                                        setExpandedPostIndex(currentIdx);
+                                        handleStartInlineEditPost(currentIdx, post);
+                                      }
+                                    }}
+                                    className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${
+                                      editingPostIndex === currentIdx
+                                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                                    }`}
+                                  >
+                                    {editingPostIndex === currentIdx ? '✓ Save' : '✏️ Edit'}
+                                  </button>
 
-                                    let activePromptText = post.midjourneyPrompt || post.aiImagePrompt || '';
-                                    let activeToolGuide = 'Paste directly into Midjourney Discord (/imagine) or Web for 8k photorealistic commercial quality:';
-                                    if (currentTab === 'RUNWAY') {
-                                      activePromptText = post.videoPrompt || `Slow cinematic push-in toward ${post.title.toLowerCase()}. Soft volumetric studio lighting, smooth micro-movements, high-end 4k commercial motion, 9:16 vertical video.`;
-                                      activeToolGuide = 'Paste into Runway Gen-3, Kling AI, or Luma Dream Machine as Text-to-Video or Image-to-Video motion prompt:';
-                                    } else if (currentTab === 'CAPCUT') {
-                                      activePromptText = post.voiceoverScript || `[0:00 - 0:03 HOOK]: ${post.hook}\n[0:03 - 0:10 VALUE]: ${post.caption ? post.caption.slice(0, 110).replace(/\n/g, ' ') : 'Here is the step-by-step breakdown.'}...\n[0:10 - 0:15 CTA]: Comment below to get the direct link in your DMs!`;
-                                      activeToolGuide = 'Paste into CapCut Teleprompter or AI Voiceover generator (word-by-word spoken 15s script):';
-                                    } else if (currentTab === 'CANVA') {
-                                      activePromptText = post.canvaDesignBrief || `Cover Headline: "${post.title.slice(0, 35)}" | Style: Clean modern minimalism | Primary Colors: #4F46E5 (Indigo), #0F172A (Slate), #F59E0B (Amber) | Safe Zone: Center-aligned typography.`;
-                                      activeToolGuide = 'Design blueprint for Canva, Photoshop, or Figma layout (Text overlay & color scheme):';
-                                    }
+                                  {/* 1-Click Single Post Regenerator */}
+                                  <button
+                                    type="button"
+                                    disabled={regeneratingPostIndex === currentIdx}
+                                    onClick={() => handleRegenerateSinglePost(currentIdx)}
+                                    className="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl border border-indigo-200 flex items-center space-x-1 transition-all cursor-pointer disabled:opacity-50"
+                                  >
+                                    <RefreshCw className={`w-3 h-3 ${regeneratingPostIndex === currentIdx ? 'animate-spin' : ''}`} />
+                                    <span>{regeneratingPostIndex === currentIdx ? 'Regenerating...' : '🔄 Rewrite'}</span>
+                                  </button>
 
-                                    return (
-                                      <div className="space-y-2">
-                                        {/* Tool Tab Buttons */}
-                                        <div className="flex flex-wrap gap-1.5">
-                                          {[
-                                            { id: 'MIDJOURNEY', label: '📸 Midjourney v6', badge: 'Photo' },
-                                            { id: 'RUNWAY', label: '🎬 Runway / Kling', badge: 'Video Motion' },
-                                            { id: 'CAPCUT', label: '🎙️ CapCut Voiceover', badge: '15s Script' },
-                                            { id: 'CANVA', label: '🎨 Canva Layout', badge: 'Design' }
-                                          ].map(tab => (
-                                            <button
-                                              key={tab.id}
-                                              type="button"
-                                              onClick={() => setTab(tab.id as any)}
-                                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 ${currentTab === tab.id
-                                                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                              <span>{tab.label}</span>
-                                              <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${currentTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                                                }`}>
-                                                {tab.badge}
-                                              </span>
-                                            </button>
-                                          ))}
-                                        </div>
-
-                                        {/* Prompt Display Box */}
-                                        <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
-                                          <div className="flex items-center justify-between text-[11px]">
-                                            <span className="text-slate-500 font-medium">{activeToolGuide}</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleCopyPromptWithKey(activePromptText, `card_${idx}_${currentTab}`)}
-                                              className="px-2.5 py-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md border border-indigo-200 flex items-center space-x-1 transition-all cursor-pointer"
-                                            >
-                                              <Copy className="w-3 h-3 text-indigo-600" />
-                                              <span>{copiedPromptTab === `card_${idx}_${currentTab}` ? '✓ Copied!' : 'Copy Prompt'}</span>
-                                            </button>
-                                          </div>
-                                          <p className="text-[11px] leading-relaxed font-mono text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap select-all">
-                                            {activePromptText}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-
-                                {/* 1-Click AI Media Generator Panel */}
-                                <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded-2xl border border-indigo-200 text-xs space-y-3">
-                                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                                    <div>
-                                      <span className="font-extrabold text-indigo-950 flex items-center space-x-1.5 text-xs">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                        <span>1-Click AI Visual &amp; Reel Generator</span>
-                                      </span>
-                                      <p className="text-[11px] text-slate-500 mt-0.5">
-                                        Generate the exact photorealistic product photo or vertical 9:16 reel in 1 click.
-                                      </p>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2 shrink-0">
-                                      {post.format === 'REEL' ? (
-                                        <button
-                                          type="button"
-                                          disabled={generatingMediaIndex === idx}
-                                          onClick={() => handleGenerateMediaForPost(idx, 'REEL')}
-                                          className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl shadow-md flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
-                                        >
-                                          {generatingMediaIndex === idx ? (
-                                            <>
-                                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                              <span>Generating AI Reel...</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Video className="w-3.5 h-3.5 text-amber-300" />
-                                              <span>🎬 1-Click Generate AI Reel (9:16)</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          disabled={generatingMediaIndex === idx}
-                                          onClick={() => handleGenerateMediaForPost(idx, 'IMAGE')}
-                                          className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl shadow-md flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
-                                        >
-                                          {generatingMediaIndex === idx ? (
-                                            <>
-                                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                              <span>Generating AI Photo...</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                                              <span>✨ 1-Click Generate AI Photo</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Live Visual Preview Container */}
-                                  {post.mediaUrl ? (
-                                    <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-4">
-                                      {post.format === 'REEL' || post.aspectRatio === '9:16' ? (
-                                        <div className="relative w-28 h-44 rounded-xl overflow-hidden border-2 border-purple-500 shadow-md shrink-0 group bg-slate-900">
-                                          <img
-                                            src={post.mediaUrl}
-                                            alt="Reel visual preview"
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                          />
-                                          <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                            <div className="w-9 h-9 rounded-full bg-white/90 text-purple-700 flex items-center justify-center shadow-lg">
-                                              <Play className="w-4 h-4 ml-0.5" />
-                                            </div>
-                                          </div>
-                                          <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
-                                            9:16 Reel
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-slate-300 shadow-xs shrink-0 group bg-slate-100">
-                                          <img
-                                            src={post.mediaUrl}
-                                            alt="Product photo preview"
-                                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                          />
-                                          <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
-                                            1:1 Photo
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      <div className="space-y-1.5 flex-1 text-left">
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center space-x-1">
-                                            <Check className="w-3 h-3 text-emerald-600" />
-                                            <span>AI Visual Ready &amp; Attached</span>
-                                          </span>
-                                          <span className="text-[10px] font-bold text-slate-400">
-                                            {post.aspectRatio || (post.format === 'REEL' ? '9:16 Vertical' : '1:1 Square')}
-                                          </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
-                                          This AI asset is saved and will be scheduled automatically with your publication.
-                                        </p>
-                                        <div className="flex items-center space-x-3 pt-1">
-                                          <button
-                                            type="button"
-                                            disabled={generatingMediaIndex === idx}
-                                            onClick={() => handleGenerateMediaForPost(idx, post.format === 'REEL' ? 'REEL' : 'IMAGE')}
-                                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
-                                          >
-                                            <RefreshCw className={`w-3 h-3 ${generatingMediaIndex === idx ? 'animate-spin' : ''}`} />
-                                            <span>Regenerate Variation</span>
-                                          </button>
-                                          <span className="text-slate-300">•</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleRemovePhotoForPost(idx)}
-                                            className="text-[11px] font-bold text-rose-600 hover:text-rose-800"
-                                          >
-                                            Remove
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white/70 rounded-xl border border-dashed border-indigo-300 text-[11px] text-slate-500 gap-2">
-                                      <span>No visual attached yet. Click the button above to generate with AI or upload from device:</span>
-                                      <label className="px-3 py-1 text-[11px] font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 rounded-lg cursor-pointer flex items-center space-x-1 transition-all shrink-0">
-                                        <Upload className="w-3 h-3 text-indigo-500" />
-                                        <span>Upload File</span>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          onChange={(e) => handlePhotoUploadForPost(e, idx)}
-                                          className="hidden"
-                                        />
-                                      </label>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* 5-Sec Phone Camera Brief */}
-                                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-xs text-indigo-900 space-y-1">
-                                  <div className="font-bold flex items-center space-x-1.5">
-                                    <Video className="w-3.5 h-3.5 text-indigo-600" />
-                                    <span>5-Second Phone Video / Visual Instruction</span>
-                                  </div>
-                                  <p className="text-[11px] leading-relaxed text-indigo-800">{post.bRollGuide}</p>
-                                </div>
-
-                                {/* Platform-Adapted Copy & Preview Tabs */}
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
-                                      <label className="text-[11px] font-bold text-slate-700 uppercase">Platform-Adapted Copy</label>
-                                      <span className="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-200/60">
-                                        Multi-Channel Repurpose
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-[10px] font-bold">
-                                      {[
-                                        { id: 'INSTAGRAM', label: '📸 IG' },
-                                        { id: 'LINKEDIN', label: '💼 LinkedIn' },
-                                        { id: 'TWITTER', label: '🐦 X / Thread' },
-                                        { id: 'FACEBOOK', label: '📘 FB' }
-                                      ].map(plat => {
-                                        const currentPlat = cardActivePlatformPreview[idx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
-                                        return (
-                                          <button
-                                            key={plat.id}
-                                            type="button"
-                                            onClick={() => setCardActivePlatformPreview(prev => ({ ...prev, [idx]: plat.id as any }))}
-                                            className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                                              currentPlat === plat.id ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                                            }`}
-                                          >
-                                            {plat.label}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  {/* Dynamic Preview Box */}
-                                  <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">
-                                    {(() => {
-                                      const currentPlat = cardActivePlatformPreview[idx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
-                                      return getPlatformOptimizedCaption(post, currentPlat);
-                                    })()}
-                                  </div>
-                                </div>
-
-                                {/* Comment to DM & First Comment */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                  <div className="p-2.5 bg-white rounded-xl border border-slate-200">
-                                    <span className="font-bold text-slate-700 text-[10px] uppercase block">Lead Trigger:</span>
-                                    <span className="font-mono text-indigo-600 font-bold">Comment &quot;{post.ctaKeyword || 'GO'}&quot; for instant DM</span>
-                                  </div>
-                                  <div className="p-2.5 bg-white rounded-xl border border-slate-200">
-                                    <span className="font-bold text-slate-700 text-[10px] uppercase block">First Comment Autopilot:</span>
-                                    <span className="text-slate-600 text-[11px] truncate block">{post.firstComment || 'Hashtags & link scheduled'}</span>
-                                  </div>
+                                  {/* Expand/Collapse pill */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedPostIndex(isExpanded ? null : currentIdx)}
+                                    className="px-2.5 py-1 text-xs text-indigo-600 font-extrabold bg-indigo-50/70 hover:bg-indigo-100 rounded-xl transition-all"
+                                  >
+                                    {isExpanded ? 'Hide ▲' : 'Inspect ▼'}
+                                  </button>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
+
+                              {/* Card Expanded Details */}
+                              {isExpanded && (
+                                <div className="p-4 sm:p-5 border-t border-slate-100 space-y-4 bg-slate-50/50">
+                                  {/* Dynamic Hook Variations Swapper */}
+                                  {post.hookVariations && post.hookVariations.length > 0 && (
+                                    <div className="p-3.5 bg-gradient-to-r from-indigo-50 via-purple-50/60 to-white rounded-2xl border border-indigo-200 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-extrabold text-indigo-950 uppercase tracking-wider flex items-center space-x-1.5">
+                                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                                          <span>Dynamic Hook Variations (Click to Swap Active Hook):</span>
+                                        </span>
+                                        <span className="text-[10px] text-indigo-700 font-mono font-bold bg-indigo-100 px-2 py-0.5 rounded-full">
+                                          Hook #{post.activeHookIndex !== undefined ? post.activeHookIndex + 1 : 1} Active
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        {post.hookVariations.map((hVar: string, hIdx: number) => {
+                                          const isActive = post.activeHookIndex === hIdx || post.hook === hVar.replace(/^[A-Za-z\s]+:\s*/, '');
+                                          const label = hIdx === 0 ? 'Curiosity Hook' : hIdx === 1 ? 'Data/Contrast Hook' : 'Story Hook';
+                                          return (
+                                            <button
+                                              key={hIdx}
+                                              type="button"
+                                              onClick={() => handleSwapHookVariation(currentIdx, hIdx, hVar)}
+                                              className={`p-2.5 text-left rounded-xl text-[11px] border transition-all cursor-pointer flex flex-col justify-between ${
+                                                isActive
+                                                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs font-medium'
+                                                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                                              }`}
+                                            >
+                                              <span className={`text-[9px] font-extrabold uppercase tracking-wider mb-1 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                                {label}
+                                              </span>
+                                              <span className="line-clamp-2 leading-snug">{hVar}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Inline Edit Form Mode */}
+                                  {editingPostIndex === currentIdx && editPostDraft && (
+                                    <div className="p-4 bg-white rounded-2xl border-2 border-indigo-500 shadow-md space-y-3 animate-in fade-in duration-150">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+                                          <span>✏️ Live Editing Day {currentIdx + 1} Post</span>
+                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingPostIndex(null);
+                                              setEditPostDraft(null);
+                                            }}
+                                            className="px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleSaveInlineEditPost(currentIdx)}
+                                            className="px-4 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full shadow-xs cursor-pointer"
+                                          >
+                                            ✓ Save Changes
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Post Title</label>
+                                        <input
+                                          type="text"
+                                          value={editPostDraft.title}
+                                          onChange={(e) => setEditPostDraft({ ...editPostDraft, title: e.target.value })}
+                                          className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Opening Hook</label>
+                                        <input
+                                          type="text"
+                                          value={editPostDraft.hook}
+                                          onChange={(e) => setEditPostDraft({ ...editPostDraft, hook: e.target.value })}
+                                          className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Full Caption</label>
+                                        <textarea
+                                          rows={4}
+                                          value={editPostDraft.caption}
+                                          onChange={(e) => setEditPostDraft({ ...editPostDraft, caption: e.target.value })}
+                                          className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-sans"
+                                        />
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Lead Trigger Keyword (Comment-to-DM)</label>
+                                        <input
+                                          type="text"
+                                          value={editPostDraft.ctaKeyword}
+                                          onChange={(e) => setEditPostDraft({ ...editPostDraft, ctaKeyword: e.target.value })}
+                                          className="w-full sm:w-48 text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono font-bold"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Guidance Studio: 3-column responsive grid */}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                    {/* Why This Post Works */}
+                                    <div className="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200 text-amber-950 space-y-1.5 flex flex-col justify-between">
+                                      <div>
+                                        <div className="font-extrabold flex items-center space-x-1.5 text-amber-900 text-[11px] uppercase tracking-wide">
+                                          <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                                          <span>Why This Post Works</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-amber-800 mt-1">
+                                          {post.whyThisPostWorks || "Builds essential awareness and primes your audience for conversion."}
+                                        </p>
+                                      </div>
+                                      <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider block pt-1">
+                                        Eugene Schwartz Framework
+                                      </span>
+                                    </div>
+
+                                    {/* Smartphone Photo Guide */}
+                                    <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 text-emerald-950 space-y-1.5 flex flex-col justify-between">
+                                      <div>
+                                        <div className="font-extrabold flex items-center space-x-1.5 text-emerald-900 text-[11px] uppercase tracking-wide">
+                                          <Camera className="w-3.5 h-3.5 text-emerald-600" />
+                                          <span>Smartphone Photo Guide</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-emerald-800 mt-1">
+                                          {post.photoUploadGuide || "Snap a clean photo in bright natural lighting matching this post's theme."}
+                                        </p>
+                                      </div>
+                                      <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider block pt-1">
+                                        Camera Direction
+                                      </span>
+                                    </div>
+
+                                    {/* 5-Sec Phone Video Brief */}
+                                    <div className="p-3.5 bg-indigo-50/80 rounded-2xl border border-indigo-200 text-indigo-950 space-y-1.5 flex flex-col justify-between">
+                                      <div>
+                                        <div className="font-extrabold flex items-center space-x-1.5 text-indigo-900 text-[11px] uppercase tracking-wide">
+                                          <Video className="w-3.5 h-3.5 text-indigo-600" />
+                                          <span>5-Sec B-Roll Camera Brief</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-indigo-800 mt-1">
+                                          {post.bRollGuide || "Record a quick 5-second video clip showing the process or holding the product."}
+                                        </p>
+                                      </div>
+                                      <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider block pt-1">
+                                        No Face Needed
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* External AI Tools Prompt Studio */}
+                                  <div className="p-4 bg-gradient-to-r from-purple-50 via-slate-50 to-indigo-50 rounded-2xl border border-purple-200/80 text-xs space-y-3">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                      <div>
+                                        <div className="flex items-center space-x-1.5 font-black text-slate-900">
+                                          <Sparkles className="w-4 h-4 text-purple-600" />
+                                          <span>External AI Tools Prompt Studio (1-Click Copy)</span>
+                                          <span className="text-[9px] bg-purple-200 text-purple-900 font-extrabold px-2 py-0.5 rounded-full uppercase">
+                                            Ready To Paste
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                          Prefer external tools like Midjourney, Runway, Kling, CapCut, or Canva? Copy tailored formulas below:
+                                        </p>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyAllPromptsForPost(post, `card_${currentIdx}_all`)}
+                                        className="px-3 py-1.5 text-[11px] font-bold bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-lg shadow-xs flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer"
+                                      >
+                                        <Copy className="w-3.5 h-3.5 text-indigo-600" />
+                                        <span>{copiedPromptTab === `card_${currentIdx}_all` ? '✓ Copied All 4!' : 'Copy All 4 Prompts'}</span>
+                                      </button>
+                                    </div>
+
+                                    {/* Tabs for External AI Tools */}
+                                    {(() => {
+                                      const currentTab = cardActivePromptTab[currentIdx] || 'MIDJOURNEY';
+                                      const setTab = (t: 'MIDJOURNEY' | 'RUNWAY' | 'CAPCUT' | 'CANVA') => {
+                                        setCardActivePromptTab(prev => ({ ...prev, [currentIdx]: t }));
+                                      };
+
+                                      let activePromptText = post.midjourneyPrompt || post.aiImagePrompt || '';
+                                      let activeToolGuide = 'Paste directly into Midjourney Discord (/imagine) or Web for 8k photorealistic commercial quality:';
+                                      if (currentTab === 'RUNWAY') {
+                                        activePromptText = post.videoPrompt || `Slow cinematic push-in toward ${post.title.toLowerCase()}. Soft volumetric studio lighting, smooth micro-movements, high-end 4k commercial motion, 9:16 vertical video.`;
+                                        activeToolGuide = 'Paste into Runway Gen-3, Kling AI, or Luma Dream Machine as Text-to-Video or Image-to-Video motion prompt:';
+                                      } else if (currentTab === 'CAPCUT') {
+                                        activePromptText = post.voiceoverScript || `[0:00 - 0:03 HOOK]: ${post.hook}\n[0:03 - 0:10 VALUE]: ${post.caption ? post.caption.slice(0, 110).replace(/\n/g, ' ') : 'Here is the step-by-step breakdown.'}...\n[0:10 - 0:15 CTA]: Comment below to get the direct link in your DMs!`;
+                                        activeToolGuide = 'Paste into CapCut Teleprompter or AI Voiceover generator (word-by-word spoken 15s script):';
+                                      } else if (currentTab === 'CANVA') {
+                                        activePromptText = post.canvaDesignBrief || `Cover Headline: "${post.title.slice(0, 35)}" | Style: Clean modern minimalism | Primary Colors: #4F46E5 (Indigo), #0F172A (Slate), #F59E0B (Amber) | Safe Zone: Center-aligned typography.`;
+                                        activeToolGuide = 'Design blueprint for Canva, Photoshop, or Figma layout (Text overlay & color scheme):';
+                                      }
+
+                                      return (
+                                        <div className="space-y-2">
+                                          {/* Tool Tab Buttons */}
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {[
+                                              { id: 'MIDJOURNEY', label: '📸 Midjourney v6', badge: 'Photo' },
+                                              { id: 'RUNWAY', label: '🎬 Runway / Kling', badge: 'Video Motion' },
+                                              { id: 'CAPCUT', label: '🎙️ CapCut Voiceover', badge: '15s Script' },
+                                              { id: 'CANVA', label: '🎨 Canva Layout', badge: 'Design' }
+                                            ].map(tab => (
+                                              <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setTab(tab.id as any)}
+                                                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 ${currentTab === tab.id
+                                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                  }`}
+                                              >
+                                                <span>{tab.label}</span>
+                                                <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${currentTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                                  }`}>
+                                                  {tab.badge}
+                                                </span>
+                                              </button>
+                                            ))}
+                                          </div>
+
+                                          {/* Prompt Display Box */}
+                                          <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                                            <div className="flex items-center justify-between text-[11px]">
+                                              <span className="text-slate-500 font-medium">{activeToolGuide}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleCopyPromptWithKey(activePromptText, `card_${currentIdx}_${currentTab}`)}
+                                                className="px-2.5 py-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md border border-indigo-200 flex items-center space-x-1 transition-all cursor-pointer"
+                                              >
+                                                <Copy className="w-3 h-3 text-indigo-600" />
+                                                <span>{copiedPromptTab === `card_${currentIdx}_${currentTab}` ? '✓ Copied!' : 'Copy Prompt'}</span>
+                                              </button>
+                                            </div>
+                                            <p className="text-[11px] leading-relaxed font-mono text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap select-all">
+                                              {activePromptText}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* 1-Click AI Media Generator Panel */}
+                                  <div className="p-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 rounded-2xl border border-indigo-200 text-xs space-y-3">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                                      <div>
+                                        <span className="font-extrabold text-indigo-950 flex items-center space-x-1.5 text-xs">
+                                          <Sparkles className="w-4 h-4 text-purple-600" />
+                                          <span>1-Click AI Visual &amp; Reel Generator</span>
+                                        </span>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                          Generate the exact photorealistic product photo or vertical 9:16 reel in 1 click.
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center space-x-2 shrink-0">
+                                        {post.format === 'REEL' ? (
+                                          <button
+                                            type="button"
+                                            disabled={generatingMediaIndex === currentIdx}
+                                            onClick={() => handleGenerateMediaForPost(currentIdx, 'REEL')}
+                                            className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl shadow-md flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
+                                          >
+                                            {generatingMediaIndex === currentIdx ? (
+                                              <>
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Generating AI Reel...</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Video className="w-3.5 h-3.5 text-amber-300" />
+                                                <span>🎬 1-Click Generate AI Reel (9:16)</span>
+                                              </>
+                                            )}
+                                          </button>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            disabled={generatingMediaIndex === currentIdx}
+                                            onClick={() => handleGenerateMediaForPost(currentIdx, 'IMAGE')}
+                                            className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl shadow-md flex items-center space-x-1.5 transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
+                                          >
+                                            {generatingMediaIndex === currentIdx ? (
+                                              <>
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Generating AI Photo...</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                                <span>✨ 1-Click Generate AI Photo</span>
+                                              </>
+                                            )}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Live Visual Preview Container */}
+                                    {post.mediaUrl ? (
+                                      <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-4">
+                                        {post.format === 'REEL' || post.aspectRatio === '9:16' ? (
+                                          <div className="relative w-28 h-44 rounded-xl overflow-hidden border-2 border-purple-500 shadow-md shrink-0 group bg-slate-900">
+                                            <img
+                                              src={post.mediaUrl}
+                                              alt="Reel visual preview"
+                                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                                              <div className="w-9 h-9 rounded-full bg-white/90 text-purple-700 flex items-center justify-center shadow-lg">
+                                                <Play className="w-4 h-4 ml-0.5" />
+                                              </div>
+                                            </div>
+                                            <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
+                                              9:16 Reel
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-slate-300 shadow-xs shrink-0 group bg-slate-100">
+                                            <img
+                                              src={post.mediaUrl}
+                                              alt="Product photo preview"
+                                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                            />
+                                            <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
+                                              1:1 Photo
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        <div className="space-y-1.5 flex-1 text-left">
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center space-x-1">
+                                              <Check className="w-3 h-3 text-emerald-600" />
+                                              <span>AI Visual Ready &amp; Attached</span>
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400">
+                                              {post.aspectRatio || (post.format === 'REEL' ? '9:16 Vertical' : '1:1 Square')}
+                                            </span>
+                                          </div>
+                                          <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+                                            This AI asset is saved and will be scheduled automatically with your publication.
+                                          </p>
+                                          <div className="flex items-center space-x-3 pt-1">
+                                            <button
+                                              type="button"
+                                              disabled={generatingMediaIndex === currentIdx}
+                                              onClick={() => handleGenerateMediaForPost(currentIdx, post.format === 'REEL' ? 'REEL' : 'IMAGE')}
+                                              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
+                                            >
+                                              <RefreshCw className={`w-3 h-3 ${generatingMediaIndex === currentIdx ? 'animate-spin' : ''}`} />
+                                              <span>Regenerate Variation</span>
+                                            </button>
+                                            <span className="text-slate-300">•</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemovePhotoForPost(currentIdx)}
+                                              className="text-[11px] font-bold text-rose-600 hover:text-rose-800"
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col sm:flex-row items-center justify-between p-3 bg-white/70 rounded-xl border border-dashed border-indigo-300 text-[11px] text-slate-500 gap-2">
+                                        <span>No visual attached yet. Click the button above to generate with AI or upload from device:</span>
+                                        <label className="px-3 py-1 text-[11px] font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 rounded-lg cursor-pointer flex items-center space-x-1 transition-all shrink-0">
+                                          <Upload className="w-3 h-3 text-indigo-500" />
+                                          <span>Upload File</span>
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => handlePhotoUploadForPost(e, currentIdx)}
+                                            className="hidden"
+                                          />
+                                        </label>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Multi-Channel Repurpose & Copy Preview */}
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-2">
+                                        <label className="text-[11px] font-bold text-slate-700 uppercase">Platform-Adapted Copy</label>
+                                        <span className="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-200/60">
+                                          Multi-Channel Repurpose
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center bg-slate-100 rounded-full p-0.5 text-[10px] font-bold">
+                                        {[
+                                          { id: 'INSTAGRAM', label: '📸 IG' },
+                                          { id: 'LINKEDIN', label: '💼 LinkedIn' },
+                                          { id: 'TWITTER', label: '🐦 X / Thread' },
+                                          { id: 'FACEBOOK', label: '📘 FB' }
+                                        ].map(plat => {
+                                          const currentPlat = cardActivePlatformPreview[currentIdx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
+                                          return (
+                                            <button
+                                              key={plat.id}
+                                              type="button"
+                                              onClick={() => setCardActivePlatformPreview(prev => ({ ...prev, [currentIdx]: plat.id as any }))}
+                                              className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                                                currentPlat === plat.id ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                              }`}
+                                            >
+                                              {plat.label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Dynamic Preview Box */}
+                                    <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">
+                                      {(() => {
+                                        const currentPlat = cardActivePlatformPreview[currentIdx] || (post.targetPlatform === 'LINKEDIN' ? 'LINKEDIN' : 'INSTAGRAM');
+                                        return getPlatformOptimizedCaption(post, currentPlat);
+                                      })()}
+                                    </div>
+                                  </div>
+
+                                  {/* Comment to DM & First Comment */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                                      <span className="font-bold text-slate-700 text-[10px] uppercase block">Lead Trigger:</span>
+                                      <span className="font-mono text-indigo-600 font-bold">Comment &quot;{post.ctaKeyword || 'GO'}&quot; for instant DM</span>
+                                    </div>
+                                    <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                                      <span className="font-bold text-slate-700 text-[10px] uppercase block">First Comment Autopilot:</span>
+                                      <span className="text-slate-600 text-[11px] truncate block">{post.firstComment || 'Hashtags & link scheduled'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
 
-                    <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+                    {/* Bottom Sticky Action Bar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
                       <button
+                        type="button"
                         onClick={() => setWizardStep(3)}
-                        className="px-5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 rounded-full"
+                        className="px-5 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-full transition-all cursor-pointer"
                       >
                         ← Modify Cadence
                       </button>
+
+                      <div className="text-xs text-slate-500 font-medium">
+                        All <span className="font-bold text-slate-800">{generatedRoadmap.posts.length} drops</span> ready for automated scheduling
+                      </div>
+
                       <button
+                        type="button"
                         onClick={handleDeployCampaign}
                         disabled={isDeployingCampaign}
-                        className="px-8 py-3 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-full shadow-xl flex items-center space-x-2 transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
+                        className="px-8 py-3 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-full shadow-xl shadow-emerald-950/20 flex items-center space-x-2 transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
                       >
                         {isDeployingCampaign ? (
                           <>
