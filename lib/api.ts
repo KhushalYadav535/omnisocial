@@ -48,6 +48,21 @@ export function setStoredTenant(tenant: any) {
   }
 }
 
+export function getStoredActiveBrandId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('omni_active_brand_id');
+}
+
+export function setStoredActiveBrandId(brandId: string) {
+  if (typeof window !== 'undefined') {
+    if (brandId) {
+      localStorage.setItem('omni_active_brand_id', brandId);
+    } else {
+      localStorage.removeItem('omni_active_brand_id');
+    }
+  }
+}
+
 export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}

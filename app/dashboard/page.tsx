@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   Inbox,
   PenTool,
@@ -38,7 +38,17 @@ import {
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
 function DashboardContent() {
-  const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [activeBrandId, setActiveBrandId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return getStoredActiveBrandId() || '';
+    }
+    return '';
+  });
+
+  const handleBrandChange = (brandId: string) => {
+    setActiveBrandId(brandId);
+    setStoredActiveBrandId(brandId);
+  };
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -201,7 +211,7 @@ function DashboardContent() {
   const needleRotation = -90 + (publishingSla / 100) * 180;
 
   return (
-    <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
+    <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 pb-20">
         
         {/* Cadra Sub-Header: Breadcrumbs, Title, Sub-Pills & Action Buttons */}

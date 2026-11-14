@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   PenTool,
   Sparkles,
@@ -96,7 +96,17 @@ function AccountPillAvatar({
 }
 
 export default function ContentStudioPage() {
-  const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [activeBrandId, setActiveBrandId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return getStoredActiveBrandId() || '';
+    }
+    return '';
+  });
+
+  const handleBrandChange = (brandId: string) => {
+    setActiveBrandId(brandId);
+    setStoredActiveBrandId(brandId);
+  };
   const [brands, setBrands] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
 
@@ -213,7 +223,18 @@ export default function ContentStudioPage() {
       .then(res => {
         if (res.brands && res.brands.length > 0) {
           setBrands(res.brands);
-          if (!activeBrandId) setActiveBrandId(res.brands[0].id);
+          setActiveBrandId((prev) => {
+            if (prev && res.brands.some((b: any) => b.id === prev)) {
+              return prev;
+            }
+            const saved = getStoredActiveBrandId();
+            if (saved && res.brands.some((b: any) => b.id === saved)) {
+              return saved;
+            }
+            const fallback = res.brands[0].id;
+            setStoredActiveBrandId(fallback);
+            return fallback;
+          });
         }
       })
       .catch(() => {});
@@ -894,7 +915,7 @@ export default function ContentStudioPage() {
   };
 
   return (
-    <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
+    <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 max-w-7xl mx-auto pb-16">
         {/* CADRA SUB-HEADER WITH CLEAN BREADCRUMB & CAPSULE ACTIONS */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 pt-1">

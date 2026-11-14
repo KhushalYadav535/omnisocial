@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -516,7 +516,17 @@ export const PILLAR_BADGE_CONFIG: Record<ContentPillar, { label: string; icon: s
 };
 
 export default function CalendarPage() {
-  const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [activeBrandId, setActiveBrandId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return getStoredActiveBrandId() || '';
+    }
+    return '';
+  });
+
+  const handleBrandChange = (brandId: string) => {
+    setActiveBrandId(brandId);
+    setStoredActiveBrandId(brandId);
+  };
   const [brands, setBrands] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST' | 'GRID'>('MONTH');
@@ -1542,6 +1552,18 @@ export default function CalendarPage() {
       .then((res) => {
         if (res.brands && res.brands.length > 0) {
           setBrands(res.brands);
+          setActiveBrandId((prev) => {
+            if (prev && (prev === 'ALL' || res.brands.some((b: any) => b.id === prev))) {
+              return prev;
+            }
+            const saved = getStoredActiveBrandId();
+            if (saved && (saved === 'ALL' || res.brands.some((b: any) => b.id === saved))) {
+              return saved;
+            }
+            const defaultBrand = res.brands[0].id;
+            setStoredActiveBrandId(defaultBrand);
+            return defaultBrand;
+          });
         }
       })
       .catch(() => {});
@@ -1951,7 +1973,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
+    <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 pb-14">
         {/* ===================================================================== */}
         {/* ULTRA-PREMIUM SUB-HEADER: BREADCRUMBS, TITLE & HERO ACTIONS          */}

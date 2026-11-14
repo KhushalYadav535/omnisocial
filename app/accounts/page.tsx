@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   Share2,
   RefreshCw,
@@ -102,12 +102,22 @@ function AccountAvatar({
 }
 
 export default function AccountsPage() {
-  const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [activeBrandId, setActiveBrandId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return getStoredActiveBrandId() || '';
+    }
+    return '';
+  });
   const [brands, setBrands] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  const handleBrandChange = (brandId: string) => {
+    setActiveBrandId(brandId);
+    setStoredActiveBrandId(brandId);
+  };
 
   // Connection intent tracker ('ALL' | 'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN')
   const [connectIntent, setConnectIntent] = useState<'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN' | 'ALL'>('ALL');
@@ -168,7 +178,18 @@ export default function AccountsPage() {
 
       if (brandRes.brands && brandRes.brands.length > 0) {
         setBrands(brandRes.brands);
-        if (!activeBrandId) setActiveBrandId(brandRes.brands[0].id);
+        setActiveBrandId((prev) => {
+          if (prev && (prev === 'ALL' || brandRes.brands.some((b: any) => b.id === prev))) {
+            return prev;
+          }
+          const saved = getStoredActiveBrandId();
+          if (saved && (saved === 'ALL' || brandRes.brands.some((b: any) => b.id === saved))) {
+            return saved;
+          }
+          const fallback = brandRes.brands[0].id;
+          setStoredActiveBrandId(fallback);
+          return fallback;
+        });
       }
       setAccounts(accRes.accounts || []);
     } catch (err) {
@@ -176,11 +197,21 @@ export default function AccountsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeBrandId]);
+  }, []);
 
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
+  // Scoped Social Accounts: Filter strictly by activeBrandId unless "ALL" is selected
+  const displayedAccounts = useMemo(() => {
+    if (!activeBrandId || activeBrandId === 'ALL') return accounts;
+    return accounts.filter((a: any) => a.brandId === activeBrandId);
+  }, [accounts, activeBrandId]);
+
+  const currentBrand = useMemo(() => {
+    return brands.find(b => b.id === activeBrandId);
+  }, [brands, activeBrandId]);
 
   // Handle OAuth code processing
   const processOAuthCode = useCallback(async (code: string, state: string) => {
@@ -615,7 +646,7 @@ export default function AccountsPage() {
   };
 
   return (
-    <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
+    <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 pb-12">
         {/* CADRA SUB-HEADER: BREADCRUMBS, TITLE & CONTROLS */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 pb-2 pt-1">
@@ -721,15 +752,16 @@ export default function AccountsPage() {
         <div className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center font-extrabold text-xs">
-              {brands.find(b => b.id === activeBrandId)?.name?.slice(0, 2).toUpperCase() || 'BR'}
+              {currentBrand?.name?.slice(0, 2).toUpperCase() || 'ALL'}
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Target Brand</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Target Brand:</span>
               <select
-                value={activeBrandId}
-                onChange={(e) => setActiveBrandId(e.target.value)}
+                value={activeBrandId || 'ALL'}
+                onChange={(e) => handleBrandChange(e.target.value === 'ALL' ? '' : e.target.value)}
                 className="text-xs border border-slate-200 rounded-xl px-3 py-1 font-bold bg-slate-50 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-indigo-600 cursor-pointer"
               >
+                <option value="ALL">✦ All Brands (Overview)</option>
                 {brands.map(b => (
                   <option key={b.id} value={b.id}>{b.name} ({b.businessName || 'Business'})</option>
                 ))}
@@ -738,21 +770,21 @@ export default function AccountsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 text-xs">
-            {/* Channel Counts Breakdown */}
+            {/* Channel Counts Breakdown for Active Brand */}
             <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl text-[11px] font-medium text-slate-600">
               <span className="flex items-center space-x-1 font-bold text-slate-800">
                 <Facebook className="w-3 h-3 text-[#1877F2] fill-current inline" />
-                <span>{accounts.filter(a => a.platform === 'FACEBOOK').length}</span>
+                <span>{displayedAccounts.filter(a => a.platform === 'FACEBOOK').length}</span>
               </span>
               <span className="text-slate-300">•</span>
               <span className="flex items-center space-x-1 font-bold text-slate-800">
                 <Instagram className="w-3 h-3 text-pink-600 inline" />
-                <span>{accounts.filter(a => a.platform === 'INSTAGRAM').length}</span>
+                <span>{displayedAccounts.filter(a => a.platform === 'INSTAGRAM').length}</span>
               </span>
               <span className="text-slate-300">•</span>
               <span className="flex items-center space-x-1 font-bold text-slate-800">
                 <LinkedIn className="w-3 h-3 text-[#0A66C2] fill-current inline" />
-                <span>{accounts.filter(a => a.platform === 'LINKEDIN').length}</span>
+                <span>{displayedAccounts.filter(a => a.platform === 'LINKEDIN').length}</span>
               </span>
             </div>
 
@@ -763,7 +795,7 @@ export default function AccountsPage() {
 
             <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{accounts.length} Active Asset{accounts.length !== 1 ? 's' : ''}</span>
+              <span>{displayedAccounts.length} Connected Asset{displayedAccounts.length !== 1 ? 's' : ''}</span>
             </span>
           </div>
         </div>
@@ -774,7 +806,7 @@ export default function AccountsPage() {
             <Activity className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
             <p className="text-xs font-medium">Loading connected social accounts...</p>
           </div>
-        ) : accounts.length === 0 ? (
+        ) : displayedAccounts.length === 0 ? (
           <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center space-y-4 max-w-2xl mx-auto shadow-2xs">
             <div className="flex items-center justify-center space-x-3">
               <div className="w-12 h-12 bg-blue-50 text-[#1877F2] rounded-2xl flex items-center justify-center border border-blue-100 shadow-2xs">
@@ -789,9 +821,11 @@ export default function AccountsPage() {
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900">No Social Accounts Connected Yet</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {currentBrand ? `No Social Accounts Connected for "${currentBrand.name}" Yet` : 'No Social Accounts Connected Yet'}
+              </h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Connect your brand&apos;s Facebook Pages, Instagram Professional, and LinkedIn accounts to start publishing, scheduling posts, and managing comments in real-time.
+                Connect {currentBrand?.name || "your brand"}&apos;s Facebook Pages, Instagram Professional, and LinkedIn accounts to start publishing, scheduling posts, and managing comments in real-time.
               </p>
             </div>
 
@@ -832,7 +866,7 @@ export default function AccountsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {accounts.map(acc => {
+            {displayedAccounts.map(acc => {
               const platformTheme =
                 acc.platform === 'LINKEDIN'
                   ? {

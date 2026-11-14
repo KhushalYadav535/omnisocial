@@ -7,7 +7,9 @@ import {
   getStoredUser, 
   getStoredTenant, 
   clearAuthToken, 
-  apiRequest 
+  apiRequest,
+  getStoredActiveBrandId,
+  setStoredActiveBrandId
 } from '../lib/api';
 import { 
   Building2, 
@@ -70,7 +72,15 @@ export default function Navbar({
     if (storedUser) {
       apiRequest('/brands')
         .then(res => {
-          if (res.brands) setBrands(res.brands);
+          if (res.brands && res.brands.length > 0) {
+            setBrands(res.brands);
+            const savedBrandId = getStoredActiveBrandId();
+            if (!currentBrandId && onBrandChange) {
+              if (savedBrandId && res.brands.some((b: any) => b.id === savedBrandId)) {
+                onBrandChange(savedBrandId);
+              }
+            }
+          }
         })
         .catch(() => {});
     }
@@ -148,6 +158,7 @@ export default function Navbar({
                   </div>
                   <button
                     onClick={() => {
+                      setStoredActiveBrandId('');
                       if (onBrandChange) onBrandChange('');
                       setShowBrandMenu(false);
                     }}
@@ -162,6 +173,7 @@ export default function Navbar({
                     <button
                       key={b.id}
                       onClick={() => {
+                        setStoredActiveBrandId(b.id);
                         if (onBrandChange) onBrandChange(b.id);
                         setShowBrandMenu(false);
                       }}
