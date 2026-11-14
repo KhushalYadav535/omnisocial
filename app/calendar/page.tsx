@@ -53,7 +53,11 @@ import {
   Repeat,
   Star,
   Tag,
-  Hash
+  Hash,
+  Heart,
+  MessageCircle,
+  ThumbsUp,
+  Smartphone
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
@@ -520,6 +524,8 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [viewingDayDrops, setViewingDayDrops] = useState<{ date: Date; events: any[] } | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
+  const [previewModalPlatform, setPreviewModalPlatform] = useState<string>('INSTAGRAM');
+  const [previewModalTab, setPreviewModalTab] = useState<'PREVIEW' | 'SETTINGS'>('PREVIEW');
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editCaption, setEditCaption] = useState('');
@@ -1634,6 +1640,51 @@ export default function CalendarPage() {
       setNotice({ type: 'error', text: err.message || 'Reschedule failed' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAttachStockVisual = async (presetUrl: string) => {
+    if (!selectedEvent) return;
+    const updatedMedia = [presetUrl];
+    setSelectedEvent((prev: any) => ({
+      ...prev,
+      mediaUrls: updatedMedia
+    }));
+    try {
+      await apiRequest(`/calendar/events/${selectedEvent.publicationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: editTitle || selectedEvent.title,
+          caption: editCaption || selectedEvent.caption,
+          mediaUrls: updatedMedia
+        })
+      });
+      setNotice({ type: 'success', text: 'Visual attached and saved to post!' });
+      fetchCalendar();
+    } catch (err: any) {
+      console.error('Failed to attach visual:', err);
+    }
+  };
+
+  const handleRemoveVisual = async () => {
+    if (!selectedEvent) return;
+    setSelectedEvent((prev: any) => ({
+      ...prev,
+      mediaUrls: []
+    }));
+    try {
+      await apiRequest(`/calendar/events/${selectedEvent.publicationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: editTitle || selectedEvent.title,
+          caption: editCaption || selectedEvent.caption,
+          mediaUrls: []
+        })
+      });
+      setNotice({ type: 'success', text: 'Removed visual from post.' });
+      fetchCalendar();
+    } catch (err: any) {
+      console.error('Failed to remove visual:', err);
     }
   };
 
@@ -3050,442 +3101,631 @@ export default function CalendarPage() {
         {/* ===================================================================== */}
         {/* EVENT DETAIL & RESCHEDULE MODAL (ULTRA-PREMIUM REDESIGN)             */}
         {/* ===================================================================== */}
-        {selectedEvent && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-                <div className="flex items-center space-x-2">
-                  <PlatformPill platform={selectedEvent.platform} />
-                  <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${selectedEvent.status === 'PUBLISHED'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : selectedEvent.status === 'QUEUED'
-                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                        : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}>
-                    {selectedEvent.status}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+        {selectedEvent && (() => {
+          const currentBrand = brands.find(b => b.id === (selectedEvent.brandId || activeBrandId)) || brands[0];
+          const brandName = currentBrand?.name || 'Aura Living';
+          const brandSlug = currentBrand?.slug || brandName.toLowerCase().replace(/\s+/g, '_');
+          const parsedTitle = parseCalendarCardTitle(editTitle || selectedEvent.title);
+          const mediaUrl = sanitizeMediaUrl(selectedEvent.mediaUrls?.[0]);
 
-              {/* Error Alert if Failed */}
-              {selectedEvent.status === 'FAILED' && selectedEvent.errorMessage && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1">
-                  <div className="flex items-center space-x-1.5 font-bold">
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
-                    <span>Publication Failed</span>
-                  </div>
-                  <p className="text-[11px] text-rose-700">{selectedEvent.errorMessage}</p>
-                </div>
-              )}
-
-              {/* Content Preview / Edit Form */}
-              {isEditing ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-700 mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-700 mb-1">Caption</label>
-                    <textarea
-                      rows={3}
-                      value={editCaption}
-                      onChange={(e) => setEditCaption(e.target.value)}
-                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  {/* Royalty-Free Stock Media Presets */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="font-bold text-neutral-700">Royalty-Free Stock Visual (Unsplash CC0)</label>
-                      <span className="text-[10px] text-neutral-400">1-Tap Attach</span>
-                    </div>
-                    {selectedEvent.mediaUrls && selectedEvent.mediaUrls[0] && (
-                      <div className="relative w-full h-24 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-900 mb-1.5">
-                        <img
-                          src={selectedEvent.mediaUrls[0]}
-                          alt="Selected visual"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="grid grid-cols-3 gap-1.5">
+          return (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-neutral-200/90 space-y-4 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col overflow-hidden">
+                {/* Modal Top Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-100 gap-2 shrink-0">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1.5">
+                    {/* Platform Switcher Tabs */}
+                    <div className="flex items-center space-x-1 bg-neutral-100 p-1 rounded-full">
                       {[
-                        { label: '💼 Modern Tech', url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80' },
-                        { label: '☕ Cafe & Food', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80' },
-                        { label: '🌿 Wellness', url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80' },
-                        { label: '🛍️ Retail & Style', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80' },
-                        { label: '🚀 Hustle Growth', url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80' },
-                        { label: '✨ Luxury Minimal', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80' }
-                      ].map((preset, pIdx) => (
+                        { id: 'INSTAGRAM', label: 'Instagram', icon: <Instagram className="w-3.5 h-3.5 text-pink-500" /> },
+                        { id: 'LINKEDIN', label: 'LinkedIn', icon: <LinkedIn className="w-3.5 h-3.5 text-[#0A66C2]" /> },
+                        { id: 'TWITTER', label: 'Twitter / X', icon: <span className="font-mono text-[9px] font-black">𝕏</span> },
+                        { id: 'FACEBOOK', label: 'Facebook', icon: <Facebook className="w-3.5 h-3.5 text-[#1877F2]" /> }
+                      ].map(p => (
                         <button
-                          key={pIdx}
+                          key={p.id}
                           type="button"
-                          onClick={() => {
-                            setSelectedEvent({
-                              ...selectedEvent,
-                              mediaUrls: [preset.url]
-                            });
-                            setNotice({ type: 'success', text: `Attached ${preset.label} stock visual!` });
-                          }}
-                          className={`px-2 py-1.5 rounded-xl text-[10px] font-bold border transition-all truncate cursor-pointer ${
-                            selectedEvent?.mediaUrls?.[0] === preset.url
-                              ? 'bg-indigo-50 border-indigo-400 text-indigo-800'
-                              : 'bg-white hover:bg-neutral-50 text-neutral-600 border-neutral-200'
+                          onClick={() => setPreviewModalPlatform(p.id)}
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${
+                            previewModalPlatform === p.id
+                              ? 'bg-white text-neutral-900 shadow-xs'
+                              : 'text-neutral-500 hover:text-neutral-800'
                           }`}
                         >
-                          {preset.label}
+                          {p.icon}
+                          <span className="hidden sm:inline">{p.label}</span>
                         </button>
                       ))}
                     </div>
+
+                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                      selectedEvent.status === 'PUBLISHED'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : selectedEvent.status === 'QUEUED'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {selectedEvent.status}
+                    </span>
                   </div>
 
-                  {/* AI Pre-Publish Quality Score & 1-Click Fix Bar */}
-                  <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1.5 font-bold text-xs text-indigo-950">
-                        <Sparkles className="w-4 h-4 text-indigo-600" />
-                        <span>AI Pre-Publish Quality Coach</span>
-                      </div>
-                      {aiScoreAnalysis && (
-                        <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-full ${
-                          aiScoreAnalysis.score >= 85
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : aiScoreAnalysis.score >= 65
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}>
-                          Score: {aiScoreAnalysis.score}/100 ({aiScoreAnalysis.grade})
-                        </span>
-                      )}
+                  <div className="flex items-center space-x-2">
+                    {/* Mobile Tab Switcher */}
+                    <div className="flex md:hidden items-center bg-neutral-100 p-0.5 rounded-xl text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModalTab('PREVIEW')}
+                        className={`px-2.5 py-1 rounded-lg transition-all ${
+                          previewModalTab === 'PREVIEW' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
+                        }`}
+                      >
+                        📱 Feed Mockup
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModalTab('SETTINGS')}
+                        className={`px-2.5 py-1 rounded-lg transition-all ${
+                          previewModalTab === 'SETTINGS' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
+                        }`}
+                      >
+                        ⚙️ Controls
+                      </button>
                     </div>
 
-                    {aiScoreAnalysis ? (
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] text-indigo-900 leading-snug">{aiScoreAnalysis.verdict}</p>
-                        {aiScoreAnalysis.metrics && (
-                          <div className="grid grid-cols-3 gap-1.5 text-[9px] font-bold text-neutral-600 pt-0.5">
-                            <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                              <span className="block text-indigo-700 font-mono text-[10px]">
-                                {aiScoreAnalysis.metrics.hookStrength?.score || 20}/25
-                              </span>
-                              <span>Hook Power</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEvent(null)}
+                      className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Error Alert if Failed */}
+                {selectedEvent.status === 'FAILED' && selectedEvent.errorMessage && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1 shrink-0">
+                    <div className="flex items-center space-x-1.5 font-bold">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Publication Failed</span>
+                    </div>
+                    <p className="text-[11px] text-rose-700">{selectedEvent.errorMessage}</p>
+                  </div>
+                )}
+
+                {/* 2-Column Responsive Body */}
+                <div className="overflow-y-auto flex-1 pr-1 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    {/* =============================================================== */}
+                    {/* LEFT COLUMN: LIVE SOCIAL FEED MOCKUP (POST KAISA DIKHEGA)        */}
+                    {/* =============================================================== */}
+                    <div className={`md:col-span-5 space-y-3 ${
+                      previewModalTab === 'PREVIEW' ? 'block' : 'hidden md:block'
+                    }`}>
+                      <div className="flex items-center justify-between pb-0.5">
+                        <span className="text-xs font-extrabold text-neutral-800 uppercase tracking-wider flex items-center space-x-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Live Follower Preview</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                          {previewModalPlatform} Mockup
+                        </span>
+                      </div>
+
+                      {/* Phone / Post Mockup Card */}
+                      <div className="border border-neutral-200/90 rounded-2xl overflow-hidden bg-white shadow-md">
+                        {/* INSTAGRAM MOCKUP */}
+                        {previewModalPlatform === 'INSTAGRAM' && (
+                          <div className="space-y-0 text-neutral-900">
+                            {/* Instagram Header */}
+                            <div className="p-3 flex items-center justify-between border-b border-neutral-100">
+                              <div className="flex items-center space-x-2.5">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-neutral-100">
+                                  {brandName.slice(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="flex items-center space-x-1">
+                                    <p className="text-xs font-bold text-neutral-900 leading-tight">
+                                      {brandSlug}
+                                    </p>
+                                    <CheckCircle2 className="w-3 h-3 text-blue-500 inline shrink-0" />
+                                  </div>
+                                  <p className="text-[9px] text-neutral-400">Sponsored • Scheduled drop</p>
+                                </div>
+                              </div>
+                              <span className="text-neutral-400 text-xs tracking-widest">•••</span>
                             </div>
-                            <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                              <span className="block text-indigo-700 font-mono text-[10px]">
-                                {aiScoreAnalysis.metrics.readabilitySpacing?.score || 18}/20
-                              </span>
-                              <span>Readability</span>
+
+                            {/* Media Frame */}
+                            <div className="relative bg-neutral-950 overflow-hidden group/media">
+                              {mediaUrl ? (
+                                <div className="relative">
+                                  <img
+                                    src={mediaUrl}
+                                    alt="Post preview"
+                                    className="w-full aspect-square object-cover"
+                                  />
+                                  <div className="absolute top-2 right-2 flex items-center space-x-1">
+                                    <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+                                      {selectedEvent.format === 'REEL' ? '🎬 Reel' : '📸 Photo'}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={handleRemoveVisual}
+                                      title="Remove visual"
+                                      className="bg-black/60 hover:bg-rose-600 text-white p-1 rounded-full transition-colors cursor-pointer"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="aspect-square bg-gradient-to-br from-slate-950 via-indigo-950 to-neutral-900 p-5 text-white flex flex-col justify-between select-none">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-300 flex items-center space-x-1">
+                                      <Sparkles className="w-3 h-3 text-indigo-400" />
+                                      <span>{brandName}</span>
+                                    </span>
+                                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/80">
+                                      {selectedEvent.format || 'POST'}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1.5 my-auto text-left">
+                                    <p className="text-base font-black leading-snug text-white/95">
+                                      “{parsedTitle.cleanTitle}”
+                                    </p>
+                                    <p className="text-xs text-white/70 line-clamp-3 leading-relaxed">
+                                      {editCaption ? editCaption.slice(0, 110) + '…' : ''}
+                                    </p>
+                                  </div>
+                                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[9px] text-white/60">
+                                    <span>OmniSocial AI Studio</span>
+                                    <span className="text-amber-300 font-bold">★ AI Peak Window</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                              <span className="block text-indigo-700 font-mono text-[10px]">
-                                {aiScoreAnalysis.metrics.callToAction?.score || 17}/20
-                              </span>
-                              <span>CTA Action</span>
+
+                            {/* 1-Tap Stock Photos Attacher (Inside Preview so user can click and see live!) */}
+                            {!mediaUrl && (
+                              <div className="p-2.5 bg-neutral-50/90 border-t border-b border-neutral-100 space-y-1.5">
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className="font-extrabold text-neutral-800 flex items-center space-x-1">
+                                    <ImageIcon className="w-3 h-3 text-indigo-600" />
+                                    <span>1-Tap Attach Photo (Unsplash CC0):</span>
+                                  </span>
+                                  <span className="text-neutral-400">Instant Preview</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  {[
+                                    { label: '💼 Tech', url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80' },
+                                    { label: '☕ Cafe', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80' },
+                                    { label: '🌿 Wellness', url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80' },
+                                    { label: '🛍️ Retail', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80' },
+                                    { label: '🚀 Growth', url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80' },
+                                    { label: '✨ Luxury', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80' }
+                                  ].map((preset, pIdx) => (
+                                    <button
+                                      key={pIdx}
+                                      type="button"
+                                      onClick={() => handleAttachStockVisual(preset.url)}
+                                      className="px-1.5 py-1 rounded-md text-[9px] font-bold border transition-all truncate cursor-pointer text-center bg-white hover:bg-neutral-100 text-neutral-700 border-neutral-200 shadow-2xs"
+                                    >
+                                      {preset.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Instagram Social Action Bar */}
+                            <div className="p-3 space-y-1.5">
+                              <div className="flex items-center justify-between text-neutral-800">
+                                <div className="flex items-center space-x-3.5">
+                                  <Heart className="w-4 h-4 text-rose-500 fill-rose-500 cursor-pointer" />
+                                  <MessageCircle className="w-4 h-4 hover:text-indigo-600 cursor-pointer" />
+                                  <Send className="w-4 h-4 hover:text-blue-600 cursor-pointer" />
+                                </div>
+                                <Bookmark className="w-4 h-4 text-neutral-700 hover:text-neutral-900 cursor-pointer" />
+                              </div>
+
+                              <p className="text-[11px] font-black text-neutral-900">4,920 likes</p>
+
+                              {/* Caption Text with Highlighted Hashtags */}
+                              <div className="text-xs text-neutral-800 leading-relaxed space-y-1">
+                                <p>
+                                  <span className="font-extrabold mr-1.5">{brandSlug}</span>
+                                  {editCaption || selectedEvent.caption || 'No caption text provided.'}
+                                </p>
+                              </div>
+
+                              <p className="text-[9px] text-neutral-400 font-mono pt-1">
+                                Scheduled for {new Date(selectedEvent.scheduledFor).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* LINKEDIN MOCKUP */}
+                        {previewModalPlatform === 'LINKEDIN' && (
+                          <div className="p-3.5 space-y-2.5 text-neutral-900">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-9 h-9 rounded-md bg-[#0A66C2] text-white flex items-center justify-center font-black text-sm">
+                                {brandName.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-bold text-neutral-900 leading-tight">{brandName}</h4>
+                                <p className="text-[10px] text-neutral-500">12,450 followers • Marketing</p>
+                                <p className="text-[9px] text-neutral-400">Scheduled • 🌐</p>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-neutral-800 whitespace-pre-wrap leading-relaxed">
+                              {editCaption || selectedEvent.caption}
+                            </p>
+
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img src={mediaUrl} alt="" className="w-full h-44 object-cover" />
+                              </div>
+                            )}
+
+                            <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
+                              <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
+                              <span className="flex items-center space-x-1"><MessageCircle className="w-3.5 h-3.5" /><span>Comment</span></span>
+                              <span className="flex items-center space-x-1"><Repeat className="w-3.5 h-3.5" /><span>Repost</span></span>
+                              <span className="flex items-center space-x-1"><Send className="w-3.5 h-3.5" /><span>Send</span></span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TWITTER / X MOCKUP */}
+                        {previewModalPlatform === 'TWITTER' && (
+                          <div className="p-3.5 space-y-2 text-neutral-900">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center font-mono font-black text-xs">
+                                𝕏
+                              </div>
+                              <div>
+                                <div className="flex items-center space-x-1">
+                                  <h4 className="text-xs font-bold text-neutral-900">{brandName}</h4>
+                                  <span className="text-[11px] text-neutral-500">@{brandSlug}</span>
+                                </div>
+                                <p className="text-[9px] text-neutral-400">Scheduled on OmniSocial</p>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-neutral-800 whitespace-pre-wrap leading-relaxed">
+                              {editCaption || selectedEvent.caption}
+                            </p>
+
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img src={mediaUrl} alt="" className="w-full h-40 object-cover" />
+                              </div>
+                            )}
+
+                            <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+                              <span className="flex items-center space-x-1"><MessageCircle className="w-3.5 h-3.5" /><span>18</span></span>
+                              <span className="flex items-center space-x-1"><Repeat className="w-3.5 h-3.5" /><span>42</span></span>
+                              <span className="flex items-center space-x-1"><Heart className="w-3.5 h-3.5 text-rose-500" /><span>280</span></span>
+                              <span className="flex items-center space-x-1"><Bookmark className="w-3.5 h-3.5" /><span>14</span></span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* FACEBOOK MOCKUP */}
+                        {previewModalPlatform === 'FACEBOOK' && (
+                          <div className="p-3.5 space-y-2 text-neutral-900">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-8 h-8 rounded-full bg-[#1877F2] text-white flex items-center justify-center font-bold text-xs">
+                                <Facebook className="w-4 h-4 text-white" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-bold text-neutral-900">{brandName}</h4>
+                                <p className="text-[10px] text-neutral-500">Sponsored • 🌐</p>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-neutral-800 whitespace-pre-wrap leading-relaxed">
+                              {editCaption || selectedEvent.caption}
+                            </p>
+
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img src={mediaUrl} alt="" className="w-full h-44 object-cover" />
+                              </div>
+                            )}
+
+                            <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
+                              <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
+                              <span className="flex items-center space-x-1"><MessageCircle className="w-3.5 h-3.5" /><span>Comment</span></span>
+                              <span className="flex items-center space-x-1"><Share2 className="w-3.5 h-3.5" /><span>Share</span></span>
                             </div>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <p className="text-[11px] text-indigo-800/80 leading-relaxed">
-                        Grade your post before publishing. AI checks line-1 hook, mobile formatting, and conversion triggers.
-                      </p>
-                    )}
-
-                    <div className="flex items-center space-x-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleAnalyzeAiScore(editCaption, selectedEvent.platform)}
-                        disabled={aiScoreLoading || !editCaption}
-                        className="flex-1 py-1.5 bg-white hover:bg-neutral-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center space-x-1 cursor-pointer"
-                      >
-                        {aiScoreLoading ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Analyzing Post...</span>
-                          </>
-                        ) : (
-                          <>
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            <span>Score Draft (0-100)</span>
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleBoostCaption(editCaption, selectedEvent.platform)}
-                        disabled={isBoosting || !editCaption}
-                        className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center space-x-1 cursor-pointer shadow-xs"
-                      >
-                        {isBoosting ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Boosting...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-3.5 h-3.5 text-amber-300" />
-                            <span>⚡ 1-Click Fix (90+)</span>
-                          </>
-                        )}
-                      </button>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedEvent.mediaUrls && selectedEvent.mediaUrls[0] && (
-                    <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-900">
-                      <img
-                        src={selectedEvent.mediaUrls[0]}
-                        alt="Post media"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
 
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-base font-extrabold text-neutral-900">{selectedEvent.title}</h3>
-                    {(() => {
-                      const p = getContentPillar(selectedEvent.title, selectedEvent.caption);
-                      const cfg = PILLAR_BADGE_CONFIG[p];
-                      return (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 font-mono ${cfg.badgeClass}`}>
-                          {cfg.icon} {cfg.label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <p className="text-xs text-neutral-600 leading-relaxed bg-neutral-50 p-3.5 rounded-2xl border border-neutral-100 whitespace-pre-wrap">
-                    {selectedEvent.caption}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                    <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
-                      <span className="text-neutral-400 block text-[10px] font-bold uppercase">Scheduled Time</span>
-                      <span className="font-bold text-neutral-800">{new Date(selectedEvent.scheduledFor).toLocaleString()}</span>
-                    </div>
-                    <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
-                      <span className="text-neutral-400 block text-[10px] font-bold uppercase">Published Time</span>
-                      <span className="font-bold text-neutral-800">{selectedEvent.publishedAt ? new Date(selectedEvent.publishedAt).toLocaleString() : 'Not published yet'}</span>
-                    </div>
-                  </div>
-
-                  {/* Evergreen Asset Controls */}
-                  <div className="p-3 bg-neutral-50/80 rounded-2xl border border-neutral-100 flex items-center justify-between gap-3">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
-                        ♻️
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-neutral-800">Evergreen Asset</p>
-                        <p className="text-[10px] text-neutral-500">Auto-fills calendar gaps &amp; recycles timeless content</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {selectedEventIsEvergreen && (
-                        <select
-                          value={selectedEventRecycleInterval}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setSelectedEventRecycleInterval(val);
-                            handleToggleEvergreen(selectedEvent, true, val);
-                          }}
-                          className="text-[11px] font-bold bg-white border border-neutral-200 rounded-lg px-2 py-1 outline-none cursor-pointer"
-                        >
-                          <option value={30}>Every 30d</option>
-                          <option value={60}>Every 60d</option>
-                          <option value={90}>Every 90d</option>
-                        </select>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextState = !selectedEventIsEvergreen;
-                          setSelectedEventIsEvergreen(nextState);
-                          handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
-                        }}
-                        className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
-                          selectedEventIsEvergreen
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
-                        }`}
-                      >
-                        {selectedEventIsEvergreen ? 'Active ♻️' : 'Turn On'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Performance Overlay & 1-Click Repeat for Published Drops */}
-                  {selectedEvent.status === 'PUBLISHED' && (
-                    <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-200/80 rounded-2xl space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1.5 font-bold text-xs text-amber-900">
-                          <Star className="w-4 h-4 text-amber-600 fill-amber-500" />
-                          <span>Performance &amp; Virality Score</span>
+                    {/* =============================================================== */}
+                    {/* RIGHT COLUMN: CONTENT EDITOR, AI VIRALITY & SLOTS                 */}
+                    {/* =============================================================== */}
+                    <div className={`md:col-span-7 space-y-3.5 ${
+                      previewModalTab === 'SETTINGS' ? 'block' : 'hidden md:block'
+                    }`}>
+                      {/* Post Title & Content Pillar */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-neutral-700">Post Title &amp; Topic</label>
+                          {(() => {
+                            const p = getContentPillar(editTitle || selectedEvent.title, editCaption || selectedEvent.caption);
+                            const cfg = PILLAR_BADGE_CONFIG[p];
+                            return (
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border font-mono ${cfg.badgeClass}`}>
+                                {cfg.icon} {cfg.label}
+                              </span>
+                            );
+                          })()}
                         </div>
-                        <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900">
-                          {selectedEvent.viralityScore ? `${selectedEvent.viralityScore}/100 High Reach` : '★ 88/100 Top Performer'}
-                        </span>
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full text-xs font-semibold border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                          placeholder="Post title..."
+                        />
                       </div>
-                      <p className="text-[11px] text-neutral-600 leading-snug">
-                        Repeat what worked! Schedule this exact high-performing post to a future date or let AI remix the hook.
-                      </p>
-                      
-                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                        <div className="flex-1 flex items-center space-x-1">
-                          <input
-                            type="datetime-local"
-                            value={duplicateTargetDate}
-                            onChange={(e) => setDuplicateTargetDate(e.target.value)}
-                            className="w-full text-xs border border-amber-200 bg-white rounded-xl p-1.5 outline-none font-mono"
-                          />
+
+                      {/* Post Caption Editor */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <label className="font-bold text-neutral-700">Post Caption &amp; Hashtags</label>
+                          <span className="text-[10px] text-neutral-400 font-mono">
+                            {editCaption.length} characters
+                          </span>
+                        </div>
+                        <textarea
+                          rows={4}
+                          value={editCaption}
+                          onChange={(e) => setEditCaption(e.target.value)}
+                          className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 bg-white leading-relaxed"
+                          placeholder="Write post caption..."
+                        />
+                      </div>
+
+                      {/* AI Pre-Publish Quality Score & 1-Click Viral Boost */}
+                      <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-1.5 font-bold text-xs text-indigo-950">
+                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                            <span>AI Pre-Publish Quality Coach</span>
+                          </div>
+                          {aiScoreAnalysis ? (
+                            <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-full ${
+                              aiScoreAnalysis.score >= 85
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : aiScoreAnalysis.score >= 65
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              Score: {aiScoreAnalysis.score}/100 ({aiScoreAnalysis.grade})
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100">
+                              Predicted Reach: 92%
+                            </span>
+                          )}
+                        </div>
+
+                        {aiScoreAnalysis ? (
+                          <div className="space-y-1.5">
+                            <p className="text-[11px] text-indigo-900 leading-snug">{aiScoreAnalysis.verdict}</p>
+                            {aiScoreAnalysis.metrics && (
+                              <div className="grid grid-cols-3 gap-1.5 text-[9px] font-bold text-neutral-600 pt-0.5">
+                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
+                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                    {aiScoreAnalysis.metrics.hookStrength?.score || 20}/25
+                                  </span>
+                                  <span>Hook Power</span>
+                                </div>
+                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
+                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                    {aiScoreAnalysis.metrics.readabilitySpacing?.score || 18}/20
+                                  </span>
+                                  <span>Readability</span>
+                                </div>
+                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
+                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                    {aiScoreAnalysis.metrics.callToAction?.score || 17}/20
+                                  </span>
+                                  <span>CTA Action</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-indigo-800/80 leading-relaxed">
+                            Grade your post before publishing. AI checks line-1 hook, mobile formatting, and conversion triggers.
+                          </p>
+                        )}
+
+                        <div className="flex items-center space-x-2 pt-0.5">
                           <button
                             type="button"
-                            onClick={() => handleDuplicateEvent(selectedEvent, duplicateTargetDate)}
-                            disabled={isDuplicating || !duplicateTargetDate}
-                            className="px-3 py-1.5 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl shrink-0 transition-all cursor-pointer disabled:opacity-50 flex items-center space-x-1"
+                            onClick={() => handleAnalyzeAiScore(editCaption, previewModalPlatform)}
+                            disabled={aiScoreLoading || !editCaption}
+                            className="flex-1 py-1.5 bg-white hover:bg-neutral-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center space-x-1 cursor-pointer"
                           >
-                            <Repeat className={`w-3 h-3 ${isDuplicating ? 'animate-spin' : ''}`} />
-                            <span>{isDuplicating ? 'Queuing...' : 'Repeat ♻️'}</span>
+                            {aiScoreLoading ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Analyzing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <BarChart3 className="w-3.5 h-3.5" />
+                                <span>Score Post</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleBoostCaption(editCaption, previewModalPlatform)}
+                            disabled={isBoosting || !editCaption}
+                            className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center space-x-1 cursor-pointer shadow-xs"
+                          >
+                            {isBoosting ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Fixing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                                <span>⚡ 1-Click Viral Boost</span>
+                              </>
+                            )}
                           </button>
                         </div>
+                      </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedEvent(null);
-                            setInstantTopic(`${selectedEvent.title} - Fresh angle remix`);
-                            setInstantPostType(selectedEvent.format === 'POST' ? 'IMAGE' : (selectedEvent.format || 'REEL'));
-                            setShowInstantModal(true);
-                            setGeneratedInstantPost(null);
-                            setNotice({ type: 'success', text: 'Loaded into 1-Click Studio for fresh AI Remix!' });
-                          }}
-                          className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-1 shrink-0"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>AI-Remix</span>
-                        </button>
+                      {/* Reschedule Picker & AI Smart Slots */}
+                      {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' && (
+                        <div className="pt-2 border-t border-neutral-100 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-neutral-700">Change Scheduled Slot</label>
+                            <span className="text-[10px] font-bold text-amber-700 flex items-center space-x-1">
+                              <span>🔥 AI Peak Windows</span>
+                            </span>
+                          </div>
+
+                          {/* 1-Tap AI Peak Smart Slots */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            {[
+                              { label: '🔥 7:30 PM Prime', hours: 19, mins: 30, note: '96% Reach' },
+                              { label: '⚡ 8:45 AM Rush', hours: 8, mins: 45, note: '95% B2B' },
+                              { label: '📱 1:15 PM Lunch', hours: 13, mins: 15, note: '91% Saves' },
+                              { label: '🌙 9:45 PM Night', hours: 21, mins: 45, note: '87% DMs' }
+                            ].map((slot, sIdx) => (
+                              <button
+                                key={sIdx}
+                                type="button"
+                                onClick={() => {
+                                  const baseDate = rescheduleDate ? new Date(rescheduleDate) : new Date(selectedEvent.scheduledFor);
+                                  baseDate.setHours(slot.hours, slot.mins, 0, 0);
+                                  const year = baseDate.getFullYear();
+                                  const month = String(baseDate.getMonth() + 1).padStart(2, '0');
+                                  const day = String(baseDate.getDate()).padStart(2, '0');
+                                  const hh = String(slot.hours).padStart(2, '0');
+                                  const mm = String(slot.mins).padStart(2, '0');
+                                  setRescheduleDate(`${year}-${month}-${day}T${hh}:${mm}`);
+                                  setNotice({ type: 'success', text: `Selected ${slot.label} window (${slot.note})!` });
+                                }}
+                                className="p-1.5 text-left rounded-xl bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200/80 text-amber-900 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <span className="block text-[10px] font-black">{slot.label}</span>
+                                <span className="block text-[8px] text-amber-700/80 font-mono">{slot.note}</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="datetime-local"
+                              value={rescheduleDate}
+                              onChange={(e) => setRescheduleDate(e.target.value)}
+                              className="w-full text-xs border border-neutral-200 rounded-xl p-2 outline-none focus:ring-2 focus:ring-indigo-500 font-mono bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleSaveModalReschedule}
+                              disabled={saving || !rescheduleDate}
+                              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
+                            >
+                              Save Date
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Evergreen Asset Recycling Controls */}
+                      <div className="p-2.5 bg-neutral-50/90 rounded-2xl border border-neutral-100 flex items-center justify-between gap-3">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
+                            ♻️
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-neutral-800">Evergreen Asset Recycling</p>
+                            <p className="text-[10px] text-neutral-500">Auto-fills calendar gaps with timeless content</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {selectedEventIsEvergreen && (
+                            <select
+                              value={selectedEventRecycleInterval}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setSelectedEventRecycleInterval(val);
+                                handleToggleEvergreen(selectedEvent, true, val);
+                              }}
+                              className="text-[10px] font-bold bg-white border border-neutral-200 rounded-lg px-2 py-1 outline-none cursor-pointer"
+                            >
+                              <option value={30}>Every 30d</option>
+                              <option value={60}>Every 60d</option>
+                              <option value={90}>Every 90d</option>
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextState = !selectedEventIsEvergreen;
+                              setSelectedEventIsEvergreen(nextState);
+                              handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
+                            }}
+                            className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                              selectedEventIsEvergreen
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+                            }`}
+                          >
+                            {selectedEventIsEvergreen ? 'Active ♻️' : 'Turn On'}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Reschedule Picker & AI Smart Slots */}
-              {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' && (
-                <div className="pt-2 border-t border-neutral-100 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-neutral-700">Change Scheduled Date &amp; Time</label>
-                    <span className="text-[10px] font-bold text-amber-700 flex items-center space-x-1">
-                      <span>🔥 AI Smart Peak Windows</span>
-                    </span>
-                  </div>
-
-                  {/* 1-Tap AI Peak Smart Slots */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    {[
-                      { label: '🔥 7:30 PM Prime', hours: 19, mins: 30, note: '96% Reach' },
-                      { label: '⚡ 8:45 AM Rush', hours: 8, mins: 45, note: '95% B2B' },
-                      { label: '📱 1:15 PM Lunch', hours: 13, mins: 15, note: '91% Saves' },
-                      { label: '🌙 9:45 PM Night', hours: 21, mins: 45, note: '87% DMs' }
-                    ].map((slot, sIdx) => (
-                      <button
-                        key={sIdx}
-                        type="button"
-                        onClick={() => {
-                          const baseDate = rescheduleDate ? new Date(rescheduleDate) : new Date(selectedEvent.scheduledFor);
-                          baseDate.setHours(slot.hours, slot.mins, 0, 0);
-                          const year = baseDate.getFullYear();
-                          const month = String(baseDate.getMonth() + 1).padStart(2, '0');
-                          const day = String(baseDate.getDate()).padStart(2, '0');
-                          const hh = String(slot.hours).padStart(2, '0');
-                          const mm = String(slot.mins).padStart(2, '0');
-                          setRescheduleDate(`${year}-${month}-${day}T${hh}:${mm}`);
-                          setNotice({ type: 'success', text: `Selected optimal ${slot.label} window (${slot.note})!` });
-                        }}
-                        className="p-1.5 text-left rounded-xl bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200/80 text-amber-900 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <span className="block text-[10px] font-black">{slot.label}</span>
-                        <span className="block text-[8px] text-amber-700/80 font-mono">{slot.note}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="datetime-local"
-                      value={rescheduleDate}
-                      onChange={(e) => setRescheduleDate(e.target.value)}
-                      className="w-full text-xs border border-neutral-200 rounded-xl p-2 outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                    />
-                    <button
-                      onClick={handleSaveModalReschedule}
-                      disabled={saving || !rescheduleDate}
-                      className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
-                    >
-                      Save Date
-                    </button>
                   </div>
                 </div>
-              )}
 
-              {/* Modal Footer Actions */}
-              <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
-                {isEditing ? (
-                  <div className="flex items-center space-x-2 w-full justify-end">
+                {/* Modal Bottom Footer Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-neutral-100 shrink-0">
+                  <div className="text-xs text-neutral-500 hidden sm:block">
+                    Changes reflect immediately in the live feed preview
+                  </div>
+
+                  <div className="flex items-center space-x-2 ml-auto">
                     <button
-                      onClick={() => setIsEditing(false)}
-                      className="px-3 py-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-800 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
+                      type="button"
                       onClick={handleSaveContentEdit}
                       disabled={saving}
-                      className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center space-x-1.5"
                     >
-                      {saving ? 'Saving...' : 'Update Post'}
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{saving ? 'Saving...' : 'Save Changes'}</span>
                     </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between w-full">
-                    {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' ? (
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Edit Content</span>
-                      </button>
-                    ) : (
-                      <div></div>
-                    )}
                     <button
+                      type="button"
                       onClick={() => setSelectedEvent(null)}
-                      className="px-4 py-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-800 bg-neutral-100 rounded-xl transition-colors cursor-pointer"
+                      className="px-4 py-2 text-xs font-bold text-neutral-600 hover:text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
                     >
                       Close
                     </button>
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ===================================================================== */}
         {/* VIEW ALL DROPS ON A DATE MODAL                                       */}
