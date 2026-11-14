@@ -518,6 +518,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-01T00:00:00Z'));
   const [today, setToday] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [viewingDayDrops, setViewingDayDrops] = useState<{ date: Date; events: any[] } | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -1803,6 +1804,51 @@ export default function CalendarPage() {
     );
   };
 
+  const sanitizeMediaUrl = (url?: string | null): string => {
+    if (!url) return '';
+    if (url.startsWith('http://omnisocialbackend.onrender.com')) {
+      return url.replace('http://omnisocialbackend.onrender.com', 'https://omnisocialbackend.onrender.com');
+    }
+    return url;
+  };
+
+  const parseCalendarCardTitle = (rawTitle: string) => {
+    if (!rawTitle) return { badge: null, fullBadge: null, cleanTitle: 'Untitled Drop', badgeStyle: '' };
+    
+    const match = rawTitle.match(/^\[(.*?)\]\s*(.*)$/);
+    if (match) {
+      const rawBadge = match[1].trim();
+      const cleanTitle = match[2].trim() || rawBadge;
+      
+      let shortBadge = rawBadge;
+      let badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200/80';
+
+      if (/^Phase\s*(\d+)/i.test(rawBadge)) {
+        const pNum = rawBadge.match(/^Phase\s*(\d+)/i)?.[1];
+        shortBadge = `P${pNum}`;
+        if (pNum === '1') badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200/90';
+        else if (pNum === '2') badgeStyle = 'bg-sky-50 text-sky-800 border-sky-200/90';
+        else if (pNum === '3') badgeStyle = 'bg-purple-50 text-purple-800 border-purple-200/90';
+        else if (pNum === '4') badgeStyle = 'bg-emerald-50 text-emerald-800 border-emerald-200/90';
+        else if (pNum === '5') badgeStyle = 'bg-rose-50 text-rose-800 border-rose-200/90';
+      } else if (rawBadge.toLowerCase().includes('quick hook')) {
+        shortBadge = 'Hook';
+        badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200/90';
+      } else if (rawBadge.length > 9) {
+        shortBadge = rawBadge.slice(0, 8) + '…';
+      }
+
+      return {
+        badge: shortBadge,
+        fullBadge: rawBadge,
+        cleanTitle,
+        badgeStyle
+      };
+    }
+    
+    return { badge: null, fullBadge: null, cleanTitle: rawTitle, badgeStyle: '' };
+  };
+
   const getEventCardStyle = (title: string, defaultStatus: string) => {
     let accentBar = 'bg-indigo-500';
     let dot = 'bg-indigo-500';
@@ -2274,23 +2320,26 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Days Grid */}
-                <div className="grid grid-cols-7 divide-x divide-y divide-neutral-200/70 min-h-[640px]">
+                <div className="grid grid-cols-7 divide-x divide-y divide-neutral-200/70 min-h-[680px]">
                   {monthDays.map((dayItem, idx) => {
                     const isToday = today ? isSameDay(dayItem.date, today) : false;
                     const dayEvents = filteredEvents.filter(e => isSameDay(new Date(e.scheduledFor), dayItem.date));
                     const cellFestival = dayItem.isCurrentMonth ? getFestivalForDate(dayItem.date) : null;
+                    const visibleEvents = dayEvents.slice(0, 2);
+                    const overflowCount = dayEvents.length - 2;
 
                     return (
                       <div
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
-                        className={`p-2.5 flex flex-col justify-between transition-all min-h-[135px] relative group/cell ${dayItem.isCurrentMonth
+                        className={`p-2 sm:p-2.5 flex flex-col justify-between transition-all min-h-[160px] sm:min-h-[175px] relative group/cell ${
+                          dayItem.isCurrentMonth
                             ? isToday
                               ? 'bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-inset ring-indigo-500/20'
-                              : 'bg-white hover:bg-neutral-50/40'
-                            : 'bg-neutral-50/50 text-neutral-400'
-                          }`}
+                              : 'bg-white hover:bg-neutral-50/50'
+                            : 'bg-neutral-50/40 text-neutral-300'
+                        }`}
                       >
                         {/* Day Cell Header */}
                         <div>
@@ -2306,14 +2355,20 @@ export default function CalendarPage() {
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-xs font-bold text-neutral-800 group-hover/cell:text-neutral-950 font-mono w-6 h-6 flex items-center justify-center">
+                                <span
+                                  className={`text-xs font-bold font-mono w-6 h-6 flex items-center justify-center rounded-full transition-colors ${
+                                    dayItem.isCurrentMonth
+                                      ? 'text-neutral-700 group-hover/cell:text-neutral-950 group-hover/cell:bg-neutral-100'
+                                      : 'text-neutral-300'
+                                  }`}
+                                >
                                   {dayItem.date.getDate()}
                                 </span>
                               )}
                             </div>
 
                             <div className="flex items-center space-x-1">
-                              {/* Optimal Peak Time Chip (Only on empty days to avoid clutter) */}
+                              {/* Optimal Peak Time Chip - Cleanly visible on hover of empty days */}
                               {dayEvents.length === 0 && dayItem.isCurrentMonth && (
                                 <button
                                   type="button"
@@ -2321,8 +2376,8 @@ export default function CalendarPage() {
                                     e.stopPropagation();
                                     handleQuickScheduleOnDate(dayItem.date);
                                   }}
-                                  title="AI Peak Window (7:30 PM - 96% Reach). Click to schedule."
-                                  className="text-[8px] font-bold text-amber-800/80 bg-amber-50/80 hover:bg-amber-100 px-1.5 py-0.5 rounded-full border border-amber-200/60 font-mono transition-all cursor-pointer hidden sm:inline-flex items-center space-x-0.5"
+                                  title="AI Prime Slot (7:30 PM - 96% Reach). Click to schedule."
+                                  className="text-[8px] font-extrabold text-amber-800 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded-full border border-amber-200/80 font-mono transition-all cursor-pointer opacity-0 group-hover/cell:opacity-100 shadow-2xs items-center space-x-0.5 hidden sm:inline-flex"
                                 >
                                   <span>🔥</span>
                                   <span>7:30P</span>
@@ -2330,14 +2385,16 @@ export default function CalendarPage() {
                               )}
 
                               {/* Quick '+' Button on Cell Hover */}
-                              <button
-                                type="button"
-                                onClick={() => handleQuickScheduleOnDate(dayItem.date)}
-                                title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
-                                className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-600 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
+                              {dayItem.isCurrentMonth && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickScheduleOnDate(dayItem.date)}
+                                  title={`Schedule drop on ${dayItem.date.toLocaleDateString()}`}
+                                  className="w-5 h-5 rounded-full bg-neutral-100 hover:bg-neutral-900 hover:text-white text-neutral-600 items-center justify-center transition-all opacity-0 group-hover/cell:opacity-100 cursor-pointer shadow-2xs hidden sm:flex"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -2361,11 +2418,13 @@ export default function CalendarPage() {
                           )}
                         </div>
 
-                        {/* Event Cards with Drag and Drop - Clean & Invisible Scrollbar */}
-                        <div className="space-y-1.5 my-2 overflow-y-auto max-h-36 pr-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden">
-                          {dayEvents.map(ev => {
+                        {/* Event Cards - 100% Unclipped, No Scrollbars! */}
+                        <div className="space-y-1.5 my-1.5 flex-1">
+                          {visibleEvents.map(ev => {
                             const isDraggable = ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING';
                             const style = getEventCardStyle(ev.title, ev.status);
+                            const titleMeta = parseCalendarCardTitle(ev.title);
+                            const mediaUrl = sanitizeMediaUrl(ev.mediaUrls?.[0]);
 
                             return (
                               <div
@@ -2384,7 +2443,7 @@ export default function CalendarPage() {
                                   nextWeek.setHours(18, 30, 0, 0);
                                   setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
                                 }}
-                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-md hover:-translate-y-0.5 ${
+                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md hover:-translate-y-0.5 ${
                                   isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                                 }`}
                               >
@@ -2394,25 +2453,33 @@ export default function CalendarPage() {
                                 <div className="pl-1.5 space-y-1">
                                   {/* Top meta row */}
                                   <div className="flex items-center justify-between gap-1">
-                                    <div className="flex items-center space-x-1.5">
+                                    <div className="flex items-center space-x-1.5 truncate">
                                       <PlatformMicroIcon platform={ev.platform} />
-                                      <span className="font-mono text-[9px] font-semibold text-neutral-500">
+                                      <span className="font-mono text-[9px] font-bold text-neutral-500">
                                         {formatPostTime(ev.scheduledFor)}
                                       </span>
+                                      {titleMeta.badge && (
+                                        <span
+                                          title={titleMeta.fullBadge || ''}
+                                          className={`text-[8px] font-extrabold px-1 py-0.2 rounded font-mono border ${titleMeta.badgeStyle}`}
+                                        >
+                                          {titleMeta.badge}
+                                        </span>
+                                      )}
                                       {(() => {
                                         const p = getContentPillar(ev.title, ev.caption);
                                         const cfg = PILLAR_BADGE_CONFIG[p];
                                         return (
-                                          <span title={`Pillar: ${cfg.label}`} className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full border font-mono ${cfg.badgeClass}`}>
+                                          <span title={`Pillar: ${cfg.label}`} className={`text-[8px] font-bold px-1 py-0.2 rounded border font-mono ${cfg.badgeClass}`}>
                                             {cfg.icon}
                                           </span>
                                         );
                                       })()}
                                     </div>
-                                    <div className="flex items-center space-x-1">
+                                    <div className="flex items-center space-x-1 shrink-0">
                                       {ev.status === 'PUBLISHED' && (
                                         <span className="text-[8px] font-black text-amber-700 bg-amber-100/90 px-1.5 py-0.2 rounded-full font-mono">
-                                          ★ {ev.viralityScore ? `${ev.viralityScore}` : '92'}
+                                          ★{ev.viralityScore || '92'}
                                         </span>
                                       )}
                                       {ev.isEvergreen && (
@@ -2426,9 +2493,9 @@ export default function CalendarPage() {
 
                                   {/* Title & Thumbnail row */}
                                   <div className="flex items-center space-x-1.5">
-                                    {ev.mediaUrls && ev.mediaUrls[0] ? (
+                                    {mediaUrl ? (
                                       <img
-                                        src={ev.mediaUrls[0]}
+                                        src={mediaUrl}
                                         alt=""
                                         className="w-5 h-5 rounded-md object-cover shrink-0 border border-black/10 shadow-2xs group-hover/card:scale-105 transition-transform"
                                       />
@@ -2437,8 +2504,8 @@ export default function CalendarPage() {
                                         {ev.format === 'REEL' ? '🎬' : ev.format === 'CAROUSEL' ? '📑' : '📸'}
                                       </span>
                                     )}
-                                    <p className="font-bold text-neutral-900 truncate leading-snug text-[10px] flex-1">
-                                      {ev.title}
+                                    <p className="font-bold text-neutral-900 truncate leading-snug text-[10.5px] flex-1">
+                                      {titleMeta.cleanTitle}
                                     </p>
                                   </div>
                                 </div>
@@ -2447,31 +2514,33 @@ export default function CalendarPage() {
                           })}
                         </div>
 
-                        {/* Empty Gap Detector & 1-Click Schedule / Auto-fill */}
-                        {dayEvents.length === 0 && dayItem.isCurrentMonth && (
-                          <div className="py-2 text-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                        {/* Cell Footer - Overflow Button or Empty Slot Add */}
+                        <div className="pt-0.5">
+                          {overflowCount > 0 ? (
                             <button
                               type="button"
-                              onClick={() => handleQuickScheduleOnDate(dayItem.date)}
-                              title="Empty slot - Click to schedule or auto-fill"
-                              className="text-[9px] font-bold text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-0.5 rounded-full border border-dashed border-slate-300 hover:border-indigo-400 transition-all cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewingDayDrops({ date: dayItem.date, events: dayEvents });
+                              }}
+                              className="w-full text-center py-1 rounded-lg text-[9.5px] font-extrabold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 transition-all cursor-pointer flex items-center justify-center space-x-1 shadow-2xs"
                             >
-                              <Plus className="w-2.5 h-2.5 text-indigo-500" />
-                              <span>Add Drop</span>
+                              <span>+{overflowCount} more drop{overflowCount > 1 ? 's' : ''}</span>
+                              <ChevronRight className="w-2.5 h-2.5 opacity-70" />
                             </button>
-                          </div>
-                        )}
-
-                        {/* Cell Footer */}
-                        <div className="flex items-center justify-between text-[9px] text-neutral-400 pt-0.5">
-                          {dayEvents.length > 0 ? (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-neutral-100/80 text-neutral-600 font-mono font-bold text-[9px]">
-                              <span>{dayEvents.length}</span>
-                              <span>{dayEvents.length === 1 ? 'post' : 'posts'}</span>
-                            </span>
-                          ) : (
-                            <span />
-                          )}
+                          ) : dayEvents.length === 0 && dayItem.isCurrentMonth ? (
+                            <div className="text-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={() => handleQuickScheduleOnDate(dayItem.date)}
+                                title="Empty slot - Click to schedule or auto-fill"
+                                className="text-[9px] font-bold text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-0.5 rounded-full border border-dashed border-slate-300 hover:border-indigo-400 transition-all cursor-pointer inline-flex items-center space-x-1 shadow-2xs"
+                              >
+                                <Plus className="w-2.5 h-2.5 text-indigo-500" />
+                                <span>Add Drop</span>
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -2514,6 +2583,9 @@ export default function CalendarPage() {
                       >
                         {dayEvents.map(ev => {
                           const style = getEventCardStyle(ev.title, ev.status);
+                          const titleMeta = parseCalendarCardTitle(ev.title);
+                          const mediaUrl = sanitizeMediaUrl(ev.mediaUrls?.[0]);
+
                           return (
                             <div
                               key={ev.id}
@@ -2530,6 +2602,11 @@ export default function CalendarPage() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-1.5">
                                   <PlatformPill platform={ev.platform} />
+                                  {titleMeta.badge && (
+                                    <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded font-mono border ${titleMeta.badgeStyle}`}>
+                                      {titleMeta.badge}
+                                    </span>
+                                  )}
                                   {(() => {
                                     const p = getContentPillar(ev.title, ev.caption);
                                     const cfg = PILLAR_BADGE_CONFIG[p];
@@ -2544,7 +2621,16 @@ export default function CalendarPage() {
                                   {formatPostTime(ev.scheduledFor)}
                                 </span>
                               </div>
-                              <p className="font-bold text-neutral-900 line-clamp-1">{ev.title}</p>
+                              <div className="flex items-center space-x-2">
+                                {mediaUrl && (
+                                  <img
+                                    src={mediaUrl}
+                                    alt=""
+                                    className="w-8 h-8 rounded-lg object-cover shrink-0 border border-black/10 shadow-2xs"
+                                  />
+                                )}
+                                <p className="font-bold text-neutral-900 line-clamp-1">{titleMeta.cleanTitle}</p>
+                              </div>
                               <p className="text-[11px] text-neutral-500 line-clamp-2 leading-snug">{ev.caption}</p>
                             </div>
                           );
@@ -2578,6 +2664,9 @@ export default function CalendarPage() {
                     .filter(e => isSameDay(new Date(e.scheduledFor), currentDate))
                     .map(ev => {
                       const style = getEventCardStyle(ev.title, ev.status);
+                      const titleMeta = parseCalendarCardTitle(ev.title);
+                      const mediaUrl = sanitizeMediaUrl(ev.mediaUrls?.[0]);
+
                       return (
                         <div
                           key={ev.id}
@@ -2590,9 +2679,9 @@ export default function CalendarPage() {
                           className="p-4 rounded-2xl border border-neutral-200/90 hover:border-indigo-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white shadow-xs hover:shadow-md"
                         >
                           <div className="flex items-start space-x-3.5">
-                            {ev.mediaUrls && ev.mediaUrls[0] ? (
+                            {mediaUrl ? (
                               <img
-                                src={ev.mediaUrls[0]}
+                                src={mediaUrl}
                                 alt=""
                                 className="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10"
                               />
@@ -2607,8 +2696,13 @@ export default function CalendarPage() {
                                 <span className="font-mono text-xs font-bold text-neutral-600">
                                   {formatPostTime(ev.scheduledFor)}
                                 </span>
+                                {titleMeta.badge && (
+                                  <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded font-mono border ${titleMeta.badgeStyle}`}>
+                                    {titleMeta.fullBadge || titleMeta.badge}
+                                  </span>
+                                )}
                               </div>
-                              <h4 className="text-sm font-bold text-neutral-900 mt-1">{ev.title}</h4>
+                              <h4 className="text-sm font-bold text-neutral-900 mt-1">{titleMeta.cleanTitle}</h4>
                               <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">{ev.caption}</p>
                             </div>
                           </div>
@@ -2636,12 +2730,15 @@ export default function CalendarPage() {
               <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.03)] divide-y divide-neutral-100 overflow-hidden">
                 {filteredEvents.map(ev => {
                   const style = getEventCardStyle(ev.title, ev.status);
+                  const titleMeta = parseCalendarCardTitle(ev.title);
+                  const mediaUrl = sanitizeMediaUrl(ev.mediaUrls?.[0]);
+
                   return (
                     <div key={ev.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50/70 transition-colors">
                       <div className="flex items-start space-x-3.5">
-                        {ev.mediaUrls && ev.mediaUrls[0] ? (
+                        {mediaUrl ? (
                           <img
-                            src={ev.mediaUrls[0]}
+                            src={mediaUrl}
                             alt=""
                             className="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/10"
                           />
@@ -2656,8 +2753,13 @@ export default function CalendarPage() {
                             <span className="font-mono text-[11px] text-neutral-500">
                               {new Date(ev.scheduledFor).toLocaleDateString()} at {formatPostTime(ev.scheduledFor)}
                             </span>
+                            {titleMeta.badge && (
+                              <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded font-mono border ${titleMeta.badgeStyle}`}>
+                                {titleMeta.badge}
+                              </span>
+                            )}
                           </div>
-                          <h4 className="text-xs font-bold text-neutral-900 mt-1">{ev.title}</h4>
+                          <h4 className="text-xs font-bold text-neutral-900 mt-1">{titleMeta.cleanTitle}</h4>
                           <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">{ev.caption}</p>
                         </div>
                       </div>
@@ -3380,6 +3482,140 @@ export default function CalendarPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* VIEW ALL DROPS ON A DATE MODAL                                       */}
+        {/* ===================================================================== */}
+        {viewingDayDrops && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl border border-neutral-200/90 shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="p-5 border-b border-neutral-200/80 bg-neutral-50/70 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base font-extrabold text-neutral-900">
+                      {viewingDayDrops.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-mono">
+                      {viewingDayDrops.events.length} drops
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-500">
+                    All scheduled social drops, reels, and stories for this date.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingDayDrops(null)}
+                  className="w-8 h-8 rounded-full bg-white hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900 border border-neutral-200/80 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Drops List */}
+              <div className="p-5 overflow-y-auto space-y-3 max-h-[60vh] divide-y divide-neutral-100">
+                {viewingDayDrops.events.map((ev, eIdx) => {
+                  const style = getEventCardStyle(ev.title, ev.status);
+                  const titleMeta = parseCalendarCardTitle(ev.title);
+                  const mediaUrl = sanitizeMediaUrl(ev.mediaUrls?.[0]);
+
+                  return (
+                    <div
+                      key={ev.id || eIdx}
+                      className="pt-3 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group/item"
+                    >
+                      <div className="flex items-start space-x-3.5">
+                        {mediaUrl ? (
+                          <img
+                            src={mediaUrl}
+                            alt=""
+                            className="w-14 h-14 rounded-xl object-cover shrink-0 border border-black/10 shadow-2xs group-hover/item:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-neutral-100 flex items-center justify-center text-xl shrink-0 border border-neutral-200">
+                            {ev.format === 'REEL' ? '🎬' : ev.format === 'CAROUSEL' ? '📑' : '📸'}
+                          </div>
+                        )}
+
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <PlatformPill platform={ev.platform} />
+                            <span className="font-mono text-xs font-bold text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-full">
+                              {formatPostTime(ev.scheduledFor)}
+                            </span>
+                            {titleMeta.badge && (
+                              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded font-mono border ${titleMeta.badgeStyle}`}>
+                                {titleMeta.fullBadge || titleMeta.badge}
+                              </span>
+                            )}
+                            <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
+                              {ev.status}
+                            </span>
+                          </div>
+
+                          <h4 className="text-sm font-extrabold text-neutral-900 group-hover/item:text-indigo-600 transition-colors">
+                            {titleMeta.cleanTitle}
+                          </h4>
+
+                          <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">
+                            {ev.caption}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEvent(ev);
+                            setIsEditing(false);
+                            setEditTitle(ev.title);
+                            setEditCaption(ev.caption);
+                            setSelectedEventIsEvergreen(ev.isEvergreen || false);
+                            setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
+                            const nextWeek = new Date();
+                            nextWeek.setDate(nextWeek.getDate() + 7);
+                            nextWeek.setHours(18, 30, 0, 0);
+                            setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
+                            setViewingDayDrops(null);
+                          }}
+                          className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white transition-all cursor-pointer shadow-xs flex items-center space-x-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Inspect / Edit</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-neutral-200/80 bg-neutral-50/70 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleQuickScheduleOnDate(viewingDayDrops.date);
+                    setViewingDayDrops(null);
+                  }}
+                  className="px-3.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200/80 transition-colors cursor-pointer flex items-center space-x-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Schedule Another Drop on this Day</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewingDayDrops(null)}
+                  className="px-4 py-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-900 bg-neutral-200/80 hover:bg-neutral-300 rounded-xl transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
