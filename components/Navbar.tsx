@@ -31,6 +31,8 @@ interface NavbarProps {
   currentBrandId?: string;
   onBrandChange?: (brandId: string) => void;
   unreadCount?: number;
+  unreadCommentsCount?: number;
+  unreadDmsCount?: number;
   commentsCount?: number;
   dmsCount?: number;
 }
@@ -39,8 +41,10 @@ export default function Navbar({
   currentBrandId, 
   onBrandChange,
   unreadCount = 0,
-  commentsCount = 4,
-  dmsCount = 2
+  unreadCommentsCount = 0,
+  unreadDmsCount = 0,
+  commentsCount = 0,
+  dmsCount = 0
 }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,6 +53,7 @@ export default function Navbar({
   const [brands, setBrands] = useState<any[]>([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showBrandMenu, setShowBrandMenu] = useState(false);
+  const [showEngageMenu, setShowEngageMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
 
   useEffect(() => {
@@ -93,10 +98,20 @@ export default function Navbar({
 
   const selectedBrand = brands.find(b => b.id === currentBrandId) || brands[0];
 
+  const totalUnreadEngage = (unreadCommentsCount || 0) + (unreadDmsCount || 0) || unreadCount || 0;
+
   const navTabs = [
     { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Comments', href: '/inbox?type=COMMENT', count: commentsCount },
-    { name: 'DMs', href: '/inbox?type=DIRECT_MESSAGE', count: dmsCount },
+    { 
+      name: 'Engage', 
+      href: '/inbox?type=COMMENT', 
+      count: totalUnreadEngage,
+      isDropdown: true,
+      subItems: [
+        { name: 'Comments', href: '/inbox?type=COMMENT', count: unreadCommentsCount, desc: 'Public post replies & threads' },
+        { name: 'DMs', href: '/inbox?type=DIRECT_MESSAGE', count: unreadDmsCount, desc: 'Private Messenger & Instagram' }
+      ]
+    },
     { name: 'Studio', href: '/content-studio' },
     { name: 'Calendar', href: '/calendar' },
     { name: 'Funnels', href: '/automations' },
@@ -204,6 +219,68 @@ export default function Navbar({
         <nav className="hidden lg:flex items-center bg-[#E6E8EC] p-1 rounded-full border border-black/[0.04] shadow-xs">
           {navTabs.map((tab) => {
             const active = isTabActive(tab.href);
+            if (tab.isDropdown) {
+              return (
+                <div 
+                  key={tab.name}
+                  className="relative group"
+                  onMouseEnter={() => setShowEngageMenu(true)}
+                  onMouseLeave={() => setShowEngageMenu(false)}
+                >
+                  <Link
+                    href={tab.href}
+                    onClick={() => setShowEngageMenu(false)}
+                    className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11px] xl:text-xs font-semibold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
+                      active
+                        ? 'bg-[#111215] text-white shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-950 hover:bg-white/40'
+                    }`}
+                  >
+                    <span>{tab.name}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showEngageMenu ? 'rotate-180' : ''} ${active ? 'text-neutral-300' : 'text-neutral-400'}`} />
+                    {tab.count !== undefined && tab.count > 0 && (
+                      <span
+                        className={`text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                          active
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-orange-100 text-orange-800'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </Link>
+
+                  {/* Engage Submenu Dropdown */}
+                  {showEngageMenu && (
+                    <div className="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 mb-1">
+                        Inbox Engagement
+                      </div>
+                      {tab.subItems?.map((sub) => (
+                        <Link
+                          key={sub.name}
+                          href={sub.href}
+                          onClick={() => setShowEngageMenu(false)}
+                          className="w-full px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-neutral-900">{sub.name}</span>
+                            <span className="text-[10px] text-neutral-400">{sub.desc}</span>
+                          </div>
+                          {sub.count !== undefined && sub.count > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">
+                              {sub.count} new
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={tab.name}

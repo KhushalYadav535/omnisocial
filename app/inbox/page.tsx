@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense, useCallback } from 'react';
+import React, { useEffect, useState, Suspense, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppLayout from '../../components/AppLayout';
 import { apiRequest } from '../../lib/api';
@@ -23,7 +23,9 @@ import {
   CornerDownLeft,
   Trash2,
   Smile,
-  Bot
+  Bot,
+  Layers,
+  CheckCheck
 } from 'lucide-react';
 import { Facebook, Instagram } from '../../components/Icons';
 import confetti from 'canvas-confetti';
@@ -33,8 +35,10 @@ function InboxContent() {
   const qType = searchParams?.get('type');
 
   const [activeBrandId, setActiveBrandId] = useState<string>('');
+  const [activeBrandName, setActiveBrandName] = useState<string>('');
   const [interactions, setInteractions] = useState<any[]>([]);
   const [selectedInteraction, setSelectedInteraction] = useState<any | null>(null);
+  const [threadMessages, setThreadMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Dedicated Category State: COMMENT vs DIRECT_MESSAGE
@@ -43,6 +47,8 @@ function InboxContent() {
   );
   const [commentsTotal, setCommentsTotal] = useState(0);
   const [dmsTotal, setDmsTotal] = useState(0);
+  const [unreadCommentsTotal, setUnreadCommentsTotal] = useState(0);
+  const [unreadDmsTotal, setUnreadDmsTotal] = useState(0);
 
   // Synchronize with URL search query parameter
   useEffect(() => {
@@ -63,7 +69,7 @@ function InboxContent() {
 
   // Pagination State
   const [page, setPage] = useState(1);
-  const [limit] = useState(25);
+  const [limit] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -77,6 +83,21 @@ function InboxContent() {
   const [syncing, setSyncing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   const [showReplyComposerOnSent, setShowReplyComposerOnSent] = useState(false);
+
+  // Fetch Brand Name
+  useEffect(() => {
+    if (activeBrandId) {
+      apiRequest('/brands')
+        .then(res => {
+          const found = (res.brands || []).find((b: any) => b.id === activeBrandId);
+          if (found) setActiveBrandName(found.name);
+          else setActiveBrandName('Active Brand');
+        })
+        .catch(() => {});
+    } else {
+      setActiveBrandName('All Brands');
+    }
+  }, [activeBrandId]);
 
   const syncWithMeta = async () => {
     setSyncing(true);
@@ -125,6 +146,8 @@ function InboxContent() {
       if (res.page !== undefined) setPage(res.page);
       if (res.commentsCount !== undefined) setCommentsTotal(res.commentsCount);
       if (res.dmsCount !== undefined) setDmsTotal(res.dmsCount);
+      if (res.unreadCommentsCount !== undefined) setUnreadCommentsTotal(res.unreadCommentsCount);
+      if (res.unreadDmsCount !== undefined) setUnreadDmsTotal(res.unreadDmsCount);
 
       // Auto-select first item if current selection is invalid or absent
       if (items.length > 0) {
@@ -133,6 +156,7 @@ function InboxContent() {
         }
       } else {
         setSelectedInteraction(null);
+        setThreadMessages([]);
       }
     } catch (err) {
       console.error('Failed to fetch inbox interactions:', err);
@@ -145,6 +169,7 @@ function InboxContent() {
     try {
       const res = await apiRequest(`/inbox/${id}`);
       setSelectedInteraction(res.interaction);
+      setThreadMessages(res.thread && res.thread.length > 0 ? res.thread : [res.interaction]);
       setShowReplyComposerOnSent(false);
 
       // Check if there is an existing draft reply
@@ -241,16 +266,33 @@ function InboxContent() {
 
       setSuccessNotice(`Approved & sent reply to ${selectedInteraction.authorName} on ${selectedInteraction.platform}!`);
 
-      // Refresh item state
-      selectedInteraction.replyStatus = 'SENT';
-      if (!selectedInteraction.replies) selectedInteraction.replies = [];
-      selectedInteraction.replies.unshift({
+      // Refresh item and thread state immediately
+      const newReplyObj = {
         id: replyId,
         finalContent: replyText,
         status: 'SENT',
         sentAt: new Date().toISOString()
-      });
+      };
+
+      selectedInteraction.replyStatus = 'SENT';
+      if (!selectedInteraction.replies) selectedInteraction.replies = [];
+      selectedInteraction.replies.unshift(newReplyObj);
       setSelectedInteraction({ ...selectedInteraction });
+
+      setThreadMessages(prev => {
+        return prev.map(m => {
+          if (m.id === selectedInteraction.id) {
+            return {
+              ...m,
+              replyStatus: 'SENT',
+              replies: [newReplyObj, ...(m.replies || [])]
+            };
+          }
+          return m;
+        });
+      });
+
+      setReplyText('');
       fetchInteractions();
     } catch (err: any) {
       alert(`Approval error: ${err.message}`);
@@ -274,10 +316,111 @@ function InboxContent() {
     }
   }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery]);
 
+  // Group interactions into Conversation Threads (for DMs by parentPlatformId/authorId, for Comments by postId)
+  const conversationThreads = useMemo(() => {
+    const threadMap = new Map<string, any>();
+
+    for (const item of interactions) {
+      let key = item.parentPlatformId;
+      if (typeFilter === 'DIRECT_MESSAGE') {
+        key = item.parentPlatformId || item.authorId || item.id;
+      } else {
+        key = item.parentPlatformId || item.id;
+      }
+
+      if (!threadMap.has(key)) {
+        threadMap.set(key, {
+          threadId: key,
+          platform: item.platform,
+          type: item.type,
+          authorName: item.authorName,
+          authorUsername: item.authorUsername,
+          authorAvatarUrl: item.authorAvatarUrl,
+          accountName: item.accountName,
+          brandName: item.brandName,
+          latestMessage: item,
+          unreadCount: item.isRead ? 0 : 1,
+          replyStatus: item.replyStatus,
+          messages: [item],
+          replies: [...(item.replies || [])]
+        });
+      } else {
+        const existing = threadMap.get(key);
+        existing.messages.push(item);
+        if (!item.isRead) existing.unreadCount += 1;
+        // Keep latest message preview
+        if (new Date(item.platformCreatedAt).getTime() > new Date(existing.latestMessage.platformCreatedAt).getTime()) {
+          existing.latestMessage = item;
+          existing.replyStatus = item.replyStatus;
+        }
+        if (item.replies) {
+          existing.replies.push(...item.replies);
+        }
+      }
+    }
+
+    const threadList = Array.from(threadMap.values());
+    threadList.sort((a, b) => 
+      new Date(b.latestMessage.platformCreatedAt).getTime() - new Date(a.latestMessage.platformCreatedAt).getTime()
+    );
+    return threadList;
+  }, [interactions, typeFilter]);
+
+  // Merge incoming thread messages and outgoing replies into a single chronological timeline
+  const chronologicalTimeline = useMemo(() => {
+    const list: Array<{
+      id: string;
+      isSenderCustomer: boolean;
+      authorName: string;
+      authorAvatarUrl?: string;
+      text: string;
+      createdAt: string;
+      platformReplyId?: string;
+      status?: string;
+    }> = [];
+
+    const messagesToRender = (threadMessages && threadMessages.length > 0) 
+      ? threadMessages 
+      : (selectedInteraction ? [selectedInteraction] : []);
+
+    for (const msg of messagesToRender) {
+      // 1. Incoming customer message
+      list.push({
+        id: msg.id,
+        isSenderCustomer: true,
+        authorName: msg.authorName,
+        authorAvatarUrl: msg.authorAvatarUrl,
+        text: msg.contentText,
+        createdAt: msg.platformCreatedAt
+      });
+
+      // 2. Outgoing replies for this message
+      if (msg.replies && msg.replies.length > 0) {
+        for (const rep of msg.replies) {
+          if (rep.status === 'SENT' || rep.status === 'APPROVED') {
+            list.push({
+              id: rep.id,
+              isSenderCustomer: false,
+              authorName: 'OmniSocial Engine',
+              text: rep.finalContent,
+              createdAt: rep.sentAt || rep.createdAt,
+              platformReplyId: rep.platformReplyId,
+              status: rep.status
+            });
+          }
+        }
+      }
+    }
+
+    // Sort chronologically from earliest to latest
+    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return list;
+  }, [threadMessages, selectedInteraction]);
+
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
-      {/* Outer Shell with responsive height and natural page scroll support */}
-      <div className="w-full flex flex-col space-y-4 pb-16">
+      {/* Outer Shell with responsive height and bottom space for Windows Explorer status bar */}
+      <div className="w-full flex flex-col space-y-4 pb-20">
         
         {/* COMPACT UNIFIED CADRA COMMAND BAR */}
         <header className="bg-white px-5 py-3 rounded-[24px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
@@ -298,11 +441,11 @@ function InboxContent() {
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Comments</span>
-                <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
-                  typeFilter === 'COMMENT' ? 'bg-orange-500 text-white' : 'bg-neutral-200 text-neutral-700'
-                }`}>
-                  {commentsTotal}
-                </span>
+                {unreadCommentsTotal > 0 && (
+                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                    {unreadCommentsTotal}
+                  </span>
+                )}
               </button>
 
               <button
@@ -319,11 +462,11 @@ function InboxContent() {
               >
                 <Inbox className="w-3.5 h-3.5" />
                 <span>Direct Messages</span>
-                <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
-                  typeFilter === 'DIRECT_MESSAGE' ? 'bg-orange-500 text-white' : 'bg-neutral-200 text-neutral-700'
-                }`}>
-                  {dmsTotal}
-                </span>
+                {unreadDmsTotal > 0 && (
+                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                    {unreadDmsTotal}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -370,8 +513,8 @@ function InboxContent() {
             <button
               onClick={() => syncWithMeta()}
               disabled={syncing}
-              title={`Last synced: ${lastSyncedTime}`}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold text-neutral-800 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200/80 flex items-center space-x-1.5 transition-all cursor-pointer"
+              title={`Auto-sync every 45s • Last: ${lastSyncedTime}`}
+              className="px-4 py-1.5 rounded-full text-xs font-semibold text-neutral-800 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200/80 border border-neutral-200/80 flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-neutral-900' : 'text-neutral-500'}`} />
               <span className="hidden sm:inline">{syncing ? 'Syncing...' : 'Sync Meta'}</span>
@@ -399,40 +542,40 @@ function InboxContent() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           
           {/* ============================================================== */}
-          {/* PANE 1: CONVERSATION LIST (CADRA 4-5 COLS)                       */}
+          {/* PANE 1: CONVERSATION THREAD DIRECTORY (CADRA 4-5 COLS)           */}
           {/* ============================================================== */}
           <section className="lg:col-span-5 xl:col-span-4 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             {/* List Header */}
             <div className="px-5 py-3.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50 shrink-0">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-                  {typeFilter === 'COMMENT' ? 'Post Comments' : 'Direct Messages'}
+                  {typeFilter === 'COMMENT' ? 'Post Discussion Threads' : 'Conversation Threads'}
                 </span>
                 <span className="text-[11px] font-semibold text-neutral-600 bg-neutral-200/70 px-2.5 py-0.2 rounded-full">
-                  {interactions.length}
+                  {conversationThreads.length}
                 </span>
               </div>
               <span className="text-[10px] text-neutral-400 font-mono">
-                {typeFilter === 'COMMENT' ? 'Public Graph' : 'Private Direct'}
+                {typeFilter === 'COMMENT' ? 'Public Threads' : 'Private Threads'}
               </span>
             </div>
 
-            {/* Scrollable Conversation Items */}
+            {/* Scrollable Conversation Threads */}
             <div className="overflow-y-auto max-h-[720px] min-h-[380px] divide-y divide-neutral-100">
               {loading ? (
                 <div className="p-10 text-center space-y-2">
                   <RefreshCw className="w-5 h-5 text-indigo-500 animate-spin mx-auto" />
-                  <p className="text-xs text-slate-400 font-medium">Fetching conversation telemetry...</p>
+                  <p className="text-xs text-slate-400 font-medium">Fetching conversation threads...</p>
                 </div>
-              ) : interactions.length === 0 ? (
+              ) : conversationThreads.length === 0 ? (
                 <div className="p-8 text-center space-y-3">
                   <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
                     {typeFilter === 'COMMENT' ? <MessageSquare className="w-5 h-5" /> : <Inbox className="w-5 h-5" />}
                   </div>
                   <p className="text-xs text-slate-500 font-medium">
                     {typeFilter === 'COMMENT'
-                      ? 'No post comments match the active filters.'
-                      : 'No direct messages match the active filters.'}
+                      ? 'No comment threads match the active filters.'
+                      : 'No direct message threads match the active filters.'}
                   </p>
                   <button
                     onClick={() => syncWithMeta()}
@@ -444,14 +587,20 @@ function InboxContent() {
                   </button>
                 </div>
               ) : (
-                interactions.map((item) => {
-                  const isSelected = selectedInteraction?.id === item.id;
-                  const isDm = item.type === 'DIRECT_MESSAGE';
+                conversationThreads.map((thread) => {
+                  const isSelected = selectedInteraction && (
+                    selectedInteraction.parentPlatformId === thread.threadId ||
+                    selectedInteraction.authorId === thread.threadId ||
+                    selectedInteraction.id === thread.latestMessage.id
+                  );
+                  const isDm = thread.type === 'DIRECT_MESSAGE';
+                  const msgCount = thread.messages.length;
+
                   return (
                     <button
-                      key={item.id}
+                      key={thread.threadId}
                       type="button"
-                      onClick={() => loadInteractionDetail(item.id)}
+                      onClick={() => loadInteractionDetail(thread.latestMessage.id)}
                       className={`w-full text-left p-3.5 transition-all flex items-start space-x-3 cursor-pointer relative ${
                         isSelected
                           ? 'bg-indigo-50/80 border-l-4 border-indigo-600 shadow-2xs'
@@ -462,16 +611,16 @@ function InboxContent() {
                       <div className="relative shrink-0 mt-0.5">
                         <img
                           src={
-                            item.authorAvatarUrl ||
+                            thread.authorAvatarUrl ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              item.authorName || 'User'
+                              thread.authorName || 'User'
                             )}&background=6366f1&color=fff&bold=true&size=128`
                           }
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
                           alt=""
                         />
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white shadow-2xs flex items-center justify-center p-0.5">
-                          {item.platform === 'INSTAGRAM' ? (
+                          {thread.platform === 'INSTAGRAM' ? (
                             <Instagram className="w-3 h-3 text-pink-600" />
                           ) : (
                             <Facebook className="w-3 h-3 text-blue-600" />
@@ -482,11 +631,11 @@ function InboxContent() {
                       {/* Content Overview */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-slate-900 truncate">
-                            {item.authorName}
+                          <span className="text-xs font-black text-slate-900 truncate max-w-[130px]">
+                            {thread.authorName}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
-                            {new Date(item.platformCreatedAt).toLocaleTimeString([], {
+                            {new Date(thread.latestMessage.platformCreatedAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
@@ -494,43 +643,51 @@ function InboxContent() {
                         </div>
 
                         <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-snug">
-                          {item.contentText}
+                          {thread.latestMessage.contentText}
                         </p>
 
                         {/* Ergonomic Status Micro-Pills */}
                         <div className="mt-2 flex items-center space-x-1.5 flex-wrap gap-y-1">
                           <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
-                            item.platform === 'INSTAGRAM'
+                            thread.platform === 'INSTAGRAM'
                               ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200'
                               : 'bg-blue-50 text-blue-700 border border-blue-200'
                           }`}>
-                            {item.platform.slice(0, 2)} • {isDm ? 'DM' : 'Post'}
+                            {thread.platform.slice(0, 2)} • {isDm ? 'DM' : 'Post'}
                           </span>
 
-                          {item.classification && (
+                          {/* Thread count badge */}
+                          {msgCount > 1 && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200 flex items-center gap-1">
+                              <Layers className="w-2.5 h-2.5 text-neutral-500" />
+                              <span>{msgCount} msgs</span>
+                            </span>
+                          )}
+
+                          {thread.latestMessage.classification && (
                             <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${
-                              item.classification.sentiment === 'POSITIVE'
+                              thread.latestMessage.classification.sentiment === 'POSITIVE'
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : item.classification.sentiment === 'NEGATIVE'
+                                : thread.latestMessage.classification.sentiment === 'NEGATIVE'
                                 ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                 : 'bg-slate-100 text-slate-600 border border-slate-200'
                             }`}>
-                              {item.classification.sentiment}
+                              {thread.latestMessage.classification.sentiment}
                             </span>
                           )}
 
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ml-auto flex items-center space-x-1 ${
-                            item.replyStatus === 'SENT'
+                            thread.replyStatus === 'SENT'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : item.replyStatus === 'DRAFT_READY'
+                              : thread.replyStatus === 'DRAFT_READY'
                               ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
-                            {item.replyStatus === 'NEEDS_RESPONSE' && (
+                            {thread.replyStatus === 'NEEDS_RESPONSE' && (
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                             )}
-                            {item.replyStatus === 'SENT' && <Check className="w-2.5 h-2.5 text-emerald-600" />}
-                            <span>{item.replyStatus === 'NEEDS_RESPONSE' ? 'Needs Reply' : item.replyStatus.replace('_', ' ')}</span>
+                            {thread.replyStatus === 'SENT' && <Check className="w-2.5 h-2.5 text-emerald-600" />}
+                            <span>{thread.replyStatus === 'NEEDS_RESPONSE' ? 'Needs Reply' : thread.replyStatus.replace('_', ' ')}</span>
                           </span>
                         </div>
                       </div>
@@ -575,13 +732,13 @@ function InboxContent() {
           </section>
 
           {/* ============================================================== */}
-          {/* PANE 2: DETAIL CONVERSATION & FIXED DOCKED COMPOSER (7-8 COLS)  */}
+          {/* PANE 2: THREAD CONVERSATION STREAM & DOCKED AI COMPOSER (7-8)  */}
           {/* ============================================================== */}
           <section className="lg:col-span-7 xl:col-span-8 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             {selectedInteraction ? (
               <div className="flex flex-col">
                 
-                {/* 1. ELEGANT CONVERSATION HEADER WITH EMBEDDED TELEMETRY PILLS */}
+                {/* 1. THREAD HEADER WITH CUSTOMER INFO & TELEMETRY BADGES */}
                 <div className="px-5 py-3.5 border-b border-black/[0.05] bg-white shrink-0">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     {/* Left: Customer Info */}
@@ -621,13 +778,8 @@ function InboxContent() {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                          Received via {selectedInteraction.accountName} on {selectedInteraction.platform} •{' '}
-                          {new Date(selectedInteraction.platformCreatedAt).toLocaleString([], {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          Channel: {selectedInteraction.accountName} on {selectedInteraction.platform} •{' '}
+                          {chronologicalTimeline.length} message(s) in thread
                         </p>
                       </div>
                     </div>
@@ -666,94 +818,71 @@ function InboxContent() {
                   </div>
                 </div>
 
-                {/* 2. SPACIOUS CONVERSATION CANVAS (PLENTY OF BREATHING ROOM FOR CUSTOMER MESSAGE) */}
-                <div className="p-4 sm:p-5 space-y-3.5 bg-[#F8F9FA]/80">
+                {/* 2. CHRONOLOGICAL CONVERSATIONAL CHAT STREAM */}
+                <div className="p-4 sm:p-5 space-y-4 bg-[#F8F9FA]/80 max-h-[520px] overflow-y-auto">
                   
-                  {/* Clean Context Label */}
+                  {/* Clean Thread Divider */}
                   <div className="flex items-center justify-center my-1">
                     <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400 bg-white px-3 py-1 rounded-full border border-black/[0.04] shadow-2xs">
-                      Customer Message Thread
+                      {selectedInteraction.type === 'DIRECT_MESSAGE' ? 'Conversational DM Thread' : 'Post Discussion Stream'}
                     </span>
                   </div>
 
-                  {/* PROMINENT INCOMING CUSTOMER MESSAGE CARD */}
-                  <div className="bg-white rounded-[22px] p-5 sm:p-6 border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-3.5 max-w-3xl">
-                    <div className="flex items-center justify-between pb-3 border-b border-black/[0.04]">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={
-                            selectedInteraction.authorAvatarUrl ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              selectedInteraction.authorName || 'User'
-                            )}&background=111215&color=fff&bold=true&size=128`
-                          }
-                          className="w-9 h-9 rounded-full object-cover ring-2 ring-black/[0.04]"
-                          alt=""
-                        />
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-extrabold text-slate-900">{selectedInteraction.authorName}</span>
-                            {selectedInteraction.authorUsername && (
-                              <span className="text-xs text-slate-400 font-mono">@{selectedInteraction.authorUsername}</span>
-                            )}
+                  {/* Render All Sequential Chronological Messages in Thread */}
+                  {chronologicalTimeline.map((item, idx) => {
+                    if (item.isSenderCustomer) {
+                      // Left-aligned Customer Speech Bubble
+                      return (
+                        <div key={item.id || idx} className="flex items-start space-x-3 max-w-2xl">
+                          <img
+                            src={
+                              item.authorAvatarUrl ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                item.authorName || 'User'
+                              )}&background=111215&color=fff&bold=true&size=128`
+                            }
+                            className="w-8 h-8 rounded-full object-cover ring-1 ring-black/[0.06] shrink-0 mt-1"
+                            alt=""
+                          />
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs font-bold text-slate-900">{item.authorName}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="bg-white rounded-2xl rounded-tl-xs p-4 border border-black/[0.06] shadow-2xs text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                              {item.text}
+                            </div>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {new Date(selectedInteraction.platformCreatedAt).toLocaleString([], {
-                              dateStyle: 'medium',
-                              timeStyle: 'short'
-                            })}
-                          </span>
                         </div>
-                      </div>
-
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                        selectedInteraction.platform === 'INSTAGRAM' ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {selectedInteraction.platform} • {selectedInteraction.type}
-                      </span>
-                    </div>
-
-                    {/* The Full Message Text - Crystal Clear, Beautiful & Un-congested */}
-                    <div className="text-sm sm:text-[15px] font-medium text-slate-900 leading-relaxed whitespace-pre-wrap py-1">
-                      {selectedInteraction.contentText}
-                    </div>
-
-                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-black/[0.03]">
-                      <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live Verified Engagement from Meta Graph API
-                      </span>
-                      <span className="font-mono text-[10px]">ID: {selectedInteraction.id.slice(0, 10)}...</span>
-                    </div>
-                  </div>
-
-                  {/* Previous Sent Replies (if any) */}
-                  {selectedInteraction.replies && selectedInteraction.replies.length > 0 && (
-                    <div className="space-y-3 pt-2">
-                      {selectedInteraction.replies
-                        .filter((r: any) => r.status === 'SENT')
-                        .map((reply: any, idx: number) => (
-                          <div key={reply.id || idx} className="flex flex-col items-end max-w-2xl ml-auto space-y-1">
-                            <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="font-semibold text-emerald-800">Delivered to Meta API v26.0</span>
-                              <span>•</span>
-                              <span>{reply.sentAt ? new Date(reply.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sent'}</span>
-                            </div>
-                            <div className="bg-[#111215] text-white rounded-[22px] rounded-tr-xs p-5 shadow-sm text-sm leading-relaxed border border-black/10">
-                              <p className="font-medium whitespace-pre-wrap">{reply.finalContent}</p>
-                            </div>
+                      );
+                    } else {
+                      // Right-aligned Sent Reply Speech Bubble
+                      return (
+                        <div key={item.id || idx} className="flex flex-col items-end max-w-2xl ml-auto space-y-1">
+                          <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="font-semibold text-emerald-800">Delivered to Meta API v26.0</span>
+                            <span>•</span>
+                            <span className="font-mono text-[10px]">
+                              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
-                        ))}
-                    </div>
-                  )}
+                          <div className="bg-[#111215] text-white rounded-2xl rounded-tr-xs p-4 shadow-xs text-sm leading-relaxed border border-black/10 whitespace-pre-wrap">
+                            {item.text}
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
 
                   {/* Status Banner when already resolved */}
                   {selectedInteraction.replyStatus === 'SENT' && !showReplyComposerOnSent && (
-                    <div className="p-4 rounded-[20px] bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+                    <div className="p-4 rounded-[20px] bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 mt-2">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-bold">This interaction has been approved and delivered to {selectedInteraction.platform}.</span>
+                        <span className="font-bold">Latest message replied & delivered to {selectedInteraction.platform}.</span>
                       </div>
                       <button
                         type="button"
@@ -818,7 +947,7 @@ function InboxContent() {
                       </div>
                     </div>
 
-                    {/* AI Suggestions Quick Chips (1-Row Horizontal Capsule Selector) */}
+                    {/* AI Suggestions Quick Chips */}
                     {suggestions.length > 0 && (
                       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
                         <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
@@ -923,14 +1052,72 @@ function InboxContent() {
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
                   <Inbox className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-black text-slate-700">Select an Interaction</h3>
+                <h3 className="text-sm font-black text-slate-700">Select a Conversation Thread</h3>
                 <p className="text-xs text-slate-400 max-w-xs">
-                  Choose a direct message or comment from the left directory to review AI classification and transmit replies.
+                  Choose a thread from the directory to view the complete chronological conversation and draft replies.
                 </p>
               </div>
             )}
           </section>
         </div>
+
+        {/* ============================================================== */}
+        {/* WINDOWS EXPLORER-STYLE BOTTOM STATUS BAR (FULL WIDTH FIXED)    */}
+        {/* ============================================================== */}
+        <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/[0.08] px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-600 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] font-mono">
+          {/* Left: Total Counts Summary */}
+          <div className="flex items-center space-x-3 shrink-0">
+            <div className="flex items-center space-x-1.5 font-bold text-neutral-900">
+              <span className="w-2 h-2 rounded-full bg-indigo-600" />
+              <span>Total: {totalCount} items</span>
+            </div>
+            <span className="text-neutral-300">•</span>
+            <div className="flex items-center space-x-1">
+              <span className="font-semibold text-neutral-800">Comments:</span>
+              <span className="font-bold">{commentsTotal}</span>
+              {unreadCommentsTotal > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px] ml-0.5">
+                  {unreadCommentsTotal} new
+                </span>
+              )}
+            </div>
+            <span className="text-neutral-300">•</span>
+            <div className="flex items-center space-x-1">
+              <span className="font-semibold text-neutral-800">DMs:</span>
+              <span className="font-bold">{dmsTotal}</span>
+              {unreadDmsTotal > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px] ml-0.5">
+                  {unreadDmsTotal} new
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Center: Active Selection Telemetry */}
+          <div className="hidden lg:flex items-center space-x-2 truncate max-w-md">
+            <span className="text-neutral-400">Selected:</span>
+            {selectedInteraction ? (
+              <span className="font-semibold text-neutral-900 truncate">
+                {selectedInteraction.authorName} ({selectedInteraction.platform} • {chronologicalTimeline.length} messages in thread)
+              </span>
+            ) : (
+              <span className="text-neutral-400 italic">No thread selected</span>
+            )}
+          </div>
+
+          {/* Right: Brand, Sync Interval & Engine Status */}
+          <div className="flex items-center space-x-2 shrink-0">
+            <span className="text-neutral-700 font-semibold">{activeBrandName}</span>
+            <span className="text-neutral-300">•</span>
+            <span className="text-neutral-500">Auto-sync: 45s</span>
+            <span className="text-neutral-300">•</span>
+            <span className="inline-flex items-center space-x-1 text-emerald-700 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Meta Graph Live</span>
+            </span>
+          </div>
+        </footer>
+
       </div>
     </AppLayout>
   );

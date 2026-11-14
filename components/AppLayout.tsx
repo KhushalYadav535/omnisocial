@@ -18,8 +18,10 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [commentsCount, setCommentsCount] = useState(4);
-  const [dmsCount, setDmsCount] = useState(2);
+  const [unreadCommentsCount, setUnreadCommentsCount] = useState(0);
+  const [unreadDmsCount, setUnreadDmsCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [dmsCount, setDmsCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +36,8 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
     apiRequest('/inbox')
       .then((res) => {
         if (res.unreadCount !== undefined) setUnreadCount(res.unreadCount);
+        if (res.unreadCommentsCount !== undefined) setUnreadCommentsCount(res.unreadCommentsCount);
+        if (res.unreadDmsCount !== undefined) setUnreadDmsCount(res.unreadDmsCount);
         if (res.commentsCount !== undefined) setCommentsCount(res.commentsCount);
         if (res.dmsCount !== undefined) setDmsCount(res.dmsCount);
       })
@@ -65,6 +69,8 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
         currentBrandId={activeBrandId} 
         onBrandChange={onBrandChange}
         unreadCount={unreadCount}
+        unreadCommentsCount={unreadCommentsCount}
+        unreadDmsCount={unreadDmsCount}
         commentsCount={commentsCount}
         dmsCount={dmsCount}
       />
