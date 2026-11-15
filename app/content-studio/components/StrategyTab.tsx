@@ -215,7 +215,7 @@ export default function StrategyTab({ brandId, onRefreshOverview }: StrategyTabP
             type="button"
             onClick={handleGenerateFullStrategy}
             disabled={isGenerating}
-            className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
           >
             {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>{isGenerating ? 'Synthesizing...' : 'AI Generate Full Strategy'}</span>

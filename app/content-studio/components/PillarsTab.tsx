@@ -151,7 +151,7 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
             type="button"
             onClick={handleAiGenerate}
             disabled={isGenerating}
-            className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer disabled:opacity-50"
           >
             {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>{isGenerating ? 'Synthesizing...' : 'AI Architect Pillars'}</span>
@@ -160,9 +160,9 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
+            className="px-4 py-2.5 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 text-neutral-500" />
             <span>Add Pillar</span>
           </button>
         </div>

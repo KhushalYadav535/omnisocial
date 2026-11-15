@@ -160,35 +160,43 @@ export default function LaunchpadTab({
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* HEADER HERO */}
-      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl border border-purple-800/40 relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* CADRA HERO BENTO CARD */}
+      <div className="bg-[#111215] text-white rounded-3xl p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-neutral-800 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <span className="w-7 h-7 rounded-lg bg-amber-400 text-slate-950 font-extrabold flex items-center justify-center text-xs">
-                🚀
+              <span className="w-6 h-6 rounded-full bg-white/10 text-white flex items-center justify-center text-xs">
+                <Rocket className="w-3.5 h-3.5" />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                Dual Operating Mode
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-300 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                Brand Launchpad
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold mt-1">Brand Marketing Launchpad</h2>
-            <p className="text-xs text-purple-200 mt-1 max-w-xl">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Brand Marketing Launchpad
+            </h2>
+            <p className="text-xs text-neutral-400 max-w-xl font-normal leading-relaxed">
               From zero to launched in 4 steps. Establish an intentional strategy, balanced content pillars, and your first 7-day sprint campaign.
             </p>
           </div>
 
-          <div className="text-right shrink-0">
-            <span className="text-xs text-purple-300 block font-medium">Stage Progress</span>
-            <span className="text-2xl font-black text-amber-300">{currentStage} / 4</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-right shrink-0 min-w-[120px]">
+            <span className="text-[10px] text-neutral-400 block font-mono uppercase tracking-wider">Stage Progress</span>
+            <span className="text-2xl font-extrabold text-white tracking-tight">{currentStage} / 4</span>
+            <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div 
+                className="bg-white h-full transition-all duration-300"
+                style={{ width: `${(currentStage / 4) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* NOTIFICATIONS */}
       {notification && (
-        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${
+        <div className={`p-4 rounded-2xl text-xs flex items-center space-x-2.5 border shadow-2xs ${
           notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
         }`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
@@ -196,8 +204,8 @@ export default function LaunchpadTab({
         </div>
       )}
 
-      {/* STAGE STEPPER NAV */}
-      <div className="grid grid-cols-4 gap-2">
+      {/* CADRA SEGMENTED STAGE STEPPER */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stages.map((st) => {
           const Icon = st.icon;
           const isActive = currentStage === st.num;
@@ -205,29 +213,30 @@ export default function LaunchpadTab({
           return (
             <button
               key={st.num}
+              type="button"
               onClick={() => setCurrentStage(st.num)}
-              className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${
+              className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center space-x-3 ${
                 isActive
-                  ? 'bg-purple-50 border-purple-400 shadow-xs ring-1 ring-purple-300'
+                  ? 'bg-white border-black/[0.12] shadow-sm text-neutral-900'
                   : isDone
-                  ? 'bg-emerald-50/50 border-emerald-200 text-slate-700'
-                  : 'bg-white border-slate-200 text-slate-400'
+                  ? 'bg-neutral-100/90 border-black/[0.04] text-neutral-700 hover:bg-neutral-100'
+                  : 'bg-white/60 border-black/[0.04] text-neutral-400 hover:bg-white'
               }`}
             >
-              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
                 isActive
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-[#111215] text-white shadow-xs'
                   : isDone
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-500'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-neutral-100 text-neutral-500'
               }`}>
-                {isDone ? <Check className="w-3.5 h-3.5" /> : st.num}
+                {isDone ? <Check className="w-4 h-4" /> : st.num}
               </div>
-              <div className="hidden sm:block truncate">
-                <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+              <div className="truncate">
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider block text-neutral-400">
                   Stage {st.num}
                 </span>
-                <span className="text-xs font-bold text-slate-800 truncate block">{st.title}</span>
+                <span className="text-xs font-bold text-neutral-900 truncate block mt-0.5">{st.title}</span>
               </div>
             </button>
           );
@@ -235,45 +244,45 @@ export default function LaunchpadTab({
       </div>
 
       {/* STAGE FORM CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5">
+      <div className="bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-6">
         {/* STAGE 1: AUDIENCE & INDUSTRY */}
         {currentStage === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Stage 1: Brand & Audience Core</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h3 className="text-base font-extrabold text-[#0F1012] tracking-tight">Stage 1: Brand &amp; Audience Core</h3>
+              <p className="text-xs text-neutral-500 mt-1">
                 Define who you serve and what primary pain points your content will solve.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Industry / Niche</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Industry / Niche</label>
                 <input
                   type="text"
                   value={stage1Data.industry}
                   onChange={(e) => setStage1Data({ ...stage1Data, industry: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Target Customer Profile</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Target Customer Profile</label>
                 <textarea
                   rows={3}
                   value={stage1Data.targetAudience}
                   onChange={(e) => setStage1Data({ ...stage1Data, targetAudience: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Primary Customer Pain Points</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Primary Customer Pain Points</label>
                 <textarea
                   rows={3}
                   value={stage1Data.primaryPainPoint}
                   onChange={(e) => setStage1Data({ ...stage1Data, primaryPainPoint: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition leading-relaxed"
                 />
               </div>
             </div>
@@ -282,42 +291,42 @@ export default function LaunchpadTab({
 
         {/* STAGE 2: VALUE PROPOSITION & POSITIONING */}
         {currentStage === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Stage 2: Value Proposition & Unique Positioning</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h3 className="text-base font-extrabold text-[#0F1012] tracking-tight">Stage 2: Value Proposition &amp; Unique Positioning</h3>
+              <p className="text-xs text-neutral-500 mt-1">
                 Anchor your brand's unique differentiation and why customers choose you over competitors.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Brand Positioning Statement</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Brand Positioning Statement</label>
                 <textarea
                   rows={3}
                   value={stage2Data.positioning}
                   onChange={(e) => setStage2Data({ ...stage2Data, positioning: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Core Value Proposition</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Core Value Proposition</label>
                 <textarea
                   rows={2}
                   value={stage2Data.valueProposition}
                   onChange={(e) => setStage2Data({ ...stage2Data, valueProposition: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition leading-relaxed"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Primary Differentiator</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Primary Differentiator</label>
                 <input
                   type="text"
                   value={stage2Data.differentiator}
                   onChange={(e) => setStage2Data({ ...stage2Data, differentiator: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                  className="w-full p-3 bg-[#F4F5F7] hover:bg-[#ECEEF2] focus:bg-white border border-neutral-200/90 rounded-2xl text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 transition"
                 />
               </div>
             </div>
@@ -326,20 +335,20 @@ export default function LaunchpadTab({
 
         {/* STAGE 3: CONTENT PILLARS & CADENCE */}
         {currentStage === 3 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Stage 3: Content Pillars & Publishing Cadence</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h3 className="text-base font-extrabold text-[#0F1012] tracking-tight">Stage 3: Content Pillars &amp; Publishing Cadence</h3>
+              <p className="text-xs text-neutral-500 mt-1">
                 Balance thematic pillars (Target: 100% total) and set weekly output volume.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {stage3Data.pillars.map((p, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-                    <span className="font-bold text-slate-800 text-xs block">{p.title}</span>
-                    <div className="flex items-center space-x-2">
+                  <div key={idx} className="p-4 bg-[#F4F5F7] border border-black/[0.04] rounded-2xl space-y-2">
+                    <span className="font-bold text-neutral-900 text-xs block">{p.title}</span>
+                    <div className="flex items-center space-x-3">
                       <input
                         type="range"
                         min="5"
@@ -351,23 +360,23 @@ export default function LaunchpadTab({
                           updated[idx].percentage = Number(e.target.value);
                           setStage3Data({ ...stage3Data, pillars: updated });
                         }}
-                        className="flex-1 accent-purple-600"
+                        className="flex-1 accent-neutral-900"
                       />
-                      <span className="font-mono font-bold text-slate-700">{p.percentage}%</span>
+                      <span className="font-mono font-bold text-neutral-800 bg-white px-2 py-0.5 rounded-md border border-black/[0.05]">{p.percentage}%</span>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Target Posts Per Week</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Target Posts Per Week</label>
                 <input
                   type="number"
                   min="1"
                   max="14"
                   value={stage3Data.weeklyCadence}
                   onChange={(e) => setStage3Data({ ...stage3Data, weeklyCadence: Number(e.target.value) })}
-                  className="w-32 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-bold"
+                  className="w-32 p-3 bg-[#F4F5F7] border border-neutral-200/90 rounded-2xl text-neutral-900 font-bold focus:outline-none focus:ring-1 focus:ring-neutral-900"
                 />
               </div>
             </div>
@@ -376,42 +385,44 @@ export default function LaunchpadTab({
 
         {/* STAGE 4: LAUNCH SPRINT */}
         {currentStage === 4 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Stage 4: Initial Launch Sprint & Deliverables</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h3 className="text-base font-extrabold text-[#0F1012] tracking-tight">Stage 4: Initial Launch Sprint &amp; Deliverables</h3>
+              <p className="text-xs text-neutral-500 mt-1">
                 Review your 7-day launch sprint. Once deployed, Omnisocial initializes your strategy, pillars, and draft posts.
               </p>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Campaign Sprint Name</label>
+                  <label className="font-semibold text-neutral-700 block mb-1.5">Campaign Sprint Name</label>
                   <input
                     type="text"
                     value={stage4Data.campaignName}
                     onChange={(e) => setStage4Data({ ...stage4Data, campaignName: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-bold"
+                    className="w-full p-3 bg-[#F4F5F7] border border-neutral-200/90 rounded-2xl text-neutral-900 font-bold focus:outline-none focus:ring-1 focus:ring-neutral-900"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Duration (Days)</label>
+                  <label className="font-semibold text-neutral-700 block mb-1.5">Duration (Days)</label>
                   <input
                     type="number"
                     value={stage4Data.sprintDurationDays}
                     onChange={(e) => setStage4Data({ ...stage4Data, sprintDurationDays: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-bold"
+                    className="w-full p-3 bg-[#F4F5F7] border border-neutral-200/90 rounded-2xl text-neutral-900 font-bold focus:outline-none focus:ring-1 focus:ring-neutral-900"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Planned Sequential Deliverables</label>
+                <label className="font-semibold text-neutral-700 block mb-1.5">Planned Sequential Deliverables</label>
                 <div className="space-y-2">
                   {stage4Data.deliverables.map((deliv, idx) => (
-                    <div key={idx} className="p-2.5 bg-purple-50/60 border border-purple-200 rounded-lg text-slate-800 flex items-center space-x-2 font-medium">
-                      <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <div key={idx} className="p-3 bg-[#F4F5F7] border border-black/[0.04] rounded-2xl text-neutral-800 flex items-center space-x-2.5 font-medium">
+                      <div className="w-5 h-5 rounded-full bg-white text-neutral-900 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        ✓
+                      </div>
                       <span>{deliv}</span>
                     </div>
                   ))}
@@ -422,12 +433,12 @@ export default function LaunchpadTab({
         )}
 
         {/* FOOTER CONTROLS */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-5 border-t border-neutral-100 flex items-center justify-between">
           {currentStage > 1 ? (
             <button
               type="button"
               onClick={() => setCurrentStage(prev => prev - 1)}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-full flex items-center space-x-1.5 transition"
+              className="px-5 py-2.5 text-xs font-semibold text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full flex items-center space-x-1.5 transition-all cursor-pointer shadow-2xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
@@ -439,7 +450,7 @@ export default function LaunchpadTab({
               type="button"
               onClick={() => handleSaveStep(currentStage + 1)}
               disabled={isSavingStep}
-              className="px-6 py-2.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer"
+              className="px-6 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
               <span>Next Stage</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -449,9 +460,9 @@ export default function LaunchpadTab({
               type="button"
               onClick={handleDeployFoundation}
               disabled={isDeploying}
-              className="px-8 py-3 text-xs font-extrabold text-white bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:opacity-95 rounded-full shadow-xl flex items-center space-x-2 transition cursor-pointer transform hover:scale-105"
+              className="px-8 py-3 text-xs font-bold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-lg flex items-center space-x-2 transition-all cursor-pointer transform hover:scale-[1.02] disabled:opacity-50"
             >
-              {isDeploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4 animate-bounce" />}
+              {isDeploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
               <span>{isDeploying ? 'Deploying Foundation...' : 'Deploy Brand Foundation Now'}</span>
             </button>
           )}
