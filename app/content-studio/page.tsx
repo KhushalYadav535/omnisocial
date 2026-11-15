@@ -971,9 +971,9 @@ export default function ContentStudioPage() {
 
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
-      <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      <div className="space-y-6 max-w-[1500px] mx-auto pb-16 px-1 sm:px-2">
         {/* CADRA SUB-HEADER WITH CLEAN BREADCRUMB & CAPSULE ACTIONS */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 pt-1">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
           <div>
             <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
               <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
@@ -996,9 +996,9 @@ export default function ContentStudioPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('launchpad')}
-                className="px-3.5 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer"
               >
-                <Rocket className="w-3.5 h-3.5 text-purple-600" />
+                <Rocket className="w-3.5 h-3.5 text-neutral-500" />
                 <span>Launchpad Wizard</span>
               </button>
             )}
@@ -1007,9 +1007,9 @@ export default function ContentStudioPage() {
             <button
               type="button"
               onClick={() => setShowRepurposeModal(true)}
-              className="px-3.5 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer"
             >
-              <Globe className="w-3.5 h-3.5 text-indigo-600" />
+              <Globe className="w-3.5 h-3.5 text-neutral-500" />
               <span>Repurpose URL</span>
             </button>
 
@@ -1018,9 +1018,9 @@ export default function ContentStudioPage() {
               type="button"
               onClick={handleGenerateClientReviewLink}
               disabled={isGeneratingReviewLink || !activeBrandId}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
-              {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
+              {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-neutral-500" />}
               <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
             </button>
 
@@ -1054,9 +1054,9 @@ export default function ContentStudioPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('composer')}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer"
+                className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
               >
-                <PenTool className="w-3.5 h-3.5" />
+                <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
                 <span>Open Post Composer</span>
               </button>
             )}
@@ -1070,32 +1070,34 @@ export default function ContentStudioPage() {
           onRefreshData={fetchOverview}
         />
 
-        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED TABS) */}
-        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200">
-          {studioTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
-                <span>{tab.label}</span>
-                {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
-                    {overviewData.stats.pendingApprovalsCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR) */}
+        <div className="w-full overflow-x-auto pb-1 scrollbar-none">
+          <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
+            {studioTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'bg-white text-neutral-900 shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
+                  <span>{tab.label}</span>
+                  {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
+                      {overviewData.stats.pendingApprovalsCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Global Feedback Banner */}

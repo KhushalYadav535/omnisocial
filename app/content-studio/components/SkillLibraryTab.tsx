@@ -131,19 +131,19 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* CADRA HEADER CARD */}
+      <div className="bg-white rounded-3xl border border-black/[0.06] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
-              AI Framework Core
+            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-800 bg-neutral-100 px-3 py-0.5 rounded-full border border-black/[0.04]">
+              Skill Engine
             </span>
-            <span className="text-xs font-semibold text-slate-500">
+            <span className="text-xs font-medium text-neutral-400">
               {skills.length} Registered Skills
             </span>
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Skill Registry & Schema Inspector</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-2xl font-extrabold text-[#0F1012] tracking-tight mt-1">Skill Registry & Schema Inspector</h2>
+          <p className="text-xs text-neutral-500 mt-0.5 max-w-2xl">
             Every AI interaction is a typed, schema-validated skill. Inspect input/output contracts, run live tests, and inspect audit logs.
           </p>
         </div>
@@ -151,22 +151,27 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
         {/* Search & Category filter */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search skills..."
-              className="pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="pl-8 pr-3 py-1.5 text-xs bg-[#F4F5F7] border border-neutral-200/80 rounded-full text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
             />
           </div>
 
-          <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-semibold overflow-x-auto">
+          <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1">
             {categories.slice(0, 5).map((cat) => (
               <button
                 key={cat}
+                type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 py-1 rounded-md transition text-[11px] ${selectedCategory === cat ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}`}
+                className={`px-3 py-1 rounded-full transition-all text-xs font-semibold cursor-pointer ${
+                  selectedCategory === cat 
+                    ? 'bg-white text-neutral-900 shadow-xs' 
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
               >
                 {cat}
               </button>
@@ -177,8 +182,8 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
 
       {/* SKILL CARDS GRID */}
       {isLoadingSkills ? (
-        <div className="p-12 text-center text-slate-400">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-500" />
+        <div className="p-12 text-center text-neutral-400">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-neutral-800" />
           <span className="text-xs">Loading skill registry...</span>
         </div>
       ) : (
@@ -186,34 +191,34 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
           {filteredSkills.map((skill) => (
             <div
               key={skill.id}
-              className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              className="bg-white rounded-3xl border border-black/[0.06] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all flex flex-col justify-between"
             >
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-md">
+                  <span className="text-[10px] font-semibold px-2.5 py-0.5 bg-neutral-100 text-neutral-700 border border-black/[0.04] rounded-full font-mono">
                     {skill.category || 'AI'}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">v{skill.version || 1}</span>
+                  <span className="text-[10px] font-mono text-neutral-400">v{skill.version || 1}</span>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">{skill.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                  <h3 className="font-bold text-sm text-[#0F1012]">{skill.name}</h3>
+                  <p className="text-xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed">
                     {skill.description || 'Schema-validated AI execution skill.'}
                   </p>
                 </div>
 
-                <div className="text-[10px] font-mono text-slate-400 truncate">
+                <div className="text-[10px] font-mono text-neutral-400 truncate">
                   ID: {skill.id}
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="pt-4 mt-4 border-t border-neutral-100 flex items-center justify-between text-xs">
                 <button
                   type="button"
                   onClick={() => setInspectSkill(skill)}
-                  className="font-semibold text-slate-600 hover:text-purple-600 flex items-center space-x-1 cursor-pointer"
+                  className="font-semibold text-neutral-600 hover:text-neutral-900 flex items-center space-x-1 cursor-pointer transition-colors"
                 >
                   <Code2 className="w-3.5 h-3.5" />
                   <span>Inspect Schema</span>
@@ -222,7 +227,7 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
                 <button
                   type="button"
                   onClick={() => handleOpenTestRunner(skill)}
-                  className="px-3 py-1.5 font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs flex items-center space-x-1 cursor-pointer transition"
+                  className="px-4 py-1.5 font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-xs flex items-center space-x-1.5 cursor-pointer transition-all"
                 >
                   <Play className="w-3 h-3 fill-current" />
                   <span>Test Run</span>
@@ -234,19 +239,19 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
       )}
 
       {/* RECENT EXECUTIONS AUDIT LOG */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-3">
+      <div className="bg-white rounded-3xl border border-black/[0.06] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-purple-600" />
-            <h3 className="text-sm font-bold text-slate-900">Execution Audit Log (Last 10 Runs)</h3>
+            <Clock className="w-4 h-4 text-neutral-700" />
+            <h3 className="text-sm font-bold text-[#0F1012]">Execution Audit Log (Last 10 Runs)</h3>
           </div>
-          <span className="text-xs text-slate-400">Audited with OpenRouter & Prisma</span>
+          <span className="text-xs text-neutral-400">Audited with OpenRouter &amp; Prisma</span>
         </div>
 
         {executions && executions.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+              <thead className="bg-[#F4F5F7] border-b border-black/[0.04] text-neutral-500 font-semibold uppercase text-[10px] tracking-wider rounded-xl">
                 <tr>
                   <th className="p-3">Skill</th>
                   <th className="p-3">Status</th>
@@ -255,27 +260,27 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
                   <th className="p-3">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100">
                 {executions.map((exec) => (
-                  <tr key={exec.id} className="hover:bg-slate-50/50">
-                    <td className="p-3 font-semibold text-slate-800">{exec.skill?.name || exec.skillId}</td>
+                  <tr key={exec.id} className="hover:bg-neutral-50/60 transition-colors">
+                    <td className="p-3 font-semibold text-neutral-900">{exec.skill?.name || exec.skillId}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        exec.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        exec.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
                         {exec.status}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-500 font-mono">{exec.latencyMs ? `${exec.latencyMs}ms` : '—'}</td>
-                    <td className="p-3 text-slate-500 font-mono">{exec.tokensUsed ? `${exec.tokensUsed}` : '—'}</td>
-                    <td className="p-3 text-slate-400">{new Date(exec.createdAt).toLocaleString()}</td>
+                    <td className="p-3 text-neutral-500 font-mono">{exec.latencyMs ? `${exec.latencyMs}ms` : '—'}</td>
+                    <td className="p-3 text-neutral-500 font-mono">{exec.tokensUsed ? `${exec.tokensUsed}` : '—'}</td>
+                    <td className="p-3 text-neutral-400">{new Date(exec.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="py-6 text-center text-xs text-slate-400">
+          <div className="py-6 text-center text-xs text-neutral-400">
             No execution records found yet.
           </div>
         )}
@@ -283,38 +288,43 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
 
       {/* SCHEMA INSPECTOR MODAL */}
       {inspectSkill && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-black/[0.08] max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div>
-                <h3 className="text-base font-bold text-slate-900">{inspectSkill.name}</h3>
-                <span className="text-[11px] font-mono text-purple-600">{inspectSkill.id}</span>
+                <h3 className="text-base font-bold text-neutral-900">{inspectSkill.name}</h3>
+                <span className="text-[11px] font-mono text-neutral-500">{inspectSkill.id}</span>
               </div>
-              <button onClick={() => setInspectSkill(null)} className="p-1 text-slate-400 hover:text-slate-600">
+              <button 
+                type="button" 
+                onClick={() => setInspectSkill(null)} 
+                className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="overflow-y-auto space-y-4 py-4 text-xs">
               <div>
-                <span className="font-bold text-slate-700 block mb-1">Input Schema (JSON Schema):</span>
-                <pre className="p-3 bg-slate-900 text-emerald-300 rounded-xl overflow-x-auto text-[11px] font-mono">
+                <span className="font-bold text-neutral-700 block mb-1">Input Schema (JSON Schema):</span>
+                <pre className="p-4 bg-[#111215] text-emerald-300 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed">
                   {JSON.stringify(inspectSkill.inputSchema || {}, null, 2)}
                 </pre>
               </div>
 
               <div>
-                <span className="font-bold text-slate-700 block mb-1">Output Schema (JSON Schema):</span>
-                <pre className="p-3 bg-slate-900 text-sky-300 rounded-xl overflow-x-auto text-[11px] font-mono">
+                <span className="font-bold text-neutral-700 block mb-1">Output Schema (JSON Schema):</span>
+                <pre className="p-4 bg-[#111215] text-sky-300 rounded-2xl overflow-x-auto text-[11px] font-mono leading-relaxed">
                   {JSON.stringify(inspectSkill.outputSchema || {}, null, 2)}
                 </pre>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 text-right">
+            <div className="pt-3 border-t border-neutral-100 text-right">
               <button
+                type="button"
                 onClick={() => setInspectSkill(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                className="px-5 py-2 text-xs font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-full transition-colors cursor-pointer"
               >
                 Close Inspector
               </button>
@@ -325,31 +335,35 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
 
       {/* TEST RUNNER MODAL */}
       {testSkill && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-black/[0.08] max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center space-x-2">
-                <Play className="w-4 h-4 text-purple-600 fill-current" />
-                <h3 className="text-base font-bold text-slate-900">Live Skill Runner: {testSkill.name}</h3>
+                <Play className="w-4 h-4 text-neutral-900 fill-current" />
+                <h3 className="text-base font-bold text-neutral-900">Live Skill Runner: {testSkill.name}</h3>
               </div>
-              <button onClick={() => setTestSkill(null)} className="p-1 text-slate-400 hover:text-slate-600">
+              <button 
+                type="button" 
+                onClick={() => setTestSkill(null)} 
+                className="w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="overflow-y-auto space-y-4 py-4 text-xs flex-1">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">JSON Input Payload:</label>
+                <label className="font-bold text-neutral-700 block mb-1">JSON Input Payload:</label>
                 <textarea
                   rows={6}
                   value={testInputJson}
                   onChange={(e) => setTestInputJson(e.target.value)}
-                  className="w-full p-3 font-mono text-xs bg-slate-900 text-purple-200 rounded-xl focus:ring-1 focus:ring-purple-500"
+                  className="w-full p-3 font-mono text-xs bg-[#111215] text-neutral-100 rounded-2xl focus:ring-1 focus:ring-neutral-400 outline-none leading-relaxed"
                 />
               </div>
 
               {testError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl">
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs">
                   {testError}
                 </div>
               )}
@@ -357,26 +371,26 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
               {testResult && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-800 flex items-center space-x-1">
+                    <span className="font-bold text-neutral-800 flex items-center space-x-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Execution Result:</span>
                     </span>
-                    <span className="font-mono text-slate-500">
+                    <span className="font-mono text-neutral-500">
                       Latency: {testResult.latencyMs}ms | Tokens: {testResult.tokensUsed}
                     </span>
                   </div>
-                  <pre className="p-3 bg-slate-900 text-emerald-300 rounded-xl max-h-48 overflow-y-auto font-mono text-[11px]">
+                  <pre className="p-4 bg-[#111215] text-emerald-300 rounded-2xl max-h-48 overflow-y-auto font-mono text-[11px] leading-relaxed">
                     {JSON.stringify(testResult.output, null, 2)}
                   </pre>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+            <div className="pt-3 border-t border-neutral-100 flex items-center justify-end space-x-2">
               <button
                 type="button"
                 onClick={() => setTestSkill(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-full cursor-pointer transition-colors"
               >
                 Close
               </button>
@@ -384,7 +398,7 @@ export default function SkillLibraryTab({ brandId }: SkillLibraryTabProps) {
                 type="button"
                 onClick={handleRunTest}
                 disabled={isRunningTest}
-                className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg shadow-md flex items-center space-x-1.5 transition"
+                className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 disabled:opacity-50 rounded-full shadow-md flex items-center space-x-1.5 transition-all cursor-pointer"
               >
                 {isRunningTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                 <span>{isRunningTest ? 'Executing...' : 'Run Skill'}</span>

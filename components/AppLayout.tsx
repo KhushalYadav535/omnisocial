@@ -79,7 +79,7 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
       <FloatingActionDock />
 
       {/* Main Full-Width Architectural Canvas - Natural Smooth Scrollable View */}
-      <main className="flex-1 px-3 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 relative xl:pl-20 w-full max-w-full">
+      <main className="flex-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 relative xl:pl-28 w-full max-w-full">
         <div className="w-full max-w-[1600px] mx-auto">
           {children}
         </div>

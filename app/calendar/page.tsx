@@ -3519,14 +3519,14 @@ export default function CalendarPage() {
                       </div>
 
                       {/* AI Pre-Publish Quality Score & 1-Click Viral Boost */}
-                      <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-2">
+                      <div className="p-4 bg-[#F4F5F7] border border-black/[0.05] rounded-3xl space-y-2.5">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1.5 font-bold text-xs text-indigo-950">
-                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                          <div className="flex items-center space-x-2 font-bold text-xs text-neutral-900">
+                            <Sparkles className="w-4 h-4 text-neutral-800" />
                             <span>AI Pre-Publish Quality Coach</span>
                           </div>
                           {aiScoreAnalysis ? (
-                            <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-full ${
+                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${
                               aiScoreAnalysis.score >= 85
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : aiScoreAnalysis.score >= 65
@@ -3536,7 +3536,7 @@ export default function CalendarPage() {
                               Score: {aiScoreAnalysis.score}/100 ({aiScoreAnalysis.grade})
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono font-bold text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100">
+                            <span className="text-[10px] font-mono font-semibold text-neutral-600 bg-white px-2.5 py-0.5 rounded-full border border-black/[0.06] shadow-2xs">
                               Predicted Reach: 92%
                             </span>
                           )}
@@ -3544,42 +3544,42 @@ export default function CalendarPage() {
 
                         {aiScoreAnalysis ? (
                           <div className="space-y-1.5">
-                            <p className="text-[11px] text-indigo-900 leading-snug">{aiScoreAnalysis.verdict}</p>
+                            <p className="text-[11px] text-neutral-700 leading-snug">{aiScoreAnalysis.verdict}</p>
                             {aiScoreAnalysis.metrics && (
                               <div className="grid grid-cols-3 gap-1.5 text-[9px] font-bold text-neutral-600 pt-0.5">
-                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
+                                  <span className="block text-neutral-900 font-mono text-[10px] font-bold">
                                     {aiScoreAnalysis.metrics.hookStrength?.score || 20}/25
                                   </span>
-                                  <span>Hook Power</span>
+                                  <span className="text-neutral-500">Hook Power</span>
                                 </div>
-                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
+                                  <span className="block text-neutral-900 font-mono text-[10px] font-bold">
                                     {aiScoreAnalysis.metrics.readabilitySpacing?.score || 18}/20
                                   </span>
-                                  <span>Readability</span>
+                                  <span className="text-neutral-500">Readability</span>
                                 </div>
-                                <div className="p-1.5 bg-white rounded-lg border border-indigo-100 text-center">
-                                  <span className="block text-indigo-700 font-mono text-[10px]">
+                                <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
+                                  <span className="block text-neutral-900 font-mono text-[10px] font-bold">
                                     {aiScoreAnalysis.metrics.callToAction?.score || 17}/20
                                   </span>
-                                  <span>CTA Action</span>
+                                  <span className="text-neutral-500">CTA Action</span>
                                 </div>
                               </div>
                             )}
                           </div>
                         ) : (
-                          <p className="text-[11px] text-indigo-800/80 leading-relaxed">
+                          <p className="text-[11px] text-neutral-500 leading-relaxed">
                             Grade your post before publishing. AI checks line-1 hook, mobile formatting, and conversion triggers.
                           </p>
                         )}
 
-                        <div className="flex items-center space-x-2 pt-0.5">
+                        <div className="flex items-center space-x-2 pt-1">
                           <button
                             type="button"
                             onClick={() => handleAnalyzeAiScore(editCaption, previewModalPlatform)}
                             disabled={aiScoreLoading || !editCaption}
-                            className="flex-1 py-1.5 bg-white hover:bg-neutral-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center space-x-1 cursor-pointer"
+                            className="flex-1 py-2 bg-white hover:bg-neutral-50 text-neutral-800 border border-black/[0.07] rounded-full text-xs font-semibold transition-all disabled:opacity-50 flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs"
                           >
                             {aiScoreLoading ? (
                               <>
@@ -3588,7 +3588,7 @@ export default function CalendarPage() {
                               </>
                             ) : (
                               <>
-                                <BarChart3 className="w-3.5 h-3.5" />
+                                <BarChart3 className="w-3.5 h-3.5 text-neutral-600" />
                                 <span>Score Post</span>
                               </>
                             )}
@@ -3598,7 +3598,7 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => handleBoostCaption(editCaption, previewModalPlatform)}
                             disabled={isBoosting || !editCaption}
-                            className="py-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center space-x-1 cursor-pointer shadow-xs"
+                            className="py-2 px-4 bg-[#111215] hover:bg-neutral-800 text-white rounded-full text-xs font-semibold transition-all disabled:opacity-50 flex items-center space-x-1.5 cursor-pointer shadow-sm"
                           >
                             {isBoosting ? (
                               <>
@@ -3620,18 +3620,18 @@ export default function CalendarPage() {
                         <div className="pt-2 border-t border-neutral-100 space-y-2">
                           <div className="flex items-center justify-between">
                             <label className="block text-xs font-bold text-neutral-700">Change Scheduled Slot</label>
-                            <span className="text-[10px] font-bold text-amber-700 flex items-center space-x-1">
-                              <span>🔥 AI Peak Windows</span>
+                            <span className="text-[10px] font-bold text-neutral-500 flex items-center space-x-1">
+                              <span>AI Peak Windows</span>
                             </span>
                           </div>
 
                           {/* 1-Tap AI Peak Smart Slots */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                             {[
-                              { label: '🔥 7:30 PM Prime', hours: 19, mins: 30, note: '96% Reach' },
-                              { label: '⚡ 8:45 AM Rush', hours: 8, mins: 45, note: '95% B2B' },
-                              { label: '📱 1:15 PM Lunch', hours: 13, mins: 15, note: '91% Saves' },
-                              { label: '🌙 9:45 PM Night', hours: 21, mins: 45, note: '87% DMs' }
+                              { label: '7:30 PM Prime', hours: 19, mins: 30, note: '96% Reach' },
+                              { label: '8:45 AM Rush', hours: 8, mins: 45, note: '95% B2B' },
+                              { label: '1:15 PM Lunch', hours: 13, mins: 15, note: '91% Saves' },
+                              { label: '9:45 PM Night', hours: 21, mins: 45, note: '87% DMs' }
                             ].map((slot, sIdx) => (
                               <button
                                 key={sIdx}
@@ -3647,10 +3647,10 @@ export default function CalendarPage() {
                                   setRescheduleDate(`${year}-${month}-${day}T${hh}:${mm}`);
                                   setNotice({ type: 'success', text: `Selected ${slot.label} window (${slot.note})!` });
                                 }}
-                                className="p-1.5 text-left rounded-xl bg-amber-50/70 hover:bg-amber-100/90 border border-amber-200/80 text-amber-900 transition-all cursor-pointer shadow-2xs"
+                                className="p-2 text-left rounded-2xl bg-[#F4F5F7] hover:bg-[#E5E7EB] border border-black/[0.04] text-neutral-800 transition-all cursor-pointer shadow-2xs"
                               >
-                                <span className="block text-[10px] font-black">{slot.label}</span>
-                                <span className="block text-[8px] text-amber-700/80 font-mono">{slot.note}</span>
+                                <span className="block text-[11px] font-bold">{slot.label}</span>
+                                <span className="block text-[9px] text-neutral-500 font-mono">{slot.note}</span>
                               </button>
                             ))}
                           </div>
@@ -3660,13 +3660,13 @@ export default function CalendarPage() {
                               type="datetime-local"
                               value={rescheduleDate}
                               onChange={(e) => setRescheduleDate(e.target.value)}
-                              className="w-full text-xs border border-neutral-200 rounded-xl p-2 outline-none focus:ring-2 focus:ring-indigo-500 font-mono bg-white"
+                              className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-neutral-900 font-mono bg-white"
                             />
                             <button
                               type="button"
                               onClick={handleSaveModalReschedule}
                               disabled={saving || !rescheduleDate}
-                              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-sm"
+                              className="px-4 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
                             >
                               Save Date
                             </button>
@@ -3675,13 +3675,13 @@ export default function CalendarPage() {
                       )}
 
                       {/* Evergreen Asset Recycling Controls */}
-                      <div className="p-2.5 bg-neutral-50/90 rounded-2xl border border-neutral-100 flex items-center justify-between gap-3">
+                      <div className="p-3 bg-[#F4F5F7] rounded-3xl border border-black/[0.04] flex items-center justify-between gap-3">
                         <div className="flex items-center space-x-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
                             ♻️
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-neutral-800">Evergreen Asset Recycling</p>
+                            <p className="text-xs font-bold text-neutral-900">Evergreen Asset Recycling</p>
                             <p className="text-[10px] text-neutral-500">Auto-fills calendar gaps with timeless content</p>
                           </div>
                         </div>
@@ -3708,7 +3708,7 @@ export default function CalendarPage() {
                               setSelectedEventIsEvergreen(nextState);
                               handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
                             }}
-                            className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                            className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
                               selectedEventIsEvergreen
                                 ? 'bg-emerald-600 text-white shadow-xs'
                                 : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
@@ -3733,7 +3733,7 @@ export default function CalendarPage() {
                       type="button"
                       onClick={handleSaveContentEdit}
                       disabled={saving}
-                      className="px-4 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center space-x-1.5"
+                      className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center space-x-1.5"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -3741,7 +3741,7 @@ export default function CalendarPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedEvent(null)}
-                      className="px-4 py-2 text-xs font-bold text-neutral-600 hover:text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+                      className="px-4 py-2 text-xs font-semibold text-neutral-700 hover:text-neutral-900 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full transition-colors cursor-pointer shadow-2xs"
                     >
                       Close
                     </button>
@@ -4374,32 +4374,32 @@ export default function CalendarPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
             <div className={`bg-white rounded-3xl border border-slate-200 shadow-2xl w-full ${wizardStep === 4 ? 'max-w-5xl xl:max-w-6xl' : 'max-w-4xl'} max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200`}>
               {/* Modal Top Header */}
-              <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white relative">
+              <div className="p-6 bg-[#111215] text-white relative border-b border-neutral-800">
                 <button
                   onClick={() => setShowArchitectModal(false)}
-                  className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
-                <div className="flex items-center space-x-2.5">
-                  <div className="p-2 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-xl shadow-lg">
-                    <Rocket className="w-5 h-5 text-white" />
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-white shadow-xs">
+                    <Rocket className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h2 className="text-xl font-black tracking-tight text-white">AI Campaign Architect</h2>
-                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
+                      <h2 className="text-xl font-extrabold tracking-tight text-white">AI Campaign Architect</h2>
+                      <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
                         Start From Zero
                       </span>
                     </div>
-                    <p className="text-xs text-slate-300 mt-0.5">
+                    <p className="text-xs text-neutral-400 mt-0.5">
                       No marketing knowledge required. AI maps out your complete sequential campaign directly into your calendar.
                     </p>
                   </div>
                 </div>
 
-                {/* Wizard Progress Steps */}
-                <div className="grid grid-cols-4 gap-2 mt-5 text-center text-xs font-semibold">
+                {/* Wizard Progress Steps (Cadra Segmented Capsule Bar) */}
+                <div className="bg-white/10 p-1 rounded-full border border-white/10 inline-flex w-full mt-5">
                   {[
                     { step: 1, label: '1. Product Brief' },
                     { step: 2, label: '2. Goal & Audience' },
@@ -4408,12 +4408,13 @@ export default function CalendarPage() {
                   ].map(s => (
                     <div
                       key={s.step}
-                      className={`py-1.5 px-2 rounded-full transition-all border ${wizardStep === s.step
-                          ? 'bg-white text-indigo-950 font-bold border-white shadow-sm'
+                      className={`flex-1 py-1.5 px-2 rounded-full text-center text-xs font-semibold transition-all ${
+                        wizardStep === s.step
+                          ? 'bg-white text-neutral-900 shadow-sm font-bold'
                           : wizardStep > s.step
-                            ? 'bg-white/20 text-white border-white/30'
-                            : 'bg-white/5 text-slate-400 border-white/10'
-                        }`}
+                            ? 'text-white'
+                            : 'text-neutral-400'
+                      }`}
                     >
                       {s.label}
                     </div>
@@ -4960,69 +4961,65 @@ export default function CalendarPage() {
                 {/* STEP 4: ROADMAP REVIEW & DEPLOY */}
                 {wizardStep === 4 && generatedRoadmap && (
                   <div className="space-y-6">
-                    {/* Hero Campaign Command Header */}
-                    <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white p-5 sm:p-6 shadow-xl border border-indigo-900/60 relative overflow-hidden">
-                      {/* Decorative background glow circles */}
-                      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-                      <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
-
+                    {/* Hero Campaign Command Header (Cadra Dark Hero Bento Card) */}
+                    <div className="rounded-3xl bg-[#111215] text-white p-6 shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-neutral-800 relative overflow-hidden">
                       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                         {/* Left: Campaign Identity & Strategy */}
                         <div className="space-y-2.5 max-w-2xl">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-xs tracking-wider flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-amber-300" />
+                            <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                               <span>Strategy Blueprint Ready</span>
                             </span>
-                            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-white/10 text-slate-200 border border-white/20">
+                            <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
                               {generatedRoadmap.posts.length} Drops Sequence
                             </span>
                             {generatedRoadmap.campaignSummary?.primaryGoal && (
-                              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                              <span className="text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
                                 Goal: {generatedRoadmap.campaignSummary.primaryGoal}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                          <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">
                             {generatedRoadmap.campaignSummary?.name || 'OmniSocial Marketing Campaign'}
                           </h3>
 
-                          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-200 flex items-start space-x-2.5 backdrop-blur-xs">
-                            <Compass className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                            <p className="leading-relaxed text-[12px] text-slate-200 font-medium">
+                          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10 text-xs text-neutral-300 flex items-start space-x-2.5">
+                            <Compass className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
+                            <p className="leading-relaxed text-[12px] text-neutral-300 font-normal">
                               {generatedRoadmap.campaignSummary?.framework || 'Eugene Schwartz 5 Stages of Awareness & Donald Miller StoryBrand Funnel'}
                             </p>
                           </div>
                         </div>
 
-                        {/* Right: High-Impact Action Pair (Never clipped, prominent, responsive) */}
+                        {/* Right: High-Impact Action Pair */}
                         <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center gap-3 shrink-0">
                           <button
                             type="button"
                             onClick={handleGenerateAllMedia}
                             disabled={generatingAllMedia || isDeployingCampaign}
-                            className="px-4 py-2.5 text-xs font-bold text-indigo-100 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl shadow-sm flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
+                            className="px-4 py-2.5 text-xs font-semibold text-neutral-200 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 rounded-full shadow-xs flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
                           >
-                            <Sparkles className={`w-4 h-4 text-amber-400 ${generatingAllMedia ? 'animate-spin' : ''}`} />
-                            <span>{generatingAllMedia ? 'Generating Visuals...' : 'Generate All AI Visuals'}</span>
+                            <Sparkles className={`w-3.5 h-3.5 text-amber-300 ${generatingAllMedia ? 'animate-spin' : ''}`} />
+                            <span>{generatingAllMedia ? 'Generating Visuals...' : 'Generate Visuals For All Days'}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={handleDeployCampaign}
                             disabled={isDeployingCampaign || generatingAllMedia}
-                            className="px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 rounded-2xl shadow-lg shadow-emerald-950/40 flex items-center justify-center space-x-2 transition-all transform hover:scale-[1.02] cursor-pointer disabled:opacity-50"
+                            className="px-6 py-2.5 text-xs font-bold text-[#111215] bg-white hover:bg-neutral-100 rounded-full shadow-md flex items-center justify-center space-x-2 transition-all cursor-pointer disabled:opacity-50"
                           >
                             {isDeployingCampaign ? (
                               <>
-                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                                 <span>Deploying to Calendar...</span>
                               </>
                             ) : (
                               <>
-                                <Rocket className="w-4 h-4 text-white" />
-                                <span>🚀 1-Click Deploy to Calendar</span>
+                                <Rocket className="w-3.5 h-3.5 text-[#111215]" />
+                                <span>1-Click Deploy to Calendar</span>
                               </>
                             )}
                           </button>
@@ -5034,9 +5031,9 @@ export default function CalendarPage() {
                         {/* Left Toolbar: Date shifter, UTM toggle, Presentation deck */}
                         <div className="flex flex-wrap items-center gap-2">
                           {/* 1-Click Shift Start Date Input */}
-                          <div className="flex items-center space-x-2 bg-white/10 border border-white/20 rounded-xl px-3 py-1.5 text-white">
-                            <CalendarIcon className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
-                            <span className="text-[10px] font-bold text-slate-300 uppercase">Start Date:</span>
+                          <div className="flex items-center space-x-2 bg-white/10 border border-white/10 rounded-full px-3.5 py-1.5 text-white">
+                            <CalendarIcon className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                            <span className="text-[10px] font-semibold text-neutral-300 uppercase font-mono">Shift Start:</span>
                             <input
                               type="date"
                               value={new Date(generatedRoadmap.campaignSummary?.startDate || Date.now()).toISOString().split('T')[0]}
@@ -5049,22 +5046,22 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setEnableUtmTracking(!enableUtmTracking)}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all flex items-center space-x-1.5 cursor-pointer ${
+                            className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer ${
                               enableUtmTracking
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
-                                : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-xs'
+                                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
                             }`}
                           >
-                            <span>{enableUtmTracking ? '✓ UTM Tracking Active' : 'UTM Tracking Off'}</span>
+                            <span>{enableUtmTracking ? '✓ UTM Active' : 'UTM Tracking Off'}</span>
                           </button>
 
                           {/* Export Campaign Presentation Deck */}
                           <button
                             type="button"
                             onClick={handleExportCampaignDeck}
-                            className="px-3.5 py-1.5 text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
+                            className="px-4 py-1.5 text-xs font-semibold text-neutral-200 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 rounded-full shadow-xs flex items-center space-x-1.5 transition-all cursor-pointer"
                           >
-                            <FileText className="w-3.5 h-3.5 text-indigo-300" />
+                            <FileText className="w-3.5 h-3.5 text-neutral-400" />
                             <span>{copiedDeckStatus ? '✓ Copied Deck!' : 'Export Deck'}</span>
                           </button>
                         </div>
@@ -5074,7 +5071,7 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setExpandAllRoadmapCards(!expandAllRoadmapCards)}
-                            className="px-3 py-1.5 text-xs font-bold text-indigo-200 hover:text-white bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/30 rounded-xl flex items-center space-x-1.5 transition-all cursor-pointer"
+                            className="px-3.5 py-1.5 text-xs font-semibold text-neutral-300 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 rounded-full flex items-center space-x-1.5 transition-all cursor-pointer"
                           >
                             <span>{expandAllRoadmapCards ? '▲ Collapse All Cards' : '▼ Expand All Cards'}</span>
                           </button>
