@@ -165,6 +165,44 @@ export default function ContentStudioPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
 
+  // Sub-navigation Tabs Horizontal Scroll & Drag Support
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+
+  const checkTabsScroll = React.useCallback(() => {
+    if (tabsContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
+      setCanScrollTabsLeft(scrollLeft > 6);
+      setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 6);
+    }
+  }, []);
+
+  const handleScrollTabs = (direction: 'left' | 'right') => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -260 : 260;
+      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      setTimeout(checkTabsScroll, 300);
+    }
+  };
+
+  const handleTabsWheel = (e: React.WheelEvent) => {
+    if (tabsContainerRef.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      tabsContainerRef.current.scrollLeft += e.deltaY;
+      checkTabsScroll();
+    }
+  };
+
+  useEffect(() => {
+    checkTabsScroll();
+    window.addEventListener('resize', checkTabsScroll);
+    return () => window.removeEventListener('resize', checkTabsScroll);
+  }, [checkTabsScroll]);
+
+  useEffect(() => {
+    checkTabsScroll();
+  }, [activeTab, checkTabsScroll]);
+
   // Studio Form State
   const [title, setTitle] = useState('');
   const [rawIdea, setRawIdea] = useState('Introduce our upcoming eco-friendly resort capsule collection with lightweight breathable linen.');
@@ -1070,34 +1108,69 @@ export default function ContentStudioPage() {
           onRefreshData={fetchOverview}
         />
 
-        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR) */}
-        <div className="w-full overflow-x-auto pb-1 scrollbar-none">
-          <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
-            {studioTabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? 'bg-white text-neutral-900 shadow-xs'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
-                  <span>{tab.label}</span>
-                  {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
-                      {overviewData.stats.pendingApprovalsCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR WITH SMOOTH SCROLL) */}
+        <div className="relative flex items-center w-full group/tabbar">
+          {/* Left Scroll Chevron Arrow */}
+          {canScrollTabsLeft && (
+            <button
+              type="button"
+              onClick={() => handleScrollTabs('left')}
+              className="absolute left-1 z-20 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+              aria-label="Scroll tabs left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Scrollable Container with Wheel & Touch Support */}
+          <div
+            ref={tabsContainerRef}
+            onScroll={checkTabsScroll}
+            onWheel={handleTabsWheel}
+            className="w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none"
+          >
+            <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
+              {studioTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={(e) => {
+                      setActiveTab(tab.id as any);
+                      e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'bg-white text-neutral-900 shadow-xs'
+                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
+                    <span>{tab.label}</span>
+                    {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
+                        {overviewData.stats.pendingApprovalsCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Right Scroll Chevron Arrow */}
+          {canScrollTabsRight && (
+            <button
+              type="button"
+              onClick={() => handleScrollTabs('right')}
+              className="absolute right-1 z-20 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+              aria-label="Scroll tabs right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Global Feedback Banner */}
