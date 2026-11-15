@@ -45,10 +45,25 @@ import {
   Globe,
   Gauge,
   Repeat,
-  ArrowRight
+  ArrowRight,
+  Target,
+  Lightbulb,
+  FileCheck2,
+  Rocket,
+  Cpu
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
+import OutcomePromptBar from './components/OutcomePromptBar';
+import OverviewTab from './components/OverviewTab';
+import StrategyTab from './components/StrategyTab';
+import PillarsTab from './components/PillarsTab';
+import CampaignsTab from './components/CampaignsTab';
+import IdeasRequestsTab from './components/IdeasRequestsTab';
+import MediaLibraryTab from './components/MediaLibraryTab';
+import ApprovalsTab from './components/ApprovalsTab';
+import LaunchpadTab from './components/LaunchpadTab';
+import SkillLibraryTab from './components/SkillLibraryTab';
 
 function AccountPillAvatar({
   url,
@@ -107,6 +122,46 @@ export default function ContentStudioPage() {
     setActiveBrandId(brandId);
     setStoredActiveBrandId(brandId);
   };
+
+  // Content Creation & Marketing Management v3.0 Workspace State
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'media' | 'approvals' | 'launchpad' | 'skills'
+  >('overview');
+
+  const [overviewData, setOverviewData] = useState<any | null>(null);
+  const [isLoadingOverview, setIsLoadingOverview] = useState(false);
+
+  const fetchOverview = async () => {
+    if (!activeBrandId) return;
+    setIsLoadingOverview(true);
+    try {
+      const res = await apiRequest(`/content-studio/overview?brandId=${activeBrandId}`);
+      setOverviewData(res);
+    } catch (err: any) {
+      console.error('Fetch overview error:', err);
+    } finally {
+      setIsLoadingOverview(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeBrandId) {
+      fetchOverview();
+    }
+  }, [activeBrandId]);
+
+  const studioTabs = [
+    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'strategy', label: 'Strategy', icon: Target },
+    { id: 'pillars', label: 'Pillars & Mix', icon: LayersIcon },
+    { id: 'campaigns', label: 'Campaigns', icon: Calendar },
+    { id: 'ideas', label: 'Ideas & Requests', icon: Lightbulb },
+    { id: 'composer', label: 'Post Composer', icon: PenTool },
+    { id: 'media', label: 'Media Library', icon: ImageIcon },
+    { id: 'approvals', label: 'Approvals Queue', icon: FileCheck2 },
+    { id: 'launchpad', label: 'Brand Launchpad', icon: Rocket },
+    { id: 'skills', label: 'Skill Library', icon: Cpu },
+  ];
   const [brands, setBrands] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
 
@@ -923,28 +978,39 @@ export default function ContentStudioPage() {
             <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
               <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
               <span>›</span>
-              <span className="hover:text-neutral-700 cursor-pointer">Creative</span>
+              <span className="hover:text-neutral-700 cursor-pointer">Marketing Studio</span>
               <span>›</span>
-              <span className="text-neutral-900 font-semibold">AI Studio</span>
+              <span className="text-neutral-900 font-semibold">{studioTabs.find(t => t.id === activeTab)?.label || 'AI Studio'}</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1">
-              AI Creative Studio
+              Content Studio & Marketing Engine
             </h1>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Multi-platform viral copywriting, visual staging & instant Facebook, Instagram & LinkedIn dispatch.
+              Outcome-first AI orchestration across Strategy, Pillars, Campaigns, Multi-Channel Execution & Governance.
             </p>
           </div>
 
-          {/* PRIMARY COMPLETION CAPSULES */}
+          {/* PRIMARY ACTION CAPSULES */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {activeTab !== 'launchpad' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('launchpad')}
+                className="px-3.5 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
+              >
+                <Rocket className="w-3.5 h-3.5 text-purple-600" />
+                <span>Launchpad Wizard</span>
+              </button>
+            )}
+
             {/* Feature 1A: Repurpose from URL / Blog */}
             <button
               type="button"
               onClick={() => setShowRepurposeModal(true)}
-              className="px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Repurpose from URL / Blog</span>
+              <span>Repurpose URL</span>
             </button>
 
             {/* Feature 3A: Agency Client Review Magic Link */}
@@ -952,40 +1018,84 @@ export default function ContentStudioPage() {
               type="button"
               onClick={handleGenerateClientReviewLink}
               disabled={isGeneratingReviewLink || !activeBrandId}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
             >
               {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
-              <span>{copiedReviewLink ? 'Link Copied to Clipboard!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
+              <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleSavePost(false)}
-              disabled={submitting}
-              className="px-5 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all disabled:opacity-50"
-            >
-              {scheduledFor ? 'Schedule to Calendar' : 'Save Draft'}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSavePost(true)}
-              disabled={submitting || selectedAccountIds.length === 0}
-              className="px-6 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>
-                {submitting
-                  ? 'Transmitting...'
-                  : selectedAccountIds.length > 1
-                  ? 'Publish Now to All Channels'
-                  : targetPlatforms.includes('LINKEDIN')
-                  ? 'Publish Now to LinkedIn'
-                  : targetPlatforms.includes('INSTAGRAM')
-                  ? 'Publish Now to Instagram'
-                  : 'Publish Now'}
-              </span>
-            </button>
+            {activeTab === 'composer' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSavePost(false)}
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition disabled:opacity-50"
+                >
+                  {scheduledFor ? 'Schedule' : 'Save Draft'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSavePost(true)}
+                  disabled={submitting || selectedAccountIds.length === 0}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>
+                    {submitting
+                      ? 'Transmitting...'
+                      : selectedAccountIds.length > 1
+                      ? 'Publish All'
+                      : 'Publish Now'}
+                  </span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveTab('composer')}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-md flex items-center space-x-1.5 transition cursor-pointer"
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Open Post Composer</span>
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* OUTCOME-FIRST PROMPT BAR */}
+        <OutcomePromptBar
+          brandId={activeBrandId}
+          onNavigateTab={(tabId) => setActiveTab(tabId as any)}
+          onRefreshData={fetchOverview}
+        />
+
+        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED TABS) */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 border-b border-slate-200">
+          {studioTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
+                <span>{tab.label}</span>
+                {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
+                    {overviewData.stats.pendingApprovalsCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Global Feedback Banner */}
@@ -1026,7 +1136,101 @@ export default function ContentStudioPage() {
           </div>
         )}
 
-        {/* 2-COLUMN MAIN WORKSPACE (Left Form: 7 cols | Right Sticky Preview: 5 cols) */}
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            brand={overviewData?.brand}
+            strategy={overviewData?.strategy}
+            stats={overviewData?.stats || {
+              pillarsCount: 0,
+              ideasCount: 0,
+              requestsCount: 0,
+              campaignsCount: 0,
+              postsCount: 0,
+              pendingApprovalsCount: 0,
+              launchpadStage: 1,
+              launchpadStatus: 'NOT_STARTED'
+            }}
+            recentExecutions={overviewData?.recentExecutions || []}
+            isLoading={isLoadingOverview}
+            onNavigateTab={(t) => setActiveTab(t as any)}
+            onRefresh={fetchOverview}
+          />
+        )}
+
+        {/* TAB 2: STRATEGY (LEVEL 1) */}
+        {activeTab === 'strategy' && (
+          <StrategyTab brandId={activeBrandId} onRefreshOverview={fetchOverview} />
+        )}
+
+        {/* TAB 3: CONTENT PILLARS (LEVEL 2) */}
+        {activeTab === 'pillars' && (
+          <PillarsTab brandId={activeBrandId} onRefreshOverview={fetchOverview} />
+        )}
+
+        {/* TAB 4: CAMPAIGNS (LEVEL 2) */}
+        {activeTab === 'campaigns' && (
+          <CampaignsTab
+            brandId={activeBrandId}
+            onNavigateTab={(t) => setActiveTab(t as any)}
+            onRefreshOverview={fetchOverview}
+          />
+        )}
+
+        {/* TAB 5: IDEAS & INTAKE (LEVEL 2) */}
+        {activeTab === 'ideas' && (
+          <IdeasRequestsTab
+            brandId={activeBrandId}
+            onTurnIntoPost={(idea) => {
+              setTitle(idea.title || '');
+              setRawIdea(idea.hook || idea.title || '');
+              setActiveTab('composer');
+            }}
+            onRefreshOverview={fetchOverview}
+          />
+        )}
+
+        {/* TAB 6: MEDIA LIBRARY */}
+        {activeTab === 'media' && (
+          <MediaLibraryTab
+            brandId={activeBrandId}
+            onSelectMediaForComposer={(url, fmt) => {
+              setMediaUrl(url);
+              if (fmt === 'CAROUSEL') setFormat('CAROUSEL');
+              else if (fmt === 'VIDEO') {
+                setFormat('PORTRAIT');
+                setIsVideoMedia(true);
+              } else {
+                setFormat('POST');
+                setIsVideoMedia(false);
+              }
+              setActiveTab('composer');
+            }}
+            onRefreshOverview={fetchOverview}
+          />
+        )}
+
+        {/* TAB 7: APPROVALS & GOVERNANCE */}
+        {activeTab === 'approvals' && (
+          <ApprovalsTab brandId={activeBrandId} onRefreshOverview={fetchOverview} />
+        )}
+
+        {/* TAB 8: BRAND LAUNCHPAD */}
+        {activeTab === 'launchpad' && (
+          <LaunchpadTab
+            brandId={activeBrandId}
+            onNavigateTab={(t) => setActiveTab(t as any)}
+            onRefreshOverview={fetchOverview}
+          />
+        )}
+
+        {/* TAB 9: SKILL LIBRARY */}
+        {activeTab === 'skills' && (
+          <SkillLibraryTab brandId={activeBrandId} />
+        )}
+
+        {/* TAB 10: POST COMPOSER & CREATIVES (LEVEL 3) */}
+        {activeTab === 'composer' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT COLUMN: FORM & COMPOSER CONTROLS */}
           <div className="lg:col-span-7 space-y-6">
@@ -2803,6 +3007,7 @@ export default function ContentStudioPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* FEATURE 1A: 1-CLICK URL/BLOG REPURPOSING MODAL */}
         {showRepurposeModal && (
