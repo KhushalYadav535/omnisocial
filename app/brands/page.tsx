@@ -23,6 +23,8 @@ export default function BrandsPage() {
   const [selectedBrand, setSelectedBrand] = useState<any | null>(null);
 
   // Brand Voice Form
+  const [brandDescription, setBrandDescription] = useState('');
+  const [brandWebsite, setBrandWebsite] = useState('');
   const [tone, setTone] = useState('');
   const [writingStyle, setWritingStyle] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
@@ -65,6 +67,8 @@ export default function BrandsPage() {
 
   const selectBrandItem = (brand: any) => {
     setSelectedBrand(brand);
+    setBrandDescription(brand.description || '');
+    setBrandWebsite(brand.website || '');
     const vp = brand.voiceProfile;
     setTone(vp?.tone || '');
     setWritingStyle(vp?.writingStyle || '');
@@ -89,6 +93,8 @@ export default function BrandsPage() {
       await apiRequest(`/brands/${selectedBrand.id}/voice`, {
         method: 'PUT',
         body: JSON.stringify({
+          description: brandDescription,
+          website: brandWebsite,
           tone,
           writingStyle,
           targetAudience,
@@ -256,6 +262,40 @@ export default function BrandsPage() {
                     <Save className="w-3.5 h-3.5" />
                     <span>{savingVoice ? 'Saving...' : 'Save Voice Profile'}</span>
                   </button>
+                </div>
+
+                {/* Core Brand & Products/Services Base */}
+                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-800">
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                    <span>Brand Details & Product Facts (Base for Comments & DMs)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Official Website
+                      </label>
+                      <input
+                        type="url"
+                        value={brandWebsite}
+                        onChange={(e) => setBrandWebsite(e.target.value)}
+                        placeholder="https://example.com"
+                        className="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-white font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Brand Knowledge / Products & Services Overview
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={brandDescription}
+                        onChange={(e) => setBrandDescription(e.target.value)}
+                        placeholder="Describe what your brand does, core products, and customer value proposition. The AI draws from this to answer user comments and DMs."
+                        className="w-full text-xs border border-slate-300 rounded-lg p-2.5 bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-600"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

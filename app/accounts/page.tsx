@@ -24,7 +24,7 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
-import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
+import { Facebook, Instagram, LinkedIn, TwitterX, GoogleMarketplace } from '../../components/Icons';
 
 interface DiscoveredAccount {
   pageId: string;
@@ -93,6 +93,10 @@ function AccountAvatar({
           <LinkedIn className="w-3 h-3 text-[#0A66C2] fill-current" />
         ) : platform === 'INSTAGRAM' ? (
           <Instagram className="w-3 h-3 text-pink-600" />
+        ) : platform === 'TWITTER' ? (
+          <TwitterX className="w-3 h-3 text-black" />
+        ) : platform === 'GOOGLE' ? (
+          <GoogleMarketplace className="w-3 h-3" />
         ) : (
           <Facebook className="w-3 h-3 text-[#1877F2] fill-current" />
         )}
