@@ -580,20 +580,21 @@ export default function CalendarPage() {
         }
       }
 
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://omnisocial-l5uq.vercel.app';
       const res = await apiRequest('/client-review/generate-token', {
         method: 'POST',
         body: JSON.stringify({
           brandId: resolvedBrandId || undefined,
-          name: 'Executive Calendar Review Portal'
+          name: 'Executive Calendar Review Portal',
+          origin: currentOrigin
         })
       });
-      if (res.success && res.reviewUrl) {
-        const url = res.reviewUrl.startsWith('http')
-          ? res.reviewUrl
-          : `${typeof window !== 'undefined' ? window.location.origin : ''}/review/${res.shareToken}`;
+      if (res.success && (res.shareToken || res.reviewUrl)) {
+        const token = res.shareToken || (res.reviewUrl ? res.reviewUrl.split('/review/').pop() : '');
+        const url = `${currentOrigin.replace(/\/$/, '')}/review/${token}`;
         setShareData({
           reviewUrl: url,
-          shareToken: res.shareToken,
+          shareToken: token,
           brandName: res.brandName || 'Your Brand'
         });
       } else {

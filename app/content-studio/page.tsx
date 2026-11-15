@@ -817,16 +817,22 @@ export default function ContentStudioPage() {
     if (!activeBrandId) return;
     setIsGeneratingReviewLink(true);
     try {
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://omnisocial-l5uq.vercel.app';
       const res = await apiRequest('/client-review/generate-token', {
         method: 'POST',
-        body: JSON.stringify({ brandId: activeBrandId })
+        body: JSON.stringify({ 
+          brandId: activeBrandId,
+          origin: currentOrigin
+        })
       });
-      if (res.reviewUrl) {
-        setClientReviewLink(res.reviewUrl);
-        navigator.clipboard.writeText(res.reviewUrl);
-        setCopiedReviewLink(true);
-        setTimeout(() => setCopiedReviewLink(false), 3000);
-      }
+
+      const token = res.shareToken || (res.reviewUrl ? res.reviewUrl.split('/review/').pop() : '');
+      const finalUrl = `${currentOrigin.replace(/\/$/, '')}/review/${token}`;
+
+      setClientReviewLink(finalUrl);
+      await navigator.clipboard.writeText(finalUrl);
+      setCopiedReviewLink(true);
+      setTimeout(() => setCopiedReviewLink(false), 3000);
     } catch (err: any) {
       alert(err.message || 'Failed to generate review link');
     } finally {
