@@ -95,8 +95,17 @@ export default function Navbar({
       );
     };
     updateTime();
-    const timer = setInterval(updateTime, 10000);
-    return () => clearInterval(timer);
+    const timer = setInterval(updateTime, 1000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        updateTime();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -348,23 +357,8 @@ export default function Navbar({
           <div className="hidden sm:flex items-center space-x-1.5 bg-white px-3 py-1.5 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] sm:text-xs font-semibold text-neutral-800 font-mono tracking-tight">
-              {currentTime || '3:27 PM'}
+              {currentTime || '--:--'}
             </span>
-          </div>
-
-          {/* Status Tracker Pill - Only shown on ultra-wide 2xl screens to prevent horizontal overflow */}
-          <div className="hidden 2xl:flex items-center space-x-2.5 bg-white px-3.5 py-1.5 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)] text-xs">
-            <div className="flex items-center space-x-1.5 font-medium text-neutral-700">
-              <span className="font-bold text-neutral-950">5 active</span>
-              <span className="text-neutral-300">•</span>
-              <span className="text-emerald-600 font-semibold">4 sync</span>
-              <span className="text-neutral-300">•</span>
-              <span className="text-orange-600 font-semibold">1 queue</span>
-            </div>
-            <div className="w-10 h-1.5 rounded-full bg-neutral-200 overflow-hidden flex">
-              <div className="bg-emerald-500 w-3/4 h-full" />
-              <div className="bg-orange-500 w-1/4 h-full" />
-            </div>
           </div>
 
           {/* User Profile Capsule - Always pinned & visible on the far right */}

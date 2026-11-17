@@ -593,14 +593,18 @@ function DashboardContent() {
             </div>
             
             <div className="my-2">
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-sans">
-                {audienceReachDisplay}
-              </h2>
+              {loading ? (
+                <div className="h-9 w-24 bg-neutral-800 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight font-sans">
+                  {audienceReachDisplay}
+                </h2>
+              )}
             </div>
 
             <div className="flex items-center">
               <span className="inline-flex items-center text-[11px] font-semibold text-neutral-300 bg-neutral-800/90 px-3 py-1 rounded-full border border-neutral-700/60">
-                {totalInteractions} Comments & DMs Ingested
+                {loading ? 'Ingesting data...' : `${totalInteractions} Comments & DMs Ingested`}
               </span>
             </div>
           </div>
@@ -619,14 +623,18 @@ function DashboardContent() {
             </div>
 
             <div className="my-2">
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
-                {totalPublishedPosts}
-              </h2>
+              {loading ? (
+                <div className="h-9 w-20 bg-blue-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
+                  {totalPublishedPosts}
+                </h2>
+              )}
             </div>
 
             <div className="flex items-center">
               <span className="inline-flex items-center text-[11px] font-semibold text-blue-800 bg-white/80 backdrop-blur-xs px-3 py-1 rounded-full border border-blue-200/50">
-                {totalQueuedPosts} Scheduled in Queue
+                {loading ? 'Checking queue...' : `${totalQueuedPosts} Scheduled in Queue`}
               </span>
             </div>
           </div>
@@ -645,14 +653,18 @@ function DashboardContent() {
             </div>
 
             <div className="my-2">
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
-                {positiveSentiment}%
-              </h2>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
+                  {positiveSentiment}%
+                </h2>
+              )}
             </div>
 
             <div className="flex items-center">
               <span className="inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/60">
-                {neutralSentiment}% Neutral • {negativeSentiment}% Negative
+                {loading ? 'Analyzing sentiment...' : `${neutralSentiment}% Neutral • ${negativeSentiment}% Negative`}
               </span>
             </div>
           </div>
@@ -671,9 +683,13 @@ function DashboardContent() {
             </div>
 
             <div className="my-2">
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
-                {publishingSla}%
-              </h2>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
+                  {publishingSla}%
+                </h2>
+              )}
             </div>
 
             <div className="flex items-center">

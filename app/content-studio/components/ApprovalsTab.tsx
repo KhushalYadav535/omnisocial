@@ -84,20 +84,29 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
         body: JSON.stringify({ brandId, expiresInDays: 7 })
       });
 
-      const token = res.token || res.reviewToken;
+      const token = res.shareToken || res.token || res.reviewToken || (res.reviewUrl ? res.reviewUrl.split('/review/').pop() : '');
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://omnisocial-l5uq.vercel.app';
       const magicLink = `${origin}/review/${token}`;
 
-      await navigator.clipboard.writeText(magicLink);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 4000);
-      setNotification({ type: 'success', message: 'Client review link copied to clipboard!' });
+      try {
+        await navigator.clipboard.writeText(magicLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 4000);
+      } catch {}
+      setNotification({ type: 'success', message: `Client review link ready: ${magicLink}` });
     } catch (err: any) {
       setNotification({ type: 'error', message: err.message || 'Failed to generate review link.' });
     } finally {
       setIsGeneratingLink(false);
     }
   };
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   return (
     <div className="space-y-6">

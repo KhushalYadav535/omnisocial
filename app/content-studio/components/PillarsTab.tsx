@@ -115,7 +115,6 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
   };
 
   const handleDeletePillar = async (pillarId: string) => {
-    if (!confirm('Are you sure you want to delete this pillar?')) return;
     try {
       await apiRequest(`/content-studio/pillars/${pillarId}`, { method: 'DELETE' });
       setPillars(prev => prev.filter(p => p.id !== pillarId));
@@ -126,6 +125,13 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
       setNotification({ type: 'error', message: err.message || 'Failed to delete pillar.' });
     }
   };
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // Calculate total distribution percentage
   const totalPercentage = pillars.reduce((sum, p) => sum + (p.percentage || 0), 0);

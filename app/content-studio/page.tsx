@@ -289,6 +289,8 @@ export default function ContentStudioPage() {
   const [clientReviewLink, setClientReviewLink] = useState<string | null>(null);
   const [isGeneratingReviewLink, setIsGeneratingReviewLink] = useState(false);
   const [copiedReviewLink, setCopiedReviewLink] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [previousCaption, setPreviousCaption] = useState<string>('');
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -299,6 +301,13 @@ export default function ContentStudioPage() {
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => setStatusMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage]);
 
   // Active Preview Tab
   const [previewPlatform, setPreviewPlatform] = useState<'FACEBOOK' | 'INSTAGRAM' | 'LINKEDIN'>('INSTAGRAM');
@@ -374,6 +383,10 @@ export default function ContentStudioPage() {
     setStatusMessage(null);
 
     try {
+      if (caption.trim().length > 0) {
+        setPreviousCaption(caption);
+      }
+
       const res = await apiRequest('/ai/generate-post', {
         method: 'POST',
         body: JSON.stringify({
@@ -388,6 +401,7 @@ export default function ContentStudioPage() {
         setCaption(res.generated.caption);
         setHashtags(res.generated.hashtags || ['#ResortCollection', '#SustainableLuxury']);
         if (!title) setTitle(promptToUse.slice(0, 35) + '...');
+        setStatusMessage({ type: 'success', text: 'AI copy crafted successfully.' });
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'AI Generation failed' });
@@ -830,11 +844,18 @@ export default function ContentStudioPage() {
       const finalUrl = `${currentOrigin.replace(/\/$/, '')}/review/${token}`;
 
       setClientReviewLink(finalUrl);
-      await navigator.clipboard.writeText(finalUrl);
-      setCopiedReviewLink(true);
-      setTimeout(() => setCopiedReviewLink(false), 3000);
+      setShowReviewModal(true);
+      try {
+        await navigator.clipboard.writeText(finalUrl);
+        setCopiedReviewLink(true);
+        setTimeout(() => setCopiedReviewLink(false), 3000);
+      } catch {
+        // Safe if headless browser denies clipboard
+      }
+      setStatusMessage({ type: 'success', text: 'Client Review Link generated successfully!' });
     } catch (err: any) {
-      alert(err.message || 'Failed to generate review link');
+      console.error('Review link generation error:', err);
+      setStatusMessage({ type: 'error', text: err.message || 'Failed to generate review link' });
     } finally {
       setIsGeneratingReviewLink(false);
     }
@@ -1749,22 +1770,26 @@ export default function ContentStudioPage() {
                     </p>
 
                     {/* Metric Pills */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[10px]">
                       <div className="bg-white p-2 rounded-xl border border-slate-200">
                         <span className="text-slate-400 font-mono">Hook Power:</span>
-                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.hookStrength?.score || 22}/25</p>
+                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.hookStrength?.score ?? 0}/25</p>
                       </div>
                       <div className="bg-white p-2 rounded-xl border border-slate-200">
                         <span className="text-slate-400 font-mono">Mobile Spacing:</span>
-                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.readabilitySpacing?.score || 18}/20</p>
+                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.readabilitySpacing?.score ?? 0}/20</p>
                       </div>
                       <div className="bg-white p-2 rounded-xl border border-slate-200">
                         <span className="text-slate-400 font-mono">Curiosity Gap:</span>
-                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.emotionalResonance?.score || 17}/20</p>
+                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.emotionalResonance?.score ?? 0}/20</p>
                       </div>
                       <div className="bg-white p-2 rounded-xl border border-slate-200">
                         <span className="text-slate-400 font-mono">CTA Strength:</span>
-                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.callToAction?.score || 18}/20</p>
+                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.callToAction?.score ?? 0}/20</p>
+                      </div>
+                      <div className="bg-white p-2 rounded-xl border border-slate-200">
+                        <span className="text-slate-400 font-mono">Hashtags:</span>
+                        <p className="font-bold text-slate-800">{viralityAnalysis.metrics?.hashtagRelevance?.score ?? 0}/15</p>
                       </div>
                     </div>
 
@@ -1807,6 +1832,22 @@ export default function ContentStudioPage() {
                     {caption.length} / 2,200 (Instagram Limit)
                   </span>
                 </label>
+                {previousCaption && (
+                  <div className="flex items-center justify-between p-2.5 bg-indigo-50/90 border border-indigo-200/90 rounded-xl text-xs text-indigo-950 animate-in fade-in">
+                    <span className="text-[11px] font-medium">AI copy generated. Want to keep your earlier draft?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tmp = caption;
+                        setCaption(previousCaption);
+                        setPreviousCaption(tmp);
+                      }}
+                      className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 underline cursor-pointer"
+                    >
+                      ↩ Restore Previous Caption
+                    </button>
+                  </div>
+                )}
                 <textarea
                   rows={6}
                   value={caption}
@@ -3288,6 +3329,80 @@ export default function ContentStudioPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* FEATURE 3A: CLIENT REVIEW LINK MODAL */}
+        {showReviewModal && clientReviewLink && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200/90 space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-neutral-900">Client Review Magic Link</h3>
+                    <p className="text-[10px] text-neutral-500">Live passwordless review portal for stakeholders</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Send this link to your client or team. They can preview upcoming posts, provide line-item comments, and submit approvals without having an OmniSocial account.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Review Link URL</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={clientReviewLink}
+                    className="w-full text-xs font-mono p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-800 select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(clientReviewLink);
+                        setCopiedReviewLink(true);
+                        setTimeout(() => setCopiedReviewLink(false), 3000);
+                      } catch {}
+                    }}
+                    className="px-4 py-2.5 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl transition flex items-center space-x-1.5 shrink-0 cursor-pointer"
+                  >
+                    {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedReviewLink ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between border-t border-neutral-100">
+                <a
+                  href={clientReviewLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 text-xs font-semibold text-neutral-700 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200 rounded-full transition cursor-pointer"
+                >
+                  Open Portal ↗
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(false)}
+                  className="px-5 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-full transition cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}

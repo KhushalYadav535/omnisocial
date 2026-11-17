@@ -135,6 +135,27 @@ export default function AnalyticsPage() {
     try {
       const res = await apiRequest(`/analytics/client-report-pdf?brandId=${activeBrandId}&period=month`);
       if (res.report?.pdfUrl) {
+        try {
+          // Fetch as blob to guarantee real cross-origin file download in Chromium / headless browser
+          const pdfBlobRes = await fetch(res.report.pdfUrl);
+          if (pdfBlobRes.ok) {
+            const blob = await pdfBlobRes.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = res.report.filename || 'Executive_Client_Report.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+            setNotice({ type: 'success', text: 'Executive Client Report PDF downloaded successfully!' });
+            return;
+          }
+        } catch (blobErr) {
+          console.warn('Direct blob fetch failed, falling back to window open:', blobErr);
+        }
+
+        // Fallback to direct anchor download
         const link = document.createElement('a');
         link.href = res.report.pdfUrl;
         link.target = '_blank';
@@ -248,7 +269,11 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
             <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Total Published</span>
             <div className="my-2 flex items-baseline justify-between">
-              <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalPublishedPosts || 0}</span>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalPublishedPosts || 0}</span>
+              )}
               <span className="text-xs font-semibold text-emerald-600 flex items-center bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Active
               </span>
@@ -260,7 +285,11 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
             <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Queue & Failures</span>
             <div className="my-2 flex items-baseline justify-between">
-              <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalQueuedPosts || 0}</span>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalQueuedPosts || 0}</span>
+              )}
               <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                 (data?.kpis?.totalFailedPosts || 0) > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-neutral-100 text-neutral-600'
               }`}>
@@ -274,7 +303,11 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
             <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Total Interactions</span>
             <div className="my-2 flex items-baseline justify-between">
-              <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalInteractions || 0}</span>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.totalInteractions || 0}</span>
+              )}
               <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/60">
                 {data?.kpis?.needsResponseCount || 0} Pending
               </span>
@@ -291,7 +324,11 @@ export default function AnalyticsPage() {
               </span>
             </div>
             <div className="my-2 flex items-baseline justify-between">
-              <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.engagementRate || 0}</span>
+              {loading ? (
+                <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-0.5" />
+              ) : (
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-900">{data?.kpis?.engagementRate || 0}</span>
+              )}
               <span className="text-xs font-semibold text-emerald-600 flex items-center bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
                 Per Post
               </span>
@@ -352,17 +389,29 @@ export default function AnalyticsPage() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100">
                   <span className="text-xs font-semibold text-emerald-800">Positive</span>
-                  <p className="text-2xl font-extrabold text-emerald-950 mt-1">{data?.sentimentStats?.positive || 0}%</p>
+                  {loading ? (
+                    <div className="h-7 w-12 bg-emerald-200/60 animate-pulse rounded-md mx-auto my-1" />
+                  ) : (
+                    <p className="text-2xl font-extrabold text-emerald-950 mt-1">{data?.sentimentStats?.positive || 0}%</p>
+                  )}
                   <p className="text-[10px] text-emerald-700 mt-0.5">Praise & high intent</p>
                 </div>
                 <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80">
                   <span className="text-xs font-semibold text-neutral-700">Neutral</span>
-                  <p className="text-2xl font-extrabold text-neutral-900 mt-1">{data?.sentimentStats?.neutral || 0}%</p>
+                  {loading ? (
+                    <div className="h-7 w-12 bg-neutral-200 animate-pulse rounded-md mx-auto my-1" />
+                  ) : (
+                    <p className="text-2xl font-extrabold text-neutral-900 mt-1">{data?.sentimentStats?.neutral || 0}%</p>
+                  )}
                   <p className="text-[10px] text-neutral-500 mt-0.5">Inquiries & sizing</p>
                 </div>
                 <div className="p-4 bg-rose-50/70 rounded-2xl border border-rose-100">
                   <span className="text-xs font-semibold text-rose-800">Critical</span>
-                  <p className="text-2xl font-extrabold text-rose-950 mt-1">{data?.sentimentStats?.negative || 0}%</p>
+                  {loading ? (
+                    <div className="h-7 w-12 bg-rose-200/60 animate-pulse rounded-md mx-auto my-1" />
+                  ) : (
+                    <p className="text-2xl font-extrabold text-rose-950 mt-1">{data?.sentimentStats?.negative || 0}%</p>
+                  )}
                   <p className="text-[10px] text-rose-700 mt-0.5">Escalations & queries</p>
                 </div>
               </div>

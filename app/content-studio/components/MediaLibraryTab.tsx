@@ -94,7 +94,6 @@ export default function MediaLibraryTab({
   };
 
   const handleDeleteMedia = async (mediaId: string) => {
-    if (!confirm('Are you sure you want to remove this media asset?')) return;
     try {
       await apiRequest(`/content-studio/media/${mediaId}`, { method: 'DELETE' });
       setMediaList(prev => prev.filter(m => m.id !== mediaId));
@@ -103,6 +102,13 @@ export default function MediaLibraryTab({
       setNotification({ type: 'error', message: err.message || 'Failed to delete asset.' });
     }
   };
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   return (
     <div className="space-y-6">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest } from '../../lib/api';
+import { apiRequest, getStoredActiveBrandId } from '../../lib/api';
 import {
   Zap,
   Plus,
@@ -47,14 +47,30 @@ export default function AutomationsPage() {
   const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
+    const saved = getStoredActiveBrandId();
+    if (saved) {
+      setActiveBrandId(saved);
+    }
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+
     apiRequest('/brands')
       .then(res => {
         if (res.brands && res.brands.length > 0) {
           setBrands(res.brands);
-          setActiveBrandId(res.brands[0].id);
+          if (!saved) {
+            setActiveBrandId(res.brands[0].id);
+          }
+        } else {
+          setLoading(false);
         }
       })
-      .catch(() => { });
+      .catch(() => {
+        setLoading(false);
+      });
+
+    return () => clearTimeout(timer);
   }, []);
 
   const loadFunnels = async (brandIdToUse?: string) => {
@@ -127,12 +143,11 @@ export default function AutomationsPage() {
   };
 
   const handleDeleteFunnel = async (funnelId: string) => {
-    if (!confirm('Are you sure you want to delete this lead funnel rule?')) return;
     try {
       await apiRequest(`/lead-funnels/${funnelId}`, { method: 'DELETE' });
       setFunnels(prev => prev.filter(f => f.id !== funnelId));
     } catch (err: any) {
-      alert(err.message || 'Failed to delete funnel');
+      console.error('Failed to delete funnel:', err);
     }
   };
 

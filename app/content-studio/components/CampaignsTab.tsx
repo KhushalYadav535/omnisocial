@@ -129,7 +129,6 @@ export default function CampaignsTab({ brandId, onNavigateTab, onRefreshOverview
   };
 
   const handleDeleteCampaign = async (campaignId: string) => {
-    if (!confirm('Are you sure you want to delete this campaign? Connected posts will be preserved in your library.')) return;
     try {
       await apiRequest(`/content-studio/campaigns/${campaignId}`, { method: 'DELETE' });
       setCampaigns(prev => prev.filter(c => c.id !== campaignId));

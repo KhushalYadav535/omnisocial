@@ -1747,6 +1747,7 @@ export default function CalendarPage() {
     setEditCaption(ev.caption || '');
     setSelectedEventIsEvergreen(ev.isEvergreen || false);
     setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
+    setAiScoreAnalysis(null);
 
     // Prefill reschedule picker with scheduled date
     if (ev.scheduledFor) {
@@ -1765,7 +1766,6 @@ export default function CalendarPage() {
   const handleDeleteCalendarPost = async (event: any) => {
     if (!event) return;
     const targetId = event.publicationId || event.id;
-    if (!confirm(`Are you sure you want to delete this post? This will permanently remove it from your calendar schedule.`)) return;
     setSaving(true);
     try {
       await apiRequest(`/calendar/events/${targetId}`, { method: 'DELETE' });
@@ -1932,10 +1932,28 @@ export default function CalendarPage() {
 
   const sanitizeMediaUrl = (url?: string | null): string => {
     if (!url) return '';
-    if (url.startsWith('http://omnisocialbackend.onrender.com')) {
-      return url.replace('http://omnisocialbackend.onrender.com', 'https://omnisocialbackend.onrender.com');
+    let cleaned = url.trim();
+    if (cleaned.startsWith('http://omnisocialbackend.onrender.com')) {
+      cleaned = cleaned.replace('http://omnisocialbackend.onrender.com', 'https://omnisocialbackend.onrender.com');
     }
-    return url;
+    if (cleaned.includes('images.unsplash.com') && !cleaned.includes('?')) {
+      cleaned = `${cleaned}?auto=format&fit=crop&w=600&q=80`;
+    }
+    return cleaned;
+  };
+
+  const formatFriendlyErrorMessage = (rawError?: string | null): string => {
+    if (!rawError) return 'Publication was not completed by the platform.';
+    if (rawError.includes('#200') || rawError.includes('Unpublished posts must be posted')) {
+      return 'Facebook Page permission required: Connected token requires administrator publishing rights for this page.';
+    }
+    if (rawError.includes('#190') || rawError.includes('OAuthException')) {
+      return 'Channel authorization expired. Please reconnect your account under Settings → Channels.';
+    }
+    if (rawError.includes('#100')) {
+      return 'Media format restriction: Please verify aspect ratio and video length requirements.';
+    }
+    return rawError;
   };
 
   const parseCalendarCardTitle = (rawTitle: string) => {
@@ -2788,6 +2806,7 @@ export default function CalendarPage() {
                               <img
                                 src={mediaUrl}
                                 alt=""
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'; }}
                                 className="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10"
                               />
                             ) : (
@@ -2845,6 +2864,7 @@ export default function CalendarPage() {
                           <img
                             src={mediaUrl}
                             alt=""
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'; }}
                             className="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/10"
                           />
                         ) : (
@@ -3078,7 +3098,7 @@ export default function CalendarPage() {
                   <span>Live Pipeline</span>
                 </h3>
                 <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full font-mono">
-                  {upcomingPosts.length} Queued
+                  {events.filter(e => e.status === 'QUEUED').length} Queued
                 </span>
               </div>
 
@@ -3246,7 +3266,7 @@ export default function CalendarPage() {
                       <AlertTriangle className="w-4 h-4 text-rose-600" />
                       <span>Publication Failed</span>
                     </div>
-                    <p className="text-[11px] text-rose-700">{selectedEvent.errorMessage}</p>
+                    <p className="text-[11px] text-rose-700">{formatFriendlyErrorMessage(selectedEvent.errorMessage)}</p>
                   </div>
                 )}
 
@@ -3300,6 +3320,7 @@ export default function CalendarPage() {
                                   <img
                                     src={mediaUrl}
                                     alt="Post preview"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=800&fit=crop'; }}
                                     className="w-full aspect-square object-cover"
                                   />
                                   <div className="absolute top-2 right-2 flex items-center space-x-1">

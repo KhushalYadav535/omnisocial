@@ -78,10 +78,23 @@ export default function LaunchpadTab({
       const res = await apiRequest(`/content-studio/launchpad?brandId=${brandId}`);
       if (res.progress) {
         if (res.progress.currentStage) setCurrentStage(res.progress.currentStage);
-        if (res.progress.stage1Data) setStage1Data(res.progress.stage1Data);
-        if (res.progress.stage2Data) setStage2Data(res.progress.stage2Data);
-        if (res.progress.stage3Data) setStage3Data(res.progress.stage3Data);
-        if (res.progress.stage4Data) setStage4Data(res.progress.stage4Data);
+        if (res.progress.stage1Data) setStage1Data(prev => ({ ...prev, ...res.progress.stage1Data }));
+        if (res.progress.stage2Data) setStage2Data(prev => ({ ...prev, ...res.progress.stage2Data }));
+        if (res.progress.stage3Data) {
+          const rawPillars = res.progress.stage3Data.pillars || res.progress.stage3Data.corePillars;
+          setStage3Data(prev => ({
+            pillars: Array.isArray(rawPillars) && rawPillars.length > 0 ? rawPillars : prev.pillars,
+            weeklyCadence: res.progress.stage3Data.weeklyCadence || prev.weeklyCadence
+          }));
+        }
+        if (res.progress.stage4Data) {
+          const rawDeliv = res.progress.stage4Data.deliverables;
+          setStage4Data(prev => ({
+            ...prev,
+            ...res.progress.stage4Data,
+            deliverables: Array.isArray(rawDeliv) && rawDeliv.length > 0 ? rawDeliv : prev.deliverables
+          }));
+        }
       }
     } catch (err: any) {
       console.error('Fetch launchpad error:', err);
@@ -352,7 +365,7 @@ export default function LaunchpadTab({
 
             <div className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {stage3Data.pillars.map((p, idx) => (
+                {(stage3Data?.pillars || []).map((p, idx) => (
                   <div key={idx} className="p-4 bg-[#F4F5F7] border border-black/[0.04] rounded-2xl space-y-2">
                     <span className="font-bold text-neutral-900 text-xs block">{p.title}</span>
                     <div className="flex items-center space-x-3">
@@ -425,7 +438,7 @@ export default function LaunchpadTab({
               <div>
                 <label className="font-semibold text-neutral-700 block mb-1.5">Planned Sequential Deliverables</label>
                 <div className="space-y-2">
-                  {stage4Data.deliverables.map((deliv, idx) => (
+                  {(stage4Data?.deliverables || []).map((deliv, idx) => (
                     <div key={idx} className="p-3 bg-[#F4F5F7] border border-black/[0.04] rounded-2xl text-neutral-800 flex items-center space-x-2.5 font-medium">
                       <div className="w-5 h-5 rounded-full bg-white text-neutral-900 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                         ✓
