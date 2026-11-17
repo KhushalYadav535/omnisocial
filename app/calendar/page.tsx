@@ -1437,6 +1437,10 @@ export default function CalendarPage() {
     setIsGeneratingInstant(true);
     setNotice(null);
     try {
+      const targetDateStr = instantScheduledDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const targetTimeStr = instantScheduledTime || '09:00';
+      const scheduledIso = new Date(`${targetDateStr}T${targetTimeStr}:00`).toISOString();
+
       const res = await apiRequest('/ai/instant-post', {
         method: 'POST',
         body: JSON.stringify({
@@ -1445,7 +1449,7 @@ export default function CalendarPage() {
           postType: instantPostType,
           preset: instantPreset,
           targetPlatform: instantPlatform,
-          scheduledDate: instantScheduledDate ? new Date(`${instantScheduledDate}T${instantScheduledTime || '19:30'}:00`).toISOString() : new Date().toISOString()
+          scheduledDate: scheduledIso
         })
       });
       if (res.success && res.post) {
@@ -1462,7 +1466,7 @@ export default function CalendarPage() {
   };
 
   const handleDeployInstantPost = async () => {
-    if (!generatedInstantPost) return;
+    if (isDeployingInstant || !generatedInstantPost) return;
     setIsDeployingInstant(true);
     setNotice(null);
     try {
@@ -2342,7 +2346,9 @@ export default function CalendarPage() {
                   <span>Promo ({pillarStats.promoCount})</span>
                 </span>
               </div>
-              <span className="font-mono font-bold text-neutral-500">{pillarStats.total} Scheduled Total</span>
+              <span className="font-mono text-xs font-bold text-neutral-600">
+                {pillarStats.total} Total Calendar Drops ({events.filter((e: any) => e.status === 'QUEUED').length} Queued • {events.filter((e: any) => e.status === 'PUBLISHED').length} Published{events.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${events.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
+              </span>
             </div>
           </div>
         </div>
@@ -2630,6 +2636,9 @@ export default function CalendarPage() {
                                       <img
                                         src={mediaUrl}
                                         alt=""
+                                        onError={(e) => {
+                                          (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop';
+                                        }}
                                         className="w-5 h-5 rounded-md object-cover shrink-0 border border-black/10 shadow-2xs group-hover/card:scale-105 transition-transform"
                                       />
                                     ) : (
@@ -2754,6 +2763,9 @@ export default function CalendarPage() {
                                   <img
                                     src={mediaUrl}
                                     alt=""
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop';
+                                    }}
                                     className="w-8 h-8 rounded-lg object-cover shrink-0 border border-black/10 shadow-2xs"
                                   />
                                 )}
@@ -3007,6 +3019,9 @@ export default function CalendarPage() {
                                 <img
                                   src={post.mediaUrls[0]}
                                   alt={post.title}
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=360&h=360&fit=crop';
+                                  }}
                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
                               ) : (
@@ -3444,7 +3459,14 @@ export default function CalendarPage() {
 
                             {mediaUrl && (
                               <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img src={mediaUrl} alt="" className="w-full h-44 object-cover" />
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-44 object-cover"
+                                />
                               </div>
                             )}
 
@@ -3479,7 +3501,14 @@ export default function CalendarPage() {
 
                             {mediaUrl && (
                               <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img src={mediaUrl} alt="" className="w-full h-40 object-cover" />
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-40 object-cover"
+                                />
                               </div>
                             )}
 
@@ -3511,7 +3540,14 @@ export default function CalendarPage() {
 
                             {mediaUrl && (
                               <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img src={mediaUrl} alt="" className="w-full h-44 object-cover" />
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-44 object-cover"
+                                />
                               </div>
                             )}
 

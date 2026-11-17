@@ -9,7 +9,7 @@ import { SpotlightCard } from './SpotlightCard';
 import { ScrollReveal } from './ScrollReveal';
 
 export function PricingSection() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
   const handleToggle = (cycle: 'monthly' | 'annual') => {
     setBillingCycle(cycle);

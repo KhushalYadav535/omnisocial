@@ -98,6 +98,17 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchDashboardData(activeBrandId);
+    const onFocus = () => {
+      fetchDashboardData(activeBrandId);
+    };
+    window.addEventListener('focus', onFocus);
+    const interval = setInterval(() => {
+      fetchDashboardData(activeBrandId);
+    }, 25000);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
   }, [activeBrandId]);
 
   const handleManualSync = async () => {
@@ -155,14 +166,16 @@ function DashboardContent() {
         ['Pending Queue Drops', String(totalQueuedPosts), 'Scheduled Queue', reportDateRange],
         ['Active Connected Channels', String(totalConnectedChannels), reportPlatforms.join(', '), 'Live']
       ];
-      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
+      const csvContent = "\uFEFF" + rows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `OmniSocial_Report_${reportDateRange}_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.href = blobUrl;
+      link.download = `OmniSocial_Report_${reportDateRange}_${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } finally {
       setTimeout(() => setReportExporting(false), 500);
     }
@@ -693,13 +706,17 @@ function DashboardContent() {
             </div>
 
             <div className="flex items-center">
-              <span className={`inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full border ${
-                totalFailedPosts === 0 
-                  ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80' 
-                  : 'text-amber-800 bg-[#FEF3C7] border-amber-200/80'
-              }`}>
-                {totalFailedPosts === 0 ? 'Optimal 0 Failed Drops' : `${totalFailedPosts} Failed attempts recorded`}
-              </span>
+              {loading ? (
+                <div className="h-5 w-32 bg-neutral-200 animate-pulse rounded-full" />
+              ) : (
+                <span className={`inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full border ${
+                  totalFailedPosts === 0 
+                    ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80' 
+                    : 'text-amber-800 bg-[#FEF3C7] border-amber-200/80'
+                }`}>
+                  {totalFailedPosts === 0 ? 'Optimal 0 Failed Drops' : `${totalFailedPosts} Failed attempts recorded`}
+                </span>
+              )}
             </div>
           </div>
 
@@ -945,11 +962,15 @@ function DashboardContent() {
 
                 {/* Big Metric in Center of Gauge */}
                 <div className="absolute -bottom-1 flex flex-col items-center">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight">
-                    {publishingSla}%
-                  </span>
+                  {loading ? (
+                    <div className="h-9 w-20 bg-neutral-200 animate-pulse rounded-lg my-1" />
+                  ) : (
+                    <span className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight">
+                      {publishingSla}%
+                    </span>
+                  )}
                   <span className="text-xs text-neutral-400 font-medium">
-                    Delivery Accuracy
+                    {loading ? 'Evaluating SLA...' : 'Delivery Accuracy'}
                   </span>
                 </div>
               </div>
@@ -997,6 +1018,9 @@ function DashboardContent() {
                   <div key={item.id} className="p-5 hover:bg-neutral-50/60 transition-colors flex items-start space-x-4">
                     <img
                       src={item.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop'}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop';
+                      }}
                       className="w-10 h-10 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-neutral-100"
                       alt=""
                     />
@@ -1080,7 +1104,12 @@ function DashboardContent() {
               </div>
 
               <div className="space-y-2.5">
-                {data?.accounts && data.accounts.length > 0 ? (
+                {loading ? (
+                  <div className="space-y-2 p-1">
+                    <div className="h-12 bg-neutral-100 animate-pulse rounded-2xl" />
+                    <div className="h-12 bg-neutral-100 animate-pulse rounded-2xl" />
+                  </div>
+                ) : data?.accounts && data.accounts.length > 0 ? (
                   data.accounts.map((acc: any) => (
                     <div key={acc.id} className="p-3 rounded-2xl bg-neutral-50/80 border border-neutral-200/60 flex items-center justify-between">
                       <div className="flex items-center space-x-3">

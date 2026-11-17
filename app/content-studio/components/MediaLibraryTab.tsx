@@ -74,7 +74,9 @@ export default function MediaLibraryTab({
           brandId,
           title: title.trim() || 'Untitled Asset',
           url: url.trim(),
+          fileUrl: url.trim(),
           format,
+          fileType: format,
           tags: tagsArr
         })
       });
@@ -172,21 +174,31 @@ export default function MediaLibraryTab({
         </div>
       ) : mediaList.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {mediaList.map((asset) => (
-            <div
-              key={asset.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group"
-            >
-              <div className="relative aspect-video bg-slate-100 overflow-hidden">
-                {asset.format === 'VIDEO' ? (
-                  <video src={asset.url} className="w-full h-full object-cover" controls />
-                ) : (
-                  <img src={asset.url} alt={asset.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                )}
-                <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-black/60 text-white backdrop-blur-xs rounded">
-                  {asset.format}
-                </span>
-              </div>
+          {mediaList.map((asset) => {
+            const mediaSrc = asset.url || asset.fileUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+            const mediaFormat = asset.format || asset.fileType || 'IMAGE';
+            return (
+              <div
+                key={asset.id}
+                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group"
+              >
+                <div className="relative aspect-video bg-slate-100 overflow-hidden">
+                  {mediaFormat === 'VIDEO' ? (
+                    <video src={mediaSrc} className="w-full h-full object-cover" controls />
+                  ) : (
+                    <img
+                      src={mediaSrc}
+                      alt={asset.title}
+                      onError={(e) => {
+                        (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                  )}
+                  <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-black/60 text-white backdrop-blur-xs rounded">
+                    {mediaFormat}
+                  </span>
+                </div>
 
               <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
                 <div>
@@ -223,7 +235,8 @@ export default function MediaLibraryTab({
                 </div>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       ) : (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">

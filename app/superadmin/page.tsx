@@ -173,11 +173,15 @@ export default function SuperAdminPage() {
               </span>
             </div>
             <div>
-              <div className="text-3xl font-extrabold tracking-tight mt-3">
-                ${overview?.metrics?.estimatedMrr ? overview.metrics.estimatedMrr.toLocaleString() : '128'}
-              </div>
+              {loading ? (
+                <div className="h-9 w-24 bg-white/10 animate-pulse rounded-lg mt-3" />
+              ) : (
+                <div className="text-3xl font-extrabold tracking-tight mt-3">
+                  ${overview?.metrics?.estimatedMrr ? overview.metrics.estimatedMrr.toLocaleString() : '0'}
+                </div>
+              )}
               <p className="text-[11px] text-slate-400 mt-1">
-                From {overview?.metrics?.activeTenants || 2} active agency subscriptions
+                From {overview?.metrics?.activeTenants ?? (loading ? '...' : tenants.filter(t => t.status === 'ACTIVE').length)} active agency subscriptions
               </p>
             </div>
             <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-indigo-500/0 rounded-full blur-2xl pointer-events-none" />
@@ -190,11 +194,15 @@ export default function SuperAdminPage() {
               <Building2 className="w-4 h-4 text-blue-600" />
             </div>
             <div>
-              <div className="text-3xl font-extrabold tracking-tight text-slate-900 mt-3">
-                {overview?.metrics?.totalTenants || 2}
-              </div>
+              {loading ? (
+                <div className="h-9 w-16 bg-blue-200/60 animate-pulse rounded-lg mt-3" />
+              ) : (
+                <div className="text-3xl font-extrabold tracking-tight text-slate-900 mt-3">
+                  {overview?.metrics?.totalTenants ?? tenants.length}
+                </div>
+              )}
               <p className="text-[11px] text-blue-700/80 font-medium mt-1">
-                {overview?.metrics?.activeTenants || 2} Active in good standing
+                {loading ? 'Auditing organizations...' : `${overview?.metrics?.activeTenants ?? tenants.filter(t => t.status === 'ACTIVE').length} Active in good standing`}
               </p>
             </div>
           </div>
@@ -204,13 +212,17 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-slate-500">Managed Brands</span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                {overview?.metrics?.totalAccounts || 3} Accounts
+                {loading ? '...' : `${overview?.metrics?.totalAccounts ?? 0} Accounts`}
               </span>
             </div>
             <div>
-              <div className="text-3xl font-extrabold tracking-tight text-slate-900 mt-3">
-                {overview?.metrics?.totalBrands || 2}
-              </div>
+              {loading ? (
+                <div className="h-9 w-16 bg-slate-200 animate-pulse rounded-lg mt-3" />
+              ) : (
+                <div className="text-3xl font-extrabold tracking-tight text-slate-900 mt-3">
+                  {overview?.metrics?.totalBrands ?? 0}
+                </div>
+              )}
               <p className="text-[11px] text-slate-400 mt-1">
                 Connected across multi-brand agency workspaces
               </p>
@@ -244,9 +256,15 @@ export default function SuperAdminPage() {
               <h2 className="text-base font-extrabold text-slate-900 tracking-tight">Agency Organizations Directory</h2>
               <p className="text-xs text-slate-500 mt-0.5">Isolated multi-tenant boundaries with sovereign BYOK keys and team access</p>
             </div>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-              {tenants.length} Agencies Registered
-            </span>
+            {loading ? (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-400 animate-pulse">
+                Loading Agencies...
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                {tenants.length} Agencies Registered
+              </span>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -262,7 +280,20 @@ export default function SuperAdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.04]">
-                {tenants.map(t => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                      Auditing agency organizations...
+                    </td>
+                  </tr>
+                ) : tenants.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                      No registered agencies found.
+                    </td>
+                  </tr>
+                ) : (
+                  tenants.map(t => (
                   <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
@@ -336,7 +367,7 @@ export default function SuperAdminPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -374,12 +405,12 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="p-4 bg-[#FAFBFD] rounded-[20px] border border-black/[0.04]">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Publication Queue</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Global Publication Queue</span>
                 <span className="font-extrabold text-slate-900 text-sm mt-1 block">
                   {systemMonitoring.platformTotals?.publications?.published || 0} Pub / {systemMonitoring.platformTotals?.publications?.failed || 0} Fail
                 </span>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  {systemMonitoring.platformTotals?.publications?.queued || 0} Queued, {systemMonitoring.platformTotals?.publications?.stale || 0} Stale
+                  System-wide: {systemMonitoring.platformTotals?.publications?.queued || 0} Queued, {systemMonitoring.platformTotals?.publications?.stale || 0} Stale
                 </p>
               </div>
 

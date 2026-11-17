@@ -18,6 +18,7 @@ import {
 
 export default function FloatingActionDock() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,59 +64,72 @@ export default function FloatingActionDock() {
       {/* Floating Vertical Capsule Dock (Cadra Left Dock) */}
       <aside 
         aria-label="Quick Actions Dock"
-        className="fixed left-5 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col items-center bg-[#111215] text-white p-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.25)] border border-neutral-800/80 backdrop-blur-xl"
+        className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col items-center bg-[#111215] text-white p-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.25)] border border-neutral-800/80 backdrop-blur-xl transition-all duration-300 ${
+          collapsed ? '-translate-x-10 opacity-40 hover:opacity-100 hover:translate-x-0' : 'translate-x-0'
+        }`}
       >
-        <div className="flex flex-col items-center space-y-2.5">
-          {quickActions.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.href ? pathname === item.href : false;
+        <button
+          type="button"
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-5 h-5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center text-[11px] font-bold mb-1 transition-colors cursor-pointer"
+          title={collapsed ? 'Expand Quick Dock' : 'Collapse Quick Dock'}
+        >
+          {collapsed ? '›' : '‹'}
+        </button>
 
-            const buttonContent = (
-              <div
-                className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 group cursor-pointer ${
-                  isActive 
-                    ? 'bg-white text-neutral-950 font-bold shadow-md' 
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/90'
-                }`}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
+        {!collapsed && (
+          <div className="flex flex-col items-center space-y-2.5">
+            {quickActions.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.href ? pathname === item.href : false;
 
-                {/* Left Tooltip */}
-                {hoveredItem === item.id && (
-                  <div className="absolute left-14 px-3 py-1.5 bg-neutral-900 text-white text-xs font-semibold rounded-xl whitespace-nowrap shadow-xl border border-neutral-700/80 pointer-events-none z-50 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150">
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-neutral-800 text-neutral-300 border border-neutral-700">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
+              const buttonContent = (
+                <div
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 group cursor-pointer ${
+                    isActive 
+                      ? 'bg-white text-neutral-950 font-bold shadow-md' 
+                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/90'
+                  }`}
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <Icon className="w-4 h-4 transition-transform group-hover:scale-110" />
 
-            if (item.href) {
-              return (
-                <Link key={item.id} href={item.href}>
-                  {buttonContent}
-                </Link>
+                  {/* Left Tooltip */}
+                  {hoveredItem === item.id && (
+                    <div className="absolute left-14 px-3 py-1.5 bg-neutral-900 text-white text-xs font-semibold rounded-xl whitespace-nowrap shadow-xl border border-neutral-700/80 pointer-events-none z-50 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150">
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-neutral-800 text-neutral-300 border border-neutral-700">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
-            }
 
-            return (
-              <button
-                key={item.id}
-                onClick={item.onClick}
-                type="button"
-                className="focus:outline-none"
-              >
-                {buttonContent}
-              </button>
-            );
-          })}
-        </div>
+              if (item.href) {
+                return (
+                  <Link key={item.id} href={item.href}>
+                    {buttonContent}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={item.onClick}
+                  type="button"
+                  className="focus:outline-none"
+                >
+                  {buttonContent}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </aside>
 
       {/* Quick Search Modal */}

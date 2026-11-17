@@ -204,13 +204,12 @@ function ClientReviewContent() {
               return (
                 <div
                   key={post.id}
-                  className={`bg-white rounded-3xl border transition-all shadow-sm overflow-hidden flex flex-col justify-between ${
-                    isApproved
-                      ? 'border-emerald-300 ring-2 ring-emerald-100'
-                      : isChangesRequested
+                  className={`bg-white rounded-3xl border transition-all shadow-sm overflow-hidden flex flex-col justify-between ${isApproved
+                    ? 'border-emerald-300 ring-2 ring-emerald-100'
+                    : isChangesRequested
                       ? 'border-rose-300 ring-2 ring-rose-100'
                       : 'border-slate-200/90 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   {/* Card Header */}
                   <div>
@@ -228,13 +227,12 @@ function ClientReviewContent() {
                       </div>
 
                       {/* Status Badge */}
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${
-                        isApproved
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : isChangesRequested
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center space-x-1 ${isApproved
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : isChangesRequested
                           ? 'bg-rose-100 text-rose-800'
                           : 'bg-amber-100 text-amber-800'
-                      }`}>
+                        }`}>
                         {isApproved ? <CheckCircle2 className="w-3 h-3" /> : isChangesRequested ? <AlertCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                         <span>{isApproved ? 'Approved' : isChangesRequested ? 'Revision Requested' : 'Awaiting Review'}</span>
                       </span>
@@ -259,7 +257,14 @@ function ClientReviewContent() {
                         ) : /\.(mp4|mov|webm)$/i.test(mediaUrl) ? (
                           <video src={mediaUrl} controls className="w-full h-full object-cover" />
                         ) : (
-                          <img src={mediaUrl} alt="Post preview" className="w-full h-full object-cover" />
+                          <img
+                            src={mediaUrl}
+                            alt="Post preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&h=500&fit=crop';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                     )}
@@ -343,11 +348,10 @@ function ClientReviewContent() {
                       type="button"
                       onClick={() => handleAction(post.id, 'APPROVE')}
                       disabled={isSubmitting || isApproved}
-                      className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-2xs transition-all cursor-pointer ${
-                        isApproved
-                          ? 'bg-emerald-600 text-white cursor-default opacity-90'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-xs'
-                      }`}
+                      className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-2xs transition-all cursor-pointer ${isApproved
+                        ? 'bg-emerald-600 text-white cursor-default opacity-90'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-xs'
+                        }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>{isApproved ? 'Approved ✓' : 'Approve Post'}</span>

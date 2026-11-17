@@ -134,7 +134,7 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
   }, [notification]);
 
   // Calculate total distribution percentage
-  const totalPercentage = pillars.reduce((sum, p) => sum + (p.percentage || 0), 0);
+  const totalPercentage = pillars.reduce((sum, p) => sum + (Number(p.percentage ?? p.targetPercentage) || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -201,25 +201,33 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
 
         {/* Multi-segmented Progress Bar */}
         <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-          {pillars.map((p, idx) => (
-            <div
-              key={p.id || idx}
-              style={{ width: `${Math.max(p.percentage || 0, 5)}%`, backgroundColor: p.color || '#6366f1' }}
-              className="h-full transition-all duration-300 relative group cursor-pointer"
-              title={`${p.title}: ${p.percentage}%`}
-            />
-          ))}
+          {pillars.map((p, idx) => {
+            const pTitle = p.title || p.name || 'Core Pillar';
+            const pPct = Number(p.percentage ?? p.targetPercentage) || 0;
+            return (
+              <div
+                key={p.id || idx}
+                style={{ width: `${Math.max(pPct, 5)}%`, backgroundColor: p.color || '#6366f1' }}
+                className="h-full transition-all duration-300 relative group cursor-pointer"
+                title={`${pTitle}: ${pPct}%`}
+              />
+            );
+          })}
         </div>
 
         {/* Pillar legend strip */}
         <div className="flex flex-wrap items-center gap-3 pt-1">
-          {pillars.map((p, idx) => (
-            <div key={p.id || idx} className="flex items-center space-x-1.5 text-xs text-slate-700">
-              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.color || '#6366f1' }} />
-              <span className="font-semibold">{p.title}:</span>
-              <span className="font-mono text-slate-500">{p.percentage}%</span>
-            </div>
-          ))}
+          {pillars.map((p, idx) => {
+            const pTitle = p.title || p.name || 'Core Pillar';
+            const pPct = Number(p.percentage ?? p.targetPercentage) || 0;
+            return (
+              <div key={p.id || idx} className="flex items-center space-x-1.5 text-xs text-slate-700">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.color || '#6366f1' }} />
+                <span className="font-semibold">{pTitle}:</span>
+                <span className="font-mono text-slate-500">{pPct}%</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -231,21 +239,24 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
         </div>
       ) : pillars.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {pillars.map((pillar) => (
-            <div
-              key={pillar.id}
-              className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: pillar.color || '#6366f1' }} />
-                    <span className="font-bold text-sm text-slate-900">{pillar.title}</span>
+          {pillars.map((pillar) => {
+            const pTitle = pillar.title || pillar.name || 'Core Pillar';
+            const pPct = Number(pillar.percentage ?? pillar.targetPercentage) || 0;
+            return (
+              <div
+                key={pillar.id}
+                className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: pillar.color || '#6366f1' }} />
+                      <span className="font-bold text-sm text-slate-900">{pTitle}</span>
+                    </div>
+                    <span className="px-2 py-0.5 text-xs font-mono font-bold bg-slate-100 text-slate-700 rounded-md">
+                      {pPct}%
+                    </span>
                   </div>
-                  <span className="px-2 py-0.5 text-xs font-mono font-bold bg-slate-100 text-slate-700 rounded-md">
-                    {pillar.percentage}%
-                  </span>
-                </div>
 
                 <p className="text-xs text-slate-500 line-clamp-2">
                   {pillar.description || 'Topic themes and educational angles for this pillar.'}
@@ -284,7 +295,8 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       ) : (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">

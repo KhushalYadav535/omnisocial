@@ -181,6 +181,9 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                   <img
                     src={post.mediaUrls[0]}
                     alt="Preview"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&h=240&fit=crop';
+                    }}
                     className="w-24 h-24 rounded-xl object-cover border border-slate-200 shrink-0"
                   />
                 )}

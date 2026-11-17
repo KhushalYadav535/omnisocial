@@ -16,7 +16,8 @@ import {
   Inbox,
   X,
   FileCheck2,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { apiRequest } from '../../../lib/api';
 
@@ -146,6 +147,17 @@ export default function IdeasRequestsTab({
       if (onRefreshOverview) onRefreshOverview();
     } catch (err: any) {
       setNotification({ type: 'error', message: err.message || 'Failed to save idea.' });
+    }
+  };
+
+  const handleDeleteIdea = async (ideaId: string) => {
+    try {
+      await apiRequest(`/content-studio/ideas/${ideaId}`, { method: 'DELETE' });
+      setIdeas(prev => prev.filter(i => i.id !== ideaId));
+      setNotification({ type: 'success', message: 'Idea removed from Idea Bank.' });
+      if (onRefreshOverview) onRefreshOverview();
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'Failed to delete idea.' });
     }
   };
 
@@ -325,14 +337,24 @@ export default function IdeasRequestsTab({
                     <span className="text-[11px] text-slate-400">
                       {new Date(idea.createdAt).toLocaleDateString()}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleTurnIntoPost(idea)}
-                      className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full shadow-2xs flex items-center space-x-1 cursor-pointer transition"
-                    >
-                      <span>Turn into Post</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteIdea(idea.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Idea"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTurnIntoPost(idea)}
+                        className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-full shadow-2xs flex items-center space-x-1 cursor-pointer transition"
+                      >
+                        <span>Turn into Post</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

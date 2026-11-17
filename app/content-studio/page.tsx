@@ -193,6 +193,30 @@ export default function ContentStudioPage() {
     }
   };
 
+  const [isDraggingTabs, setIsDraggingTabs] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startScrollLeft, setStartScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tabsContainerRef.current) return;
+    setIsDraggingTabs(true);
+    setStartX(e.pageX - tabsContainerRef.current.offsetLeft);
+    setStartScrollLeft(tabsContainerRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingTabs || !tabsContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tabsContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    tabsContainerRef.current.scrollLeft = startScrollLeft - walk;
+    checkTabsScroll();
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDraggingTabs(false);
+  };
+
   useEffect(() => {
     checkTabsScroll();
     window.addEventListener('resize', checkTabsScroll);
@@ -399,9 +423,12 @@ export default function ContentStudioPage() {
 
       if (res.generated) {
         setCaption(res.generated.caption);
-        setHashtags(res.generated.hashtags || ['#ResortCollection', '#SustainableLuxury']);
+        const newTags = res.generated.hashtags || ['#ResortCollection', '#SustainableLuxury'];
+        setHashtags(newTags);
         if (!title) setTitle(promptToUse.slice(0, 35) + '...');
-        setStatusMessage({ type: 'success', text: 'AI copy crafted successfully.' });
+        setViralityAnalysis(null);
+        setStatusMessage({ type: 'success', text: 'AI copy crafted successfully. Updating virality score...' });
+        handleAnalyzeVirality(res.generated.caption, newTags);
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'AI Generation failed' });
@@ -744,19 +771,20 @@ export default function ContentStudioPage() {
   };
 
   // Feature 1C: AI Virality Score Meter
-  const handleAnalyzeVirality = async () => {
-    if (!caption.trim()) {
-      alert('Please enter or generate a caption first to analyze virality.');
+  const handleAnalyzeVirality = async (captionOverride?: string, hashtagsOverride?: string[]) => {
+    const textToAnalyze = captionOverride || caption;
+    if (!textToAnalyze.trim()) {
       return;
     }
+    const tagsToAnalyze = hashtagsOverride || hashtags;
     setIsAnalyzingVirality(true);
     try {
       const res = await apiRequest('/ai/virality-score', {
         method: 'POST',
         body: JSON.stringify({
-          caption,
+          caption: textToAnalyze,
           platform: previewPlatform,
-          hashtags,
+          hashtags: tagsToAnalyze,
           hasMedia: Boolean(mediaUrl),
           mediaType: isVideoUrl(mediaUrl) ? 'VIDEO' : format === 'CAROUSEL' ? 'CAROUSEL_PDF' : 'IMAGE'
         })
@@ -1137,24 +1165,35 @@ export default function ContentStudioPage() {
 
         {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR WITH SMOOTH SCROLL) */}
         <div className="relative flex items-center w-full group/tabbar">
+          {/* Left subtle fade mask */}
+          {canScrollTabsLeft && (
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#F4F5F7] to-transparent pointer-events-none z-10" />
+          )}
+
           {/* Left Scroll Chevron Arrow */}
           {canScrollTabsLeft && (
             <button
               type="button"
               onClick={() => handleScrollTabs('left')}
-              className="absolute left-1 z-20 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+              className="absolute left-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
               aria-label="Scroll tabs left"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
           )}
 
-          {/* Scrollable Container with Wheel & Touch Support */}
+          {/* Scrollable Container with Wheel, Drag & Touch Support */}
           <div
             ref={tabsContainerRef}
             onScroll={checkTabsScroll}
             onWheel={handleTabsWheel}
-            className="w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            className={`w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none ${
+              isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
           >
             <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
               {studioTabs.map((tab) => {
@@ -1187,12 +1226,17 @@ export default function ContentStudioPage() {
             </div>
           </div>
 
+          {/* Right subtle fade mask */}
+          {canScrollTabsRight && (
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F4F5F7] to-transparent pointer-events-none z-10" />
+          )}
+
           {/* Right Scroll Chevron Arrow */}
           {canScrollTabsRight && (
             <button
               type="button"
               onClick={() => handleScrollTabs('right')}
-              className="absolute right-1 z-20 w-7 h-7 rounded-full bg-white/95 hover:bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+              className="absolute right-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
               aria-label="Scroll tabs right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -1753,7 +1797,7 @@ export default function ContentStudioPage() {
 
                   <button
                     type="button"
-                    onClick={handleAnalyzeVirality}
+                    onClick={() => handleAnalyzeVirality()}
                     disabled={isAnalyzingVirality || !caption.trim()}
                     className="px-3 py-1 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs flex items-center space-x-1.5 transition-all disabled:opacity-50 cursor-pointer"
                   >

@@ -612,7 +612,14 @@ export default function SettingsPage() {
                           {/* Avatar */}
                           <div className="relative">
                             {acc.profilePicUrl ? (
-                              <img src={acc.profilePicUrl} alt={acc.accountName} className="w-10 h-10 rounded-xl object-cover border border-slate-200" />
+                              <img
+                                src={acc.profilePicUrl}
+                                alt={acc.accountName}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop';
+                                }}
+                                className="w-10 h-10 rounded-xl object-cover border border-slate-200"
+                              />
                             ) : (
                               <div className="w-10 h-10 rounded-xl bg-slate-800 text-white font-bold flex items-center justify-center text-xs">
                                 {acc.accountName?.slice(0, 2).toUpperCase() || 'SM'}

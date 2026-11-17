@@ -881,37 +881,33 @@ function InboxContent() {
                   })}
 
                   {/* Status Banner when already resolved */}
-                  {selectedInteraction.replyStatus === 'SENT' && !showReplyComposerOnSent && (
-                    <div className="p-4 rounded-[20px] bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 mt-2">
+                  {selectedInteraction.replyStatus === 'SENT' && (
+                    <div className="p-3.5 rounded-[20px] bg-emerald-50/80 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 mt-2">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-bold">Latest message replied & delivered to {selectedInteraction.platform}.</span>
+                        <span className="font-bold">Latest message replied & delivered. Additional replies enabled below.</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
                           setShowReplyComposerOnSent(true);
-                          setReplyText('');
-                          setTimeout(() => {
-                            const composer = document.getElementById('inbox-reply-composer');
-                            if (composer) {
-                              composer.scrollIntoView({ behavior: 'smooth' });
-                              const textarea = composer.querySelector('textarea');
-                              if (textarea) textarea.focus();
-                            }
-                          }, 50);
+                          const composer = document.getElementById('inbox-reply-composer');
+                          if (composer) {
+                            composer.scrollIntoView({ behavior: 'smooth' });
+                            const textarea = composer.querySelector('textarea');
+                            if (textarea) textarea.focus();
+                          }
                         }}
                         className="px-3.5 py-1.5 rounded-full bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold transition-all text-xs cursor-pointer shadow-2xs"
                       >
-                        Send Additional Reply
+                        Send Additional Reply ↵
                       </button>
                     </div>
                   )}
                 </div>
 
                 {/* 3. DOCKED BOTTOM COMPOSER & COMPACT AI STUDIO */}
-                {(selectedInteraction.replyStatus !== 'SENT' || showReplyComposerOnSent) && (
-                  <div id="inbox-reply-composer" className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
+                <div id="inbox-reply-composer" className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
                     
                     {/* Top Row: AI Reply Studio Controls & Tone Pills */}
                     <div className="flex items-center justify-between gap-2">
@@ -1059,8 +1055,7 @@ function InboxContent() {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-12 text-center space-y-3 text-slate-400 min-h-[420px]">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
