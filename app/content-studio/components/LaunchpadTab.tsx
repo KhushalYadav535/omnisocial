@@ -94,6 +94,13 @@ export default function LaunchpadTab({
     fetchProgress();
   }, [brandId]);
 
+  useEffect(() => {
+    if (notification) {
+      const t = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [notification]);
+
   const handleSaveStep = async (nextStage: number) => {
     if (!brandId) return;
     setIsSavingStep(true);

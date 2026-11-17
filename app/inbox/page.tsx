@@ -168,9 +168,12 @@ function InboxContent() {
   const loadInteractionDetail = async (id: string) => {
     try {
       const res = await apiRequest(`/inbox/${id}`);
+      const isNewThread = !selectedInteraction || selectedInteraction.id !== id;
       setSelectedInteraction(res.interaction);
       setThreadMessages(res.thread && res.thread.length > 0 ? res.thread : [res.interaction]);
-      setShowReplyComposerOnSent(false);
+      if (isNewThread) {
+        setShowReplyComposerOnSent(false);
+      }
 
       // Check if there is an existing draft reply
       const draft = (res.interaction.replies || []).find((r: any) => r.status === 'DRAFT');
@@ -886,7 +889,18 @@ function InboxContent() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setShowReplyComposerOnSent(true)}
+                        onClick={() => {
+                          setShowReplyComposerOnSent(true);
+                          setReplyText('');
+                          setTimeout(() => {
+                            const composer = document.getElementById('inbox-reply-composer');
+                            if (composer) {
+                              composer.scrollIntoView({ behavior: 'smooth' });
+                              const textarea = composer.querySelector('textarea');
+                              if (textarea) textarea.focus();
+                            }
+                          }, 50);
+                        }}
                         className="px-3.5 py-1.5 rounded-full bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 font-bold transition-all text-xs cursor-pointer shadow-2xs"
                       >
                         Send Additional Reply
@@ -897,7 +911,7 @@ function InboxContent() {
 
                 {/* 3. DOCKED BOTTOM COMPOSER & COMPACT AI STUDIO */}
                 {(selectedInteraction.replyStatus !== 'SENT' || showReplyComposerOnSent) && (
-                  <div className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
+                  <div id="inbox-reply-composer" className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
                     
                     {/* Top Row: AI Reply Studio Controls & Tone Pills */}
                     <div className="flex items-center justify-between gap-2">

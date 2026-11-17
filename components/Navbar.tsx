@@ -56,6 +56,37 @@ export default function Navbar({
   const [showEngageMenu, setShowEngageMenu] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
 
+  // Close menus on Escape or Outside Click
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowUserMenu(false);
+        setShowBrandMenu(false);
+        setShowEngageMenu(false);
+      }
+    };
+
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
+      }
+      if (!target.closest('.brand-menu-container')) {
+        setShowBrandMenu(false);
+      }
+      if (!target.closest('.engage-menu-container')) {
+        setShowEngageMenu(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
+  }, []);
+
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -114,7 +145,7 @@ export default function Navbar({
     },
     { name: 'Studio', href: '/content-studio' },
     { name: 'Calendar', href: '/calendar' },
-    { name: 'Funnels', href: '/automations' },
+    { name: 'Funnels', href: '/funnels' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Settings', href: '/settings' },
   ];
@@ -122,6 +153,9 @@ export default function Navbar({
   const isTabActive = (href: string) => {
     if (href.startsWith('/inbox')) {
       return pathname === '/inbox';
+    }
+    if (href === '/funnels') {
+      return pathname === '/funnels' || pathname === '/automations';
     }
     return pathname === href;
   };
@@ -155,7 +189,7 @@ export default function Navbar({
 
           {/* Active Brand Switcher Capsule */}
           {brands.length > 0 && (
-            <div className="relative hidden md:block pl-1 sm:pl-2">
+            <div className="relative hidden md:block pl-1 sm:pl-2 brand-menu-container">
               <button
                 onClick={() => setShowBrandMenu(!showBrandMenu)}
                 className="flex items-center space-x-1.5 text-xs font-semibold text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.06] px-2.5 py-1.5 rounded-full transition-all shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-pointer"
@@ -334,7 +368,7 @@ export default function Navbar({
           </div>
 
           {/* User Profile Capsule - Always pinned & visible on the far right */}
-          <div className="relative">
+          <div className="relative user-menu-container">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-1.5 sm:space-x-2 p-1 pl-2 bg-white hover:bg-neutral-50 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all cursor-pointer"

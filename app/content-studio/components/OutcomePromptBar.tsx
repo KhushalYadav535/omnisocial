@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Loader2, CheckCircle2, ChevronRight, Zap, Target } from 'lucide-react';
 import { apiRequest } from '../../../lib/api';
 
@@ -19,6 +19,13 @@ export default function OutcomePromptBar({
   const [isOrchestrating, setIsOrchestrating] = useState(false);
   const [executionResult, setExecutionResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (errorMsg) {
+      const t = setTimeout(() => setErrorMsg(null), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [errorMsg]);
 
   const quickPrompts = [
     { label: 'Draft Marketing Strategy', prompt: 'Create a comprehensive marketing strategy with personas and positioning for our brand', tab: 'strategy' },

@@ -14,7 +14,8 @@ import {
   X,
   FileText,
   Tag,
-  Layers
+  Layers,
+  Trash2
 } from 'lucide-react';
 import { apiRequest } from '../../../lib/api';
 
@@ -126,6 +127,26 @@ export default function CampaignsTab({ brandId, onNavigateTab, onRefreshOverview
       setIsSubmitting(false);
     }
   };
+
+  const handleDeleteCampaign = async (campaignId: string) => {
+    if (!confirm('Are you sure you want to delete this campaign? Connected posts will be preserved in your library.')) return;
+    try {
+      await apiRequest(`/content-studio/campaigns/${campaignId}`, { method: 'DELETE' });
+      setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+      setNotification({ type: 'success', message: 'Campaign deleted successfully.' });
+      if (onRefreshOverview) onRefreshOverview();
+    } catch (err: any) {
+      console.error('Delete campaign error:', err);
+      setNotification({ type: 'error', message: err.message || 'Failed to delete campaign.' });
+    }
+  };
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   return (
     <div className="space-y-6">
@@ -250,15 +271,25 @@ export default function CampaignsTab({ brandId, onNavigateTab, onRefreshOverview
                 <span className="text-[11px] font-semibold text-slate-400">
                   {camp.contents?.length || 0} Connected Posts
                 </span>
-                {onNavigateTab && (
+                <div className="flex items-center space-x-2.5">
                   <button
-                    onClick={() => onNavigateTab('composer')}
-                    className="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center space-x-1 cursor-pointer"
+                    type="button"
+                    onClick={() => handleDeleteCampaign(camp.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Campaign"
                   >
-                    <span>Create Post</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                )}
+                  {onNavigateTab && (
+                    <button
+                      onClick={() => onNavigateTab('composer')}
+                      className="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>Create Post</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

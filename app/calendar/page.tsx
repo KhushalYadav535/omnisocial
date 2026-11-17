@@ -58,7 +58,8 @@ import {
   Heart,
   MessageCircle,
   ThumbsUp,
-  Smartphone
+  Smartphone,
+  Trash2
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
 
@@ -1739,6 +1740,54 @@ export default function CalendarPage() {
     }
   };
 
+  const handleOpenPostInspector = (ev: any) => {
+    setSelectedEvent(ev);
+    setIsEditing(false);
+    setEditTitle(ev.title || '');
+    setEditCaption(ev.caption || '');
+    setSelectedEventIsEvergreen(ev.isEvergreen || false);
+    setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
+
+    // Prefill reschedule picker with scheduled date
+    if (ev.scheduledFor) {
+      const dt = new Date(ev.scheduledFor);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const d = String(dt.getDate()).padStart(2, '0');
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mm = String(dt.getMinutes()).padStart(2, '0');
+      setRescheduleDate(`${y}-${m}-${d}T${hh}:${mm}`);
+    } else {
+      setRescheduleDate('');
+    }
+  };
+
+  const handleDeleteCalendarPost = async (event: any) => {
+    if (!event) return;
+    const targetId = event.publicationId || event.id;
+    if (!confirm(`Are you sure you want to delete this post? This will permanently remove it from your calendar schedule.`)) return;
+    setSaving(true);
+    try {
+      await apiRequest(`/calendar/events/${targetId}`, { method: 'DELETE' });
+      setEvents(prev => prev.filter(e => (e.publicationId || e.id) !== targetId && e.id !== targetId));
+      setSelectedEvent(null);
+      setNotice({ type: 'success', text: 'Post deleted successfully from your calendar.' });
+      fetchCalendar();
+    } catch (err: any) {
+      console.error('Delete post error:', err);
+      setNotice({ type: 'error', text: err.message || 'Failed to delete post.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (notice) {
+      const t = setTimeout(() => setNotice(null), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [notice]);
+
   // Date Navigation Helpers
   const nextPeriod = () => {
     const next = new Date(currentDate);
@@ -2508,18 +2557,7 @@ export default function CalendarPage() {
                                 key={ev.id}
                                 draggable={isDraggable}
                                 onDragStart={(e) => handleDragStart(e, ev)}
-                                onClick={() => {
-                                  setSelectedEvent(ev);
-                                  setIsEditing(false);
-                                  setEditTitle(ev.title);
-                                  setEditCaption(ev.caption);
-                                  setSelectedEventIsEvergreen(ev.isEvergreen || false);
-                                  setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
-                                  const nextWeek = new Date();
-                                  nextWeek.setDate(nextWeek.getDate() + 7);
-                                  nextWeek.setHours(18, 30, 0, 0);
-                                  setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
-                                }}
+                                onClick={() => handleOpenPostInspector(ev)}
                                 className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md hover:-translate-y-0.5 ${
                                   isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                                 }`}
@@ -2668,12 +2706,7 @@ export default function CalendarPage() {
                               key={ev.id}
                               draggable={ev.status !== 'PUBLISHED' && ev.status !== 'PUBLISHING'}
                               onDragStart={(e) => handleDragStart(e, ev)}
-                              onClick={() => {
-                                setSelectedEvent(ev);
-                                setIsEditing(false);
-                                setEditTitle(ev.title);
-                                setEditCaption(ev.caption);
-                              }}
+                              onClick={() => handleOpenPostInspector(ev)}
                               className={`p-2.5 rounded-2xl text-xs cursor-pointer border shadow-xs space-y-1.5 transition-all hover:shadow-md hover:-translate-y-0.5 ${style.cardBg}`}
                             >
                               <div className="flex items-center justify-between">
@@ -2747,12 +2780,7 @@ export default function CalendarPage() {
                       return (
                         <div
                           key={ev.id}
-                          onClick={() => {
-                            setSelectedEvent(ev);
-                            setIsEditing(false);
-                            setEditTitle(ev.title);
-                            setEditCaption(ev.caption);
-                          }}
+                          onClick={() => handleOpenPostInspector(ev)}
                           className="p-4 rounded-2xl border border-neutral-200/90 hover:border-indigo-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white shadow-xs hover:shadow-md"
                         >
                           <div className="flex items-start space-x-3.5">
@@ -2846,15 +2874,18 @@ export default function CalendarPage() {
                           {ev.status}
                         </span>
                         <button
-                          onClick={() => {
-                            setSelectedEvent(ev);
-                            setIsEditing(false);
-                            setEditTitle(ev.title);
-                            setEditCaption(ev.caption);
-                          }}
+                          onClick={() => handleOpenPostInspector(ev)}
                           className="text-xs text-neutral-800 hover:text-neutral-950 font-bold px-3 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors cursor-pointer"
                         >
                           Inspect
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCalendarPost(ev)}
+                          className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+                          title="Delete post"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -3547,24 +3578,36 @@ export default function CalendarPage() {
                           <div className="space-y-1.5">
                             <p className="text-[11px] text-neutral-700 leading-snug">{aiScoreAnalysis.verdict}</p>
                             {aiScoreAnalysis.metrics && (
-                              <div className="grid grid-cols-3 gap-1.5 text-[9px] font-bold text-neutral-600 pt-0.5">
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[9px] font-bold text-neutral-600 pt-0.5">
                                 <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
                                   <span className="block text-neutral-900 font-mono text-[10px] font-bold">
-                                    {aiScoreAnalysis.metrics.hookStrength?.score || 20}/25
+                                    {aiScoreAnalysis.metrics.hookStrength?.score ?? 20}/25
                                   </span>
                                   <span className="text-neutral-500">Hook Power</span>
                                 </div>
                                 <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
                                   <span className="block text-neutral-900 font-mono text-[10px] font-bold">
-                                    {aiScoreAnalysis.metrics.readabilitySpacing?.score || 18}/20
+                                    {aiScoreAnalysis.metrics.readabilitySpacing?.score ?? 18}/20
                                   </span>
                                   <span className="text-neutral-500">Readability</span>
                                 </div>
                                 <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
                                   <span className="block text-neutral-900 font-mono text-[10px] font-bold">
-                                    {aiScoreAnalysis.metrics.callToAction?.score || 17}/20
+                                    {aiScoreAnalysis.metrics.emotionalResonance?.score ?? 16}/20
+                                  </span>
+                                  <span className="text-neutral-500">Resonance</span>
+                                </div>
+                                <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
+                                  <span className="block text-neutral-900 font-mono text-[10px] font-bold">
+                                    {aiScoreAnalysis.metrics.callToAction?.score ?? 16}/20
                                   </span>
                                   <span className="text-neutral-500">CTA Action</span>
+                                </div>
+                                <div className="p-2 bg-white rounded-xl border border-black/[0.05] text-center shadow-2xs">
+                                  <span className="block text-neutral-900 font-mono text-[10px] font-bold">
+                                    {aiScoreAnalysis.metrics.hashtagRelevance?.score ?? 12}/15
+                                  </span>
+                                  <span className="text-neutral-500">Hashtags</span>
                                 </div>
                               </div>
                             )}
@@ -3725,8 +3768,16 @@ export default function CalendarPage() {
 
                 {/* Modal Bottom Footer Actions */}
                 <div className="flex items-center justify-between pt-3 border-t border-neutral-100 shrink-0">
-                  <div className="text-xs text-neutral-500 hidden sm:block">
-                    Changes reflect immediately in the live feed preview
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCalendarPost(selectedEvent)}
+                      disabled={saving}
+                      className="px-4 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-full transition-all cursor-pointer flex items-center space-x-1.5 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Post</span>
+                    </button>
                   </div>
 
                   <div className="flex items-center space-x-2 ml-auto">
@@ -3838,22 +3889,24 @@ export default function CalendarPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedEvent(ev);
-                            setIsEditing(false);
-                            setEditTitle(ev.title);
-                            setEditCaption(ev.caption);
-                            setSelectedEventIsEvergreen(ev.isEvergreen || false);
-                            setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
-                            const nextWeek = new Date();
-                            nextWeek.setDate(nextWeek.getDate() + 7);
-                            nextWeek.setHours(18, 30, 0, 0);
-                            setDuplicateTargetDate(nextWeek.toISOString().slice(0, 16));
+                            handleOpenPostInspector(ev);
                             setViewingDayDrops(null);
                           }}
                           className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white transition-all cursor-pointer shadow-xs flex items-center space-x-1"
                         >
                           <Edit2 className="w-3 h-3" />
                           <span>Inspect / Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await handleDeleteCalendarPost(ev);
+                            setViewingDayDrops(prev => prev ? { ...prev, events: prev.events.filter(e => e.id !== ev.id) } : null);
+                          }}
+                          className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                          title="Delete post"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

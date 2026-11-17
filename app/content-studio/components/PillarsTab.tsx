@@ -88,10 +88,13 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
         method: 'POST',
         body: JSON.stringify({
           brandId,
+          name: newTitle.trim(),
           title: newTitle.trim(),
           description: newDescription.trim(),
+          targetPercentage: Number(newPercentage),
           percentage: Number(newPercentage),
           color: newColor,
+          themes: subThemesArr,
           subThemes: subThemesArr
         })
       });

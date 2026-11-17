@@ -91,6 +91,13 @@ export default function IdeasRequestsTab({
     else fetchRequests();
   }, [brandId, subView]);
 
+  useEffect(() => {
+    if (notification) {
+      const t = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [notification]);
+
   const handleAiBrainstorm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!brandId) return;
