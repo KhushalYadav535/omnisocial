@@ -128,6 +128,42 @@ export default function ContentStudioPage() {
     'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'media' | 'approvals' | 'launchpad' | 'skills'
   >('overview');
 
+  const handleTabChange = (tabId: 'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'media' | 'approvals' | 'launchpad' | 'skills') => {
+    setActiveTab(tabId);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tabId === 'overview') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tabId);
+      }
+      window.history.replaceState({}, '', url.toString());
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
+
+  useEffect(() => {
+    const handleUrlSync = () => {
+      if (typeof window === 'undefined') return;
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (
+        tabParam &&
+        ['overview', 'strategy', 'pillars', 'campaigns', 'ideas', 'composer', 'media', 'approvals', 'launchpad', 'skills'].includes(
+          tabParam
+        )
+      ) {
+        setActiveTab(tabParam as any);
+      } else if (!tabParam) {
+        setActiveTab('overview');
+      }
+    };
+
+    handleUrlSync();
+    window.addEventListener('popstate', handleUrlSync);
+    return () => window.removeEventListener('popstate', handleUrlSync);
+  }, []);
+
   const [overviewData, setOverviewData] = useState<any | null>(null);
   const [isLoadingOverview, setIsLoadingOverview] = useState(false);
 
@@ -1118,7 +1154,7 @@ export default function ContentStudioPage() {
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('launchpad')}
+                  onClick={() => handleTabChange('launchpad')}
                   className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white/90 hover:bg-white border border-black/[0.08] rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer backdrop-blur-xs"
                 >
                   <Rocket className="w-3.5 h-3.5 text-neutral-500" />
@@ -1146,7 +1182,7 @@ export default function ContentStudioPage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('composer')}
+                  onClick={() => handleTabChange('composer')}
                   className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
                 >
                   <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
@@ -1161,7 +1197,7 @@ export default function ContentStudioPage() {
             <div>
               <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
                 <button
-                  onClick={() => setActiveTab('overview')}
+                  onClick={() => handleTabChange('overview')}
                   className="hover:text-neutral-900 font-semibold text-neutral-600 flex items-center space-x-1 cursor-pointer"
                 >
                   <span>Studio</span>
@@ -1171,7 +1207,7 @@ export default function ContentStudioPage() {
               </div>
               <div className="flex items-center space-x-3 mt-1">
                 <button
-                  onClick={() => setActiveTab('overview')}
+                  onClick={() => handleTabChange('overview')}
                   className="text-xs font-bold text-neutral-600 hover:text-neutral-900 bg-white hover:bg-neutral-100 border border-black/[0.08] px-3 py-1.5 rounded-full transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
                 >
                   <span>← Back to Studio</span>
@@ -1287,7 +1323,7 @@ export default function ContentStudioPage() {
                         key={tab.id}
                         type="button"
                         onClick={(e) => {
-                          setActiveTab(tab.id as any);
+                          handleTabChange(tab.id as any);
                           e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                         }}
                         className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -1392,7 +1428,7 @@ export default function ContentStudioPage() {
               }}
               recentExecutions={overviewData?.recentExecutions || []}
               isLoading={isLoadingOverview}
-              onNavigateTab={(t) => setActiveTab(t as any)}
+              onNavigateTab={(t) => handleTabChange(t as any)}
               onRefresh={fetchOverview}
             />
 
@@ -1400,7 +1436,7 @@ export default function ContentStudioPage() {
             <div className="pt-2">
               <OutcomePromptBar
                 brandId={activeBrandId}
-                onNavigateTab={(tabId) => setActiveTab(tabId as any)}
+                onNavigateTab={(tabId) => handleTabChange(tabId as any)}
                 onRefreshData={fetchOverview}
               />
             </div>
@@ -1412,7 +1448,7 @@ export default function ContentStudioPage() {
           <StrategyTab
             brandId={activeBrandId}
             onRefreshOverview={fetchOverview}
-            onNavigateTab={(t) => setActiveTab(t as any)}
+            onNavigateTab={(t) => handleTabChange(t as any)}
           />
         )}
 
@@ -1425,7 +1461,7 @@ export default function ContentStudioPage() {
         {activeTab === 'campaigns' && (
           <CampaignsTab
             brandId={activeBrandId}
-            onNavigateTab={(t) => setActiveTab(t as any)}
+            onNavigateTab={(t) => handleTabChange(t as any)}
             onRefreshOverview={fetchOverview}
           />
         )}
@@ -1437,7 +1473,7 @@ export default function ContentStudioPage() {
             onTurnIntoPost={(idea) => {
               setTitle(idea.title || '');
               setRawIdea(idea.hook || idea.title || '');
-              setActiveTab('composer');
+              handleTabChange('composer');
             }}
             onRefreshOverview={fetchOverview}
           />
@@ -1457,7 +1493,7 @@ export default function ContentStudioPage() {
                 setFormat('POST');
                 setIsVideoMedia(false);
               }
-              setActiveTab('composer');
+              handleTabChange('composer');
             }}
             onRefreshOverview={fetchOverview}
           />
@@ -1472,7 +1508,7 @@ export default function ContentStudioPage() {
         {activeTab === 'launchpad' && (
           <LaunchpadTab
             brandId={activeBrandId}
-            onNavigateTab={(t) => setActiveTab(t as any)}
+            onNavigateTab={(t) => handleTabChange(t as any)}
             onRefreshOverview={fetchOverview}
           />
         )}

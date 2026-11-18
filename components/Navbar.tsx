@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { 
   getStoredUser, 
   getStoredTenant, 
@@ -13,21 +13,23 @@ import {
 } from '../lib/api';
 import { 
   Building2, 
-  Layers, 
+  Tag, 
   ShieldCheck, 
   LogOut, 
   Bell, 
   ChevronDown, 
-  CheckCircle2, 
+  Check, 
+  Home,
+  Menu,
+  MessageSquare,
+  Inbox,
+  ExternalLink,
   Sparkles,
-  User as UserIcon,
-  Activity,
-  Check,
-  Circle,
-  ExternalLink
+  Settings,
+  Users
 } from 'lucide-react';
 
-interface NavbarProps {
+export interface NavbarProps {
   currentBrandId?: string;
   onBrandChange?: (brandId: string) => void;
   unreadCount?: number;
@@ -35,26 +37,32 @@ interface NavbarProps {
   unreadDmsCount?: number;
   commentsCount?: number;
   dmsCount?: number;
+  onOpenMobileMenu?: () => void;
 }
 
-export default function Navbar({ 
+function NavbarContent({ 
   currentBrandId, 
   onBrandChange,
   unreadCount = 0,
   unreadCommentsCount = 0,
   unreadDmsCount = 0,
   commentsCount = 0,
-  dmsCount = 0
+  dmsCount = 0,
+  onOpenMobileMenu
 }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams?.get('tab');
+  const currentStep = searchParams?.get('step');
+
   const [user, setUser] = useState<any>(null);
   const [tenant, setTenant] = useState<any>(null);
   const [brands, setBrands] = useState<any[]>([]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showBrandMenu, setShowBrandMenu] = useState(false);
-  const [showEngageMenu, setShowEngageMenu] = useState(false);
-  const [currentTime, setCurrentTime] = useState<string>('');
+  const [showBusinessMenu, setShowBusinessMenu] = useState(false);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
 
   // Close menus on Escape or Outside Click
   useEffect(() => {
@@ -62,7 +70,8 @@ export default function Navbar({
       if (e.key === 'Escape') {
         setShowUserMenu(false);
         setShowBrandMenu(false);
-        setShowEngageMenu(false);
+        setShowBusinessMenu(false);
+        setShowNotifMenu(false);
       }
     };
 
@@ -74,8 +83,11 @@ export default function Navbar({
       if (!target.closest('.brand-menu-container')) {
         setShowBrandMenu(false);
       }
-      if (!target.closest('.engage-menu-container')) {
-        setShowEngageMenu(false);
+      if (!target.closest('.business-menu-container')) {
+        setShowBusinessMenu(false);
+      }
+      if (!target.closest('.notif-menu-container')) {
+        setShowNotifMenu(false);
       }
     };
 
@@ -88,27 +100,6 @@ export default function Navbar({
   }, []);
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
-      );
-    };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        updateTime();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, []);
-
-  useEffect(() => {
     const storedUser = getStoredUser();
     const storedTenant = getStoredTenant();
     setUser(storedUser);
@@ -116,13 +107,15 @@ export default function Navbar({
 
     if (storedUser) {
       apiRequest('/brands')
-        .then(res => {
+        .then((res) => {
           if (res.brands && res.brands.length > 0) {
             setBrands(res.brands);
             const savedBrandId = getStoredActiveBrandId();
             if (!currentBrandId && onBrandChange) {
               if (savedBrandId && res.brands.some((b: any) => b.id === savedBrandId)) {
                 onBrandChange(savedBrandId);
+              } else {
+                onBrandChange(res.brands[0].id);
               }
             }
           }
@@ -136,297 +129,435 @@ export default function Navbar({
     router.push('/login');
   };
 
-  const selectedBrand = brands.find(b => b.id === currentBrandId) || brands[0];
-
+  const selectedBrand = brands.find((b) => b.id === currentBrandId) || brands[0];
   const totalUnreadEngage = (unreadCommentsCount || 0) + (unreadDmsCount || 0) || unreadCount || 0;
 
-  const navTabs = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { 
-      name: 'Engage', 
-      href: '/inbox?type=COMMENT', 
-      count: totalUnreadEngage,
-      isDropdown: true,
-      subItems: [
-        { name: 'Comments', href: '/inbox?type=COMMENT', count: unreadCommentsCount, desc: 'Public post replies & threads' },
-        { name: 'DMs', href: '/inbox?type=DIRECT_MESSAGE', count: unreadDmsCount, desc: 'Private Messenger & Instagram' }
-      ]
-    },
-    { name: 'Studio', href: '/content-studio' },
-    { name: 'Calendar', href: '/calendar' },
-    { name: 'Funnels', href: '/funnels' },
-    { name: 'Analytics', href: '/analytics' },
-    { name: 'Settings', href: '/settings' },
-  ];
+  // Compute dynamic breadcrumbs matching reference design:
+  // e.g. 🏠 › Studio / Marketing Strategy or 🏠 › Studio / Marketing Strategy › Business & Brand Analysis
+  const getBreadcrumbs = () => {
+    if (pathname === '/content-studio') {
+      if (currentTab === 'strategy') {
+        const stepLabels: Record<string, string> = {
+          '1': 'Business & Brand Analysis',
+          '2': 'Market & Competitor Research',
+          '3': 'Audience Strategy',
+          '4': 'Marketing Objectives',
+          '5': 'Positioning & Messaging',
+          '6': 'Channel Strategy',
+          '7': 'Marketing Roadmap',
+          '8': 'Review & Approval'
+        };
+        const items = [
+          { label: 'Studio', href: '/content-studio' },
+          { label: 'Marketing Strategy', href: '/content-studio?tab=strategy', isCurrent: !currentStep }
+        ];
+        if (currentStep && stepLabels[currentStep]) {
+          items.push({
+            label: stepLabels[currentStep],
+            href: `/content-studio?tab=strategy&step=${currentStep}`,
+            isCurrent: true
+          });
+        }
+        return items;
+      }
+      if (currentTab === 'campaigns') {
+        return [
+          { label: 'Studio', href: '/content-studio' },
+          { label: 'Campaigns', href: '/content-studio?tab=campaigns', isCurrent: true }
+        ];
+      }
+      if (currentTab === 'ideas') {
+        return [
+          { label: 'Studio', href: '/content-studio' },
+          { label: 'Content Library', href: '/content-studio?tab=ideas', isCurrent: true }
+        ];
+      }
+      if (currentTab === 'media') {
+        return [
+          { label: 'Studio', href: '/content-studio' },
+          { label: 'Media Library', href: '/content-studio?tab=media', isCurrent: true }
+        ];
+      }
+      if (currentTab === 'approvals') {
+        return [
+          { label: 'Studio', href: '/content-studio' },
+          { label: 'Approvals', href: '/content-studio?tab=approvals', isCurrent: true }
+        ];
+      }
+      return [
+        { label: 'Studio', href: '/content-studio', isCurrent: true }
+      ];
+    }
 
-  const isTabActive = (href: string) => {
-    if (href.startsWith('/inbox')) {
-      return pathname === '/inbox';
+    if (pathname === '/dashboard') {
+      return [{ label: 'Overview', href: '/dashboard', isCurrent: true }];
     }
-    if (href === '/funnels') {
-      return pathname === '/funnels' || pathname === '/automations';
+    if (pathname === '/calendar') {
+      return [{ label: 'Content Calendar', href: '/calendar', isCurrent: true }];
     }
-    return pathname === href;
+    if (pathname === '/analytics') {
+      return [{ label: 'Performance', href: '/analytics', isCurrent: true }];
+    }
+    if (pathname === '/settings') {
+      return [{ label: 'Settings', href: '/settings', isCurrent: true }];
+    }
+    if (pathname.startsWith('/inbox')) {
+      return [{ label: 'Inbox & Engage', href: '/inbox', isCurrent: true }];
+    }
+    if (pathname === '/accounts') {
+      return [{ label: 'Connected Channels', href: '/accounts', isCurrent: true }];
+    }
+    if (pathname === '/team') {
+      return [{ label: 'Team & RBAC', href: '/team', isCurrent: true }];
+    }
+    if (pathname === '/superadmin') {
+      return [{ label: 'Platform Administration', href: '/superadmin', isCurrent: true }];
+    }
+    return [{ label: 'Studio', href: '/content-studio', isCurrent: true }];
   };
 
+  const breadcrumbs = getBreadcrumbs();
+
+  // User initials (defaults to ST or user's first 2 characters)
+  const userInitials = user?.name ? user.name.slice(0, 2).toUpperCase() : 'ST';
+
   return (
-    <header className="sticky top-0 z-30 w-full bg-[#F4F5F7]/95 backdrop-blur-xl border-b border-black/[0.05] py-2 px-3 sm:px-6">
-      <div className="w-full max-w-[1680px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
-        
-        {/* Left: Cadra Brand Mark & Context */}
-        <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
-          <Link href="/dashboard" className="flex items-center space-x-2.5 group">
-            {/* Minimalist Geometric Emblem */}
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#111215] text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="m10 15 5-3-5-3v6Z" fill="currentColor" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-1.5">
-                <span className="font-extrabold text-[#0F1012] tracking-tight text-xs sm:text-sm leading-none">
-                  OmniSocial
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              </div>
-              <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 leading-none mt-1 hidden xs:inline">
-                Larkspur Engine
-              </span>
-            </div>
+    <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/70 h-14 px-4 sm:px-6 flex items-center justify-between">
+      {/* Left: Mobile Menu Toggle & Dynamic Breadcrumbs */}
+      <div className="flex items-center space-x-3 min-w-0">
+        {onOpenMobileMenu && (
+          <button
+            type="button"
+            onClick={onOpenMobileMenu}
+            className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Dynamic StudioFlow Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 sm:space-x-2 text-xs font-semibold text-slate-500 overflow-hidden">
+          <Link
+            href="/dashboard"
+            className="text-slate-400 hover:text-slate-800 transition flex items-center shrink-0"
+            title="Overview Home"
+          >
+            <Home className="w-3.5 h-3.5" />
           </Link>
 
-          {/* Active Brand Switcher Capsule */}
-          {brands.length > 0 && (
-            <div className="relative hidden md:block pl-1 sm:pl-2 brand-menu-container">
-              <button
-                onClick={() => setShowBrandMenu(!showBrandMenu)}
-                className="flex items-center space-x-1.5 text-xs font-semibold text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.06] px-2.5 py-1.5 rounded-full transition-all shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-pointer"
-              >
-                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-                <span className="max-w-[70px] lg:max-w-[100px] truncate">{selectedBrand?.name || 'All Brands'}</span>
-                <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0" />
-              </button>
-
-              {showBrandMenu && (
-                <div className="absolute left-1 sm:left-2 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100">
-                    Switch Workspace Brand
-                  </div>
-                  <button
-                    onClick={() => {
-                      setStoredActiveBrandId('');
-                      if (onBrandChange) onBrandChange('');
-                      setShowBrandMenu(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer ${
-                      !currentBrandId ? 'font-bold text-neutral-900 bg-neutral-100/70' : 'text-neutral-700 font-medium'
-                    }`}
-                  >
-                    <span className="truncate">✦ All Brands (Overview)</span>
-                    {!currentBrandId && <Check className="w-3.5 h-3.5 text-neutral-900" />}
-                  </button>
-                  {brands.map(b => (
-                    <button
-                      key={b.id}
-                      onClick={() => {
-                        setStoredActiveBrandId(b.id);
-                        if (onBrandChange) onBrandChange(b.id);
-                        setShowBrandMenu(false);
-                      }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer ${
-                        selectedBrand?.id === b.id ? 'font-bold text-neutral-900 bg-neutral-100/70' : 'text-neutral-700 font-medium'
-                      }`}
-                    >
-                      <span className="truncate">{b.name}</span>
-                      {selectedBrand?.id === b.id && <Check className="w-3.5 h-3.5 text-neutral-900" />}
-                    </button>
-                  ))}
-                  <div className="border-t border-neutral-100 mt-1 pt-1">
-                    <Link
-                      href="/brands"
-                      onClick={() => setShowBrandMenu(false)}
-                      className="block px-3.5 py-1.5 text-xs text-neutral-900 hover:underline font-semibold"
-                    >
-                      + Manage Brands & Voice
-                    </Link>
-                  </div>
-                </div>
+          {breadcrumbs.map((crumb, idx) => (
+            <React.Fragment key={crumb.label}>
+              <span className="text-slate-300 font-normal shrink-0">
+                {idx === 1 && crumb.label === 'Marketing Strategy' ? '/' : '›'}
+              </span>
+              {crumb.isCurrent ? (
+                <span className="text-slate-900 font-bold truncate">
+                  {crumb.label}
+                </span>
+              ) : (
+                <Link
+                  href={crumb.href}
+                  className="text-slate-500 hover:text-slate-900 transition truncate"
+                >
+                  {crumb.label}
+                </Link>
               )}
+            </React.Fragment>
+          ))}
+        </nav>
+      </div>
+
+      {/* Right: Workspace Capsules (Business, Brand, Notification Bell, User Avatar) */}
+      <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 ml-3">
+        {/* Business Selector Capsule */}
+        <div className="relative business-menu-container">
+          <button
+            type="button"
+            onClick={() => {
+              setShowBusinessMenu(!showBusinessMenu);
+              setShowBrandMenu(false);
+              setShowNotifMenu(false);
+              setShowUserMenu(false);
+            }}
+            className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/80 px-2.5 sm:px-3 py-1.5 rounded-xl shadow-2xs transition cursor-pointer"
+          >
+            <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="max-w-[85px] sm:max-w-[130px] truncate">
+              Business: {tenant?.name || 'Sentient Digital'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+          </button>
+
+          {showBusinessMenu && (
+            <div className="absolute right-0 sm:left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                Active Organization
+              </div>
+              <div className="px-3.5 py-2.5">
+                <p className="text-xs font-bold text-slate-900">{tenant?.name || 'Sentient Digital'}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Multi-tenant Sovereign Workspace</p>
+                <div className="mt-2 inline-flex items-center text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-[#7C3AED] border border-purple-100">
+                  Plan: Agency Enterprise
+                </div>
+              </div>
+              <div className="border-t border-slate-100 pt-1.5 px-1.5">
+                <Link
+                  href="/settings"
+                  onClick={() => setShowBusinessMenu(false)}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-50 rounded-lg transition"
+                >
+                  <Settings className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Organization Settings</span>
+                </Link>
+                <Link
+                  href="/team"
+                  onClick={() => setShowBusinessMenu(false)}
+                  className="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-50 rounded-lg transition"
+                >
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Team & Collaborators</span>
+                </Link>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Center: The Cadra Segmented Pill Bar (Responsive & Compact) */}
-        <nav className="hidden lg:flex items-center bg-[#E6E8EC] p-1 rounded-full border border-black/[0.04] shadow-xs">
-          {navTabs.map((tab) => {
-            const active = isTabActive(tab.href);
-            if (tab.isDropdown) {
-              return (
-                <div 
-                  key={tab.name}
-                  className="relative group"
-                  onMouseEnter={() => setShowEngageMenu(true)}
-                  onMouseLeave={() => setShowEngageMenu(false)}
-                >
-                  <Link
-                    href={tab.href}
-                    onClick={() => setShowEngageMenu(false)}
-                    className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11px] xl:text-xs font-semibold transition-all duration-200 flex items-center gap-1 cursor-pointer ${
-                      active
-                        ? 'bg-[#111215] text-white shadow-xs'
-                        : 'text-neutral-600 hover:text-neutral-950 hover:bg-white/40'
-                    }`}
-                  >
-                    <span>{tab.name}</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform ${showEngageMenu ? 'rotate-180' : ''} ${active ? 'text-neutral-300' : 'text-neutral-400'}`} />
-                    {tab.count !== undefined && tab.count > 0 && (
-                      <span
-                        className={`text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                          active
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-orange-100 text-orange-800'
+        {/* Brand Selector Capsule */}
+        <div className="relative brand-menu-container">
+          <button
+            type="button"
+            onClick={() => {
+              setShowBrandMenu(!showBrandMenu);
+              setShowBusinessMenu(false);
+              setShowNotifMenu(false);
+              setShowUserMenu(false);
+            }}
+            className="flex items-center space-x-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/80 px-2.5 sm:px-3 py-1.5 rounded-xl shadow-2xs transition cursor-pointer"
+          >
+            <Tag className="w-3.5 h-3.5 text-[#7C3AED] shrink-0" />
+            <span className="max-w-[85px] sm:max-w-[130px] truncate">
+              Brand: {selectedBrand?.name || 'CredibilityCRM'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+          </button>
+
+          {showBrandMenu && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                Switch Brand Workspace
+              </div>
+
+              <div className="max-h-60 overflow-y-auto py-1">
+                {brands.length === 0 ? (
+                  <div className="px-3.5 py-2 text-xs text-slate-500">
+                    CredibilityCRM (Default)
+                  </div>
+                ) : (
+                  brands.map((b) => {
+                    const isSelected = selectedBrand?.id === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => {
+                          setStoredActiveBrandId(b.id);
+                          if (onBrandChange) onBrandChange(b.id);
+                          setShowBrandMenu(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition cursor-pointer ${
+                          isSelected ? 'font-bold text-[#7C3AED] bg-purple-50/60' : 'text-slate-700 font-medium'
                         }`}
                       >
-                        {tab.count}
-                      </span>
-                    )}
-                  </Link>
-
-                  {/* Engage Submenu Dropdown */}
-                  {showEngageMenu && (
-                    <div className="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 mb-1">
-                        Inbox Engagement
-                      </div>
-                      {tab.subItems?.map((sub) => (
-                        <Link
-                          key={sub.name}
-                          href={sub.href}
-                          onClick={() => setShowEngageMenu(false)}
-                          className="w-full px-3.5 py-2 text-xs flex items-center justify-between hover:bg-neutral-50 transition-colors"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-neutral-900">{sub.name}</span>
-                            <span className="text-[10px] text-neutral-400">{sub.desc}</span>
-                          </div>
-                          {sub.count !== undefined && sub.count > 0 && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">
-                              {sub.count} new
-                            </span>
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <Link
-                key={tab.name}
-                href={tab.href}
-                className={`relative px-2.5 xl:px-3.5 py-1.5 rounded-full text-[11px] xl:text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
-                  active
-                    ? 'bg-[#111215] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-white/40'
-                }`}
-              >
-                <span>{tab.name}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span
-                    className={`text-[9px] xl:text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                      active
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
+                        <span className="truncate">{b.name}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#7C3AED] shrink-0" />}
+                      </button>
+                    );
+                  })
                 )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right: Live Clock, Status Bar Pill & Profile (Fits 100% On-Screen) */}
-        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-          
-          {/* Live Clock Pill */}
-          <div className="hidden sm:flex items-center space-x-1.5 bg-white px-3 py-1.5 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] sm:text-xs font-semibold text-neutral-800 font-mono tracking-tight">
-              {currentTime || '--:--'}
-            </span>
-          </div>
-
-          {/* User Profile Capsule - Always pinned & visible on the far right */}
-          <div className="relative user-menu-container">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-1.5 sm:space-x-2 p-1 pl-2 bg-white hover:bg-neutral-50 rounded-full border border-black/[0.06] shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition-all cursor-pointer"
-            >
-              <span className="text-xs font-semibold text-neutral-800 hidden sm:inline max-w-[85px] lg:max-w-[110px] truncate">
-                {user?.name || 'Admin'}
-              </span>
-              <div className="w-7 h-7 rounded-full bg-neutral-950 text-white flex items-center justify-center font-bold text-xs">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'OS'}
               </div>
-            </button>
 
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-black/[0.08] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-4 py-2 border-b border-neutral-100">
-                  <p className="text-xs font-bold text-neutral-900 truncate">{user?.name}</p>
-                  <p className="text-[11px] text-neutral-500 truncate">{user?.email}</p>
-                  <span className="inline-block mt-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
-                    {user?.role || 'AGENCY_ADMIN'}
-                  </span>
-                </div>
-
-                <div className="py-1">
-                  <Link
-                    href="/settings"
-                    onClick={() => setShowUserMenu(false)}
-                    className="block px-4 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    Organization Settings
-                  </Link>
-                  <Link
-                    href="/team"
-                    onClick={() => setShowUserMenu(false)}
-                    className="block px-4 py-2 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    Team & Collaborators
-                  </Link>
-                  {user?.role === 'SUPERADMIN' && (
-                    <Link
-                      href="/superadmin"
-                      onClick={() => setShowUserMenu(false)}
-                      className="block px-4 py-2 text-xs text-amber-900 font-bold hover:bg-amber-50 transition-colors"
-                    >
-                      ★ Platform Governance
-                    </Link>
-                  )}
-                </div>
-
-                <div className="border-t border-neutral-100 pt-1">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-xs text-rose-600 font-semibold hover:bg-rose-50 transition-colors flex items-center space-x-1.5 cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+              <div className="border-t border-slate-100 pt-1.5 px-1.5 mt-1">
+                <Link
+                  href="/brands"
+                  onClick={() => setShowBrandMenu(false)}
+                  className="block px-3 py-1.5 text-xs font-semibold text-[#7C3AED] hover:bg-purple-50 rounded-lg transition"
+                >
+                  + Manage Brands & Voice
+                </Link>
               </div>
-            )}
-          </div>
-
+            </div>
+          )}
         </div>
 
+        {/* Notification Bell */}
+        <div className="relative notif-menu-container">
+          <button
+            type="button"
+            onClick={() => {
+              setShowNotifMenu(!showNotifMenu);
+              setShowBusinessMenu(false);
+              setShowBrandMenu(false);
+              setShowUserMenu(false);
+            }}
+            className="w-8 h-8 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-600 transition cursor-pointer relative shadow-2xs"
+            title="Activity & Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {totalUnreadEngage > 0 && (
+              <span className="absolute 1 top-1.5 right-1.5 w-2 h-2 rounded-full bg-purple-600 ring-2 ring-white" />
+            )}
+          </button>
+
+          {showNotifMenu && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center justify-between">
+                <span>Notifications</span>
+                {totalUnreadEngage > 0 && (
+                  <span className="text-[10px] font-bold text-[#7C3AED] bg-purple-50 px-1.5 py-0.2 rounded-md">
+                    {totalUnreadEngage} new
+                  </span>
+                )}
+              </div>
+
+              <div className="py-1">
+                <Link
+                  href="/inbox?type=COMMENT"
+                  onClick={() => setShowNotifMenu(false)}
+                  className="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <MessageSquare className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-900">Post Comments</p>
+                      <p className="text-[10px] text-slate-400">Replies & community threads</p>
+                    </div>
+                  </div>
+                  {unreadCommentsCount > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#7C3AED]">
+                      {unreadCommentsCount}
+                    </span>
+                  )}
+                </Link>
+
+                <Link
+                  href="/inbox?type=DIRECT_MESSAGE"
+                  onClick={() => setShowNotifMenu(false)}
+                  className="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Inbox className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-900">Direct Messages</p>
+                      <p className="text-[10px] text-slate-400">Messenger & Instagram DMs</p>
+                    </div>
+                  </div>
+                  {unreadDmsCount > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#7C3AED]">
+                      {unreadDmsCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+              <div className="border-t border-slate-100 pt-1.5 px-3.5 text-center">
+                <Link
+                  href="/inbox"
+                  onClick={() => setShowNotifMenu(false)}
+                  className="text-xs font-bold text-[#7C3AED] hover:underline"
+                >
+                  View Sovereign Inbox →
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Profile Avatar Capsule (Exact Match: ST Lavender Pill) */}
+        <div className="relative user-menu-container">
+          <button
+            type="button"
+            onClick={() => {
+              setShowUserMenu(!showUserMenu);
+              setShowBusinessMenu(false);
+              setShowBrandMenu(false);
+              setShowNotifMenu(false);
+            }}
+            className="w-8 h-8 rounded-xl bg-[#EDE9FE] text-[#7C3AED] hover:bg-[#DDD6FE] border border-purple-200 flex items-center justify-center font-bold text-xs transition cursor-pointer shadow-2xs"
+            title={user?.name || 'User Profile'}
+          >
+            {userInitials}
+          </button>
+
+          {showUserMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-2 border-b border-slate-100">
+                <p className="text-xs font-bold text-slate-900 truncate">{user?.name || 'Administrator'}</p>
+                <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@sentientdigital.ai'}</p>
+                <span className="inline-block mt-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-50 text-[#7C3AED] border border-purple-100">
+                  {user?.role || 'AGENCY_ADMIN'}
+                </span>
+              </div>
+
+              <div className="py-1">
+                <Link
+                  href="/settings"
+                  onClick={() => setShowUserMenu(false)}
+                  className="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Organization Settings
+                </Link>
+                <Link
+                  href="/team"
+                  onClick={() => setShowUserMenu(false)}
+                  className="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Team & Collaborators
+                </Link>
+                <Link
+                  href="/accounts"
+                  onClick={() => setShowUserMenu(false)}
+                  className="block px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Connected Channels
+                </Link>
+                {user?.role === 'SUPERADMIN' && (
+                  <Link
+                    href="/superadmin"
+                    onClick={() => setShowUserMenu(false)}
+                    className="block px-4 py-2 text-xs text-amber-900 font-bold hover:bg-amber-50 transition"
+                  >
+                    ★ Platform Governance
+                  </Link>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 pt-1">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-xs text-rose-600 font-semibold hover:bg-rose-50 transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
+  );
+}
+
+export default function Navbar(props: NavbarProps) {
+  return (
+    <Suspense
+      fallback={
+        <header className="h-14 bg-white/95 border-b border-slate-200/70 px-6 flex items-center justify-between" />
+      }
+    >
+      <NavbarContent {...props} />
+    </Suspense>
   );
 }
