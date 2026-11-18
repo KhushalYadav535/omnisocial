@@ -1621,6 +1621,16 @@ export default function CalendarPage() {
     const newScheduled = new Date(targetDate);
     newScheduled.setHours(origDate.getHours(), origDate.getMinutes(), 0, 0);
 
+    // Prevent rescheduling to past date/time
+    if (newScheduled.getTime() < Date.now() - 60000) {
+      setNotice({
+        type: 'error',
+        text: '⚠️ Cannot reschedule to a past date. Posts must be scheduled for a future date and time.'
+      });
+      setDraggedEventId(null);
+      return;
+    }
+
     // Optimistic UI state update
     const previousEvents = [...events];
     setEvents(prev =>

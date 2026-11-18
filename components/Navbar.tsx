@@ -26,7 +26,8 @@ import {
   ExternalLink,
   Sparkles,
   Settings,
-  Users
+  Users,
+  Search
 } from 'lucide-react';
 
 export interface NavbarProps {
@@ -38,6 +39,7 @@ export interface NavbarProps {
   commentsCount?: number;
   dmsCount?: number;
   onOpenMobileMenu?: () => void;
+  onOpenSearch?: () => void;
 }
 
 function NavbarContent({ 
@@ -48,7 +50,8 @@ function NavbarContent({
   unreadDmsCount = 0,
   commentsCount = 0,
   dmsCount = 0,
-  onOpenMobileMenu
+  onOpenMobileMenu,
+  onOpenSearch
 }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -109,13 +112,18 @@ function NavbarContent({
       apiRequest('/brands')
         .then((res) => {
           if (res.brands && res.brands.length > 0) {
-            setBrands(res.brands);
+            // Deduplicate brands by name so duplicate options never appear
+            const uniqueBrands = res.brands.filter(
+              (b: any, index: number, self: any[]) =>
+                index === self.findIndex((item: any) => item.name?.trim().toLowerCase() === b.name?.trim().toLowerCase())
+            );
+            setBrands(uniqueBrands);
             const savedBrandId = getStoredActiveBrandId();
             if (!currentBrandId && onBrandChange) {
-              if (savedBrandId && res.brands.some((b: any) => b.id === savedBrandId)) {
+              if (savedBrandId && uniqueBrands.some((b: any) => b.id === savedBrandId)) {
                 onBrandChange(savedBrandId);
               } else {
-                onBrandChange(res.brands[0].id);
+                onBrandChange(uniqueBrands[0].id);
               }
             }
           }
@@ -270,6 +278,22 @@ function NavbarContent({
 
       {/* Right: Workspace Capsules (Business, Brand, Notification Bell, User Avatar) */}
       <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 ml-3">
+        {/* Global Search Palette Trigger Button */}
+        {onOpenSearch && (
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="flex items-center space-x-2 text-xs text-slate-500 hover:text-slate-900 bg-slate-100/80 hover:bg-slate-200/60 border border-slate-200/90 px-2.5 sm:px-3 py-1.5 rounded-xl transition cursor-pointer shadow-2xs"
+            title="Open Command Palette (Ctrl+K or /)"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="hidden sm:inline font-medium">Search...</span>
+            <kbd className="hidden sm:inline text-[10px] font-mono font-bold bg-white text-slate-500 px-1.5 py-0.2 rounded border border-slate-200 shadow-2xs">
+              ⌘K
+            </kbd>
+          </button>
+        )}
+
         {/* Business Selector Capsule */}
         <div className="relative business-menu-container">
           <button

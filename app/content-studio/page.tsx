@@ -350,6 +350,8 @@ export default function ContentStudioPage() {
   const [isGeneratingReviewLink, setIsGeneratingReviewLink] = useState(false);
   const [copiedReviewLink, setCopiedReviewLink] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showReplaceConfirmModal, setShowReplaceConfirmModal] = useState(false);
+  const [pendingPromptToRun, setPendingPromptToRun] = useState<string>('');
   const [previousCaption, setPreviousCaption] = useState<string>('');
 
   const [isUploading, setIsUploading] = useState(false);
@@ -436,17 +438,21 @@ export default function ContentStudioPage() {
       });
   }, [targetPlatforms]);
 
-  const handleGenerateAi = async (customPrompt?: string) => {
-    const promptToUse = customPrompt || rawIdea;
+  const handleGenerateAi = async (customPrompt?: string, skipConfirm = false) => {
+    const promptToUse = customPrompt || pendingPromptToRun || rawIdea;
     if (!activeBrandId || !promptToUse.trim()) return;
+
+    if (!skipConfirm && caption.trim().length > 15) {
+      setPendingPromptToRun(promptToUse);
+      setShowReplaceConfirmModal(true);
+      return;
+    }
+
+    setShowReplaceConfirmModal(false);
     setGenerating(true);
     setStatusMessage(null);
 
     try {
-      if (caption.trim().length > 0) {
-        setPreviousCaption(caption);
-      }
-
       const res = await apiRequest('/ai/generate-post', {
         method: 'POST',
         body: JSON.stringify({
@@ -457,7 +463,10 @@ export default function ContentStudioPage() {
         })
       });
 
-      if (res.generated) {
+      if (res.generated && res.generated.caption) {
+        if (caption.trim().length > 0) {
+          setPreviousCaption(caption);
+        }
         setCaption(res.generated.caption);
         const newTags = res.generated.hashtags || ['#ResortCollection', '#SustainableLuxury'];
         setHashtags(newTags);
@@ -467,7 +476,11 @@ export default function ContentStudioPage() {
         handleAnalyzeVirality(res.generated.caption, newTags);
       }
     } catch (err: any) {
-      setStatusMessage({ type: 'error', text: err.message || 'AI Generation failed' });
+      const msg = err.message || '';
+      const friendlyError = msg.includes('JSON') || msg.includes('parse') || msg.includes('Unexpected')
+        ? 'AI formatting took too long. Please try again with a concise idea.'
+        : msg || 'AI Generation failed. Please try again.';
+      setStatusMessage({ type: 'error', text: friendlyError });
     } finally {
       setGenerating(false);
     }
@@ -937,6 +950,7 @@ export default function ContentStudioPage() {
     setPublishedPosts([]);
 
     try {
+      const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
       const res = await apiRequest('/content', {
         method: 'POST',
         body: JSON.stringify({
@@ -948,7 +962,7 @@ export default function ContentStudioPage() {
           mediaUrls: mediaUrl ? [mediaUrl] : [],
           targetPlatforms,
           format: format === 'PORTRAIT' ? 'POST' : format,
-          scheduledFor: immediatePublish ? undefined : (scheduledFor || undefined),
+          scheduledFor: immediatePublish ? undefined : scheduledIso,
           socialAccountIds: selectedAccountIds,
           firstComment: enableFirstComment && firstComment.trim() ? firstComment.trim() : undefined,
           viralityScore: viralityAnalysis?.score || undefined,
@@ -3588,6 +3602,50 @@ export default function ContentStudioPage() {
                   className="px-5 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-full transition cursor-pointer"
                 >
                   Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PRE-REPLACE CONFIRMATION MODAL (B20 UX) */}
+        {showReplaceConfirmModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Replace Existing Draft?</h3>
+                  <p className="text-xs text-slate-500">You already have text in the caption field.</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 max-h-24 overflow-y-auto">
+                <p className="font-semibold text-slate-500 text-[10px] uppercase mb-1">Current Caption:</p>
+                <p className="line-clamp-3 italic">"{caption}"</p>
+              </div>
+
+              <p className="text-xs text-slate-600">
+                Generating will replace this caption with a new AI draft. Your current text will be backed up and can be restored using the <b>Restore</b> button.
+              </p>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReplaceConfirmModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAi(pendingPromptToRun, true)}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-xs flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Generate & Replace</span>
                 </button>
               </div>
             </div>

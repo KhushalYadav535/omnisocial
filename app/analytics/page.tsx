@@ -203,13 +203,11 @@ export default function AnalyticsPage() {
         document.body.removeChild(link);
         setNotice({ type: 'success', text: 'Executive Client Report PDF opened and ready for download!' });
       } else {
-        window.print();
-        setNotice({ type: 'success', text: 'Print dialogue opened for PDF report generation.' });
+        setNotice({ type: 'error', text: 'PDF report service temporarily unavailable. Please try downloading CSV summary instead.' });
       }
     } catch (err: any) {
-      console.warn('PDF endpoint issue, triggering browser print view:', err.message);
-      window.print();
-      setNotice({ type: 'success', text: 'Browser print dialogue opened for executive PDF save.' });
+      console.warn('PDF endpoint issue:', err.message);
+      setNotice({ type: 'error', text: err.message || 'Unable to generate PDF report at this time.' });
     } finally {
       setGeneratingPdf(false);
     }

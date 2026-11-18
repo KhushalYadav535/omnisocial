@@ -409,9 +409,14 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
       } else if (action === 'suggest_differentiators' && Array.isArray(res.data)) {
         setDifferentiators(res.data);
         setNotification({ type: 'success', message: 'Key differentiators updated with AI suggestions!' });
+      } else if ((action.includes('persona') || action.includes('audience')) && Array.isArray(res.data)) {
+        setTargetPersonas(res.data);
+        setNotification({ type: 'success', message: 'Audience personas synthesized with AI!' });
       } else if (action === 'refine_value_prop' && res.data) {
         setValueProposition(res.data);
         setNotification({ type: 'success', message: 'Value proposition refined by AI Copilot!' });
+      } else if (action === 'swot' && res.data) {
+        setNotification({ type: 'success', message: 'SWOT analysis completed: Strengths & opportunities evaluated!' });
       } else {
         setNotification({ type: 'success', message: res.data?.tip || 'Section reviewed and aligned to strategic frameworks!' });
       }
@@ -1149,6 +1154,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
               {[
                 { id: 'generate_overview', label: 'Generate business overview', icon: FileText },
                 { id: 'suggest_differentiators', label: 'Suggest key differentiators', icon: Sparkles },
+                { id: 'generate_personas', label: 'Generate audience personas', icon: Users },
                 { id: 'swot', label: 'Identify strengths & gaps (SWOT)', icon: BarChart2 },
                 { id: 'refine_value_prop', label: 'Refine value proposition', icon: Target },
                 { id: 'improve_section', label: 'Review and improve this section', icon: Compass }

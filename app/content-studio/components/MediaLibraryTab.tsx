@@ -41,6 +41,31 @@ export default function MediaLibraryTab({
   const [format, setFormat] = useState('IMAGE');
   const [tags, setTags] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+
+  const handleLocalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await apiRequest('/content/upload', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.url) {
+        setUrl(res.url);
+        if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ''));
+        if (file.type.startsWith('video/')) setFormat('VIDEO');
+        setNotification({ type: 'success', message: 'File uploaded successfully!' });
+      }
+    } catch (err: any) {
+      setNotification({ type: 'error', message: err.message || 'File upload failed' });
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
 
   const fetchMedia = async () => {
     if (!brandId) return;
@@ -158,9 +183,8 @@ export default function MediaLibraryTab({
 
       {/* NOTIFICATIONS */}
       {notification && (
-        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${
-          notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-        }`}>
+        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
           <span className="font-semibold">{notification.message}</span>
         </div>
@@ -200,43 +224,43 @@ export default function MediaLibraryTab({
                   </span>
                 </div>
 
-              <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 truncate">{asset.title}</h4>
-                  {asset.tags && asset.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {asset.tags.slice(0, 2).map((t: string, idx: number) => (
-                        <span key={idx} className="text-[10px] text-slate-500">#{t}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 truncate">{asset.title}</h4>
+                    {asset.tags && asset.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {asset.tags.slice(0, 2).map((t: string, idx: number) => (
+                          <span key={idx} className="text-[10px] text-slate-500">#{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMedia(asset.id)}
-                    className="p-1 text-slate-400 hover:text-rose-600 transition"
-                    title="Delete Asset"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  {onSelectMediaForComposer && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={() => onSelectMediaForComposer(asset.url, asset.format)}
-                      className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-md transition flex items-center space-x-1"
+                      onClick={() => handleDeleteMedia(asset.id)}
+                      className="p-1 text-slate-400 hover:text-rose-600 transition"
+                      title="Delete Asset"
                     >
-                      <span>Use in Post</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
+
+                    {onSelectMediaForComposer && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectMediaForComposer(asset.url, asset.format)}
+                        className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-md transition flex items-center space-x-1"
+                      >
+                        <span>Use in Post</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       ) : (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">
@@ -280,14 +304,27 @@ export default function MediaLibraryTab({
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Media URL *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700">Media Source *</label>
+                  <label className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center space-x-1">
+                    <Upload className="w-3 h-3" />
+                    <span>{isUploadingFile ? 'Uploading...' : 'Upload File'}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*,video/*"
+                      disabled={isUploadingFile}
+                      onChange={handleLocalFileUpload}
+                    />
+                  </label>
+                </div>
                 <input
                   type="url"
                   required
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono"
+                  placeholder="Paste image/video URL or click 'Upload File' above..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-mono text-xs"
                 />
               </div>
 

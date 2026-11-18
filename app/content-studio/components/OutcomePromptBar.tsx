@@ -186,14 +186,121 @@ export default function OutcomePromptBar({
             </div>
           )}
 
-          {/* Output Summary Snippet */}
+          {/* Formatted Output Visualizer (No Raw JSON) */}
           {executionResult.output && (
-            <div className="p-3 bg-white rounded-xl border border-neutral-200/80 text-xs font-mono text-neutral-700 max-h-36 overflow-y-auto shadow-inner">
-              <pre className="whitespace-pre-wrap font-sans text-xs">
-                {typeof executionResult.output === 'string'
-                  ? executionResult.output
-                  : JSON.stringify(executionResult.output, null, 2)}
-              </pre>
+            <div className="p-4 bg-white rounded-2xl border border-neutral-200/90 text-xs text-neutral-800 space-y-3 shadow-2xs">
+              {/* Case A: Strategy Deliverable */}
+              {executionResult.output.positioning || executionResult.output.valueProposition ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs flex items-center space-x-1.5">
+                      <Target className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Synthesized Marketing Strategy</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('strategy')}
+                      className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>Open in Strategy Workspace</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {executionResult.output.positioning && (
+                    <div className="bg-purple-50/60 p-3 rounded-xl border border-purple-100">
+                      <p className="font-bold text-[10px] uppercase tracking-wider text-purple-800 mb-0.5">Core Positioning</p>
+                      <p className="text-xs text-neutral-800 leading-relaxed">{executionResult.output.positioning}</p>
+                    </div>
+                  )}
+
+                  {executionResult.output.valueProposition && (
+                    <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                      <p className="font-bold text-[10px] uppercase tracking-wider text-neutral-600 mb-0.5">Value Proposition</p>
+                      <p className="text-xs text-neutral-800 leading-relaxed">{executionResult.output.valueProposition}</p>
+                    </div>
+                  )}
+
+                  {Array.isArray(executionResult.output.personas) && executionResult.output.personas.length > 0 && (
+                    <div>
+                      <p className="font-bold text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Target Personas:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {executionResult.output.personas.map((p: any, pIdx: number) => (
+                          <span key={pIdx} className="px-2.5 py-1 bg-neutral-100 text-neutral-800 rounded-lg text-xs font-medium">
+                            {typeof p === 'string' ? p : p.name || p.title || `Persona ${pIdx + 1}`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : Array.isArray(executionResult.output.pillars) ? (
+                /* Case B: Content Pillars Deliverable */
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs">Architected Content Pillars</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('pillars')}
+                      className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>View in Pillars Tab</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {executionResult.output.pillars.map((pil: any, pilIdx: number) => (
+                      <div key={pilIdx} className="p-2.5 bg-neutral-50 border border-neutral-200/80 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-bold text-neutral-900">
+                          <span>{pil.name}</span>
+                          <span className="text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded">{pil.targetPercentage || pil.percentage || 25}%</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-600 line-clamp-2">{pil.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : Array.isArray(executionResult.output.ideas) ? (
+                /* Case C: Brainstorm Ideas Deliverable */
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs">Generated Viral Ideas</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('ideas')}
+                      className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>Open Content Library</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {executionResult.output.ideas.slice(0, 5).map((idea: any, iIdx: number) => (
+                      <div key={iIdx} className="p-2 bg-neutral-50 border border-neutral-200 rounded-xl flex items-center justify-between text-xs">
+                        <span className="font-semibold text-neutral-800 truncate">{idea.title || idea.hook}</span>
+                        <span className="text-[10px] font-mono text-neutral-500 bg-white px-2 py-0.5 rounded-md border shrink-0 ml-2">
+                          {idea.format || 'POST'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Case D: Formatted Text / Narrative Deliverable */
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs">Deliverable Summary</span>
+                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+                      ✓ Ready in Workspace
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-700 leading-relaxed whitespace-pre-line font-sans">
+                    {typeof executionResult.output === 'string'
+                      ? executionResult.output
+                      : executionResult.output.summary || executionResult.output.message || executionResult.output.rawOutput || JSON.stringify(executionResult.output)}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

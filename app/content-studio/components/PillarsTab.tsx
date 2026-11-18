@@ -126,6 +126,32 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
     }
   };
 
+  const handleAutoBalance = async () => {
+    if (pillars.length === 0) return;
+    const baseShare = Math.floor(100 / pillars.length);
+    const remainder = 100 - baseShare * pillars.length;
+    const updated = pillars.map((p, idx) => ({
+      ...p,
+      targetPercentage: baseShare + (idx === 0 ? remainder : 0),
+      percentage: baseShare + (idx === 0 ? remainder : 0)
+    }));
+    setPillars(updated);
+    try {
+      await Promise.all(
+        updated.map(p =>
+          apiRequest(`/content-studio/pillars/${p.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ targetPercentage: p.targetPercentage })
+          })
+        )
+      );
+      setNotification({ type: 'success', message: 'Content pillars auto-balanced to 100%!' });
+      if (onRefreshOverview) onRefreshOverview();
+    } catch {
+      setNotification({ type: 'success', message: 'Content pillars balanced to 100% locally.' });
+    }
+  };
+
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => setNotification(null), 4000);
@@ -179,9 +205,8 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
 
       {/* NOTIFICATIONS */}
       {notification && (
-        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${
-          notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-        }`}>
+        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
           <span className="font-semibold">{notification.message}</span>
         </div>
@@ -194,9 +219,20 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
             <Sliders className="w-4 h-4 text-purple-600" />
             <span className="font-bold text-slate-900">Distribution Mix</span>
           </div>
-          <span className={`font-mono text-xs font-bold ${totalPercentage === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
-            Total: {totalPercentage}% {totalPercentage === 100 ? '✓ Balanced' : '(Target: 100%)'}
-          </span>
+          <div className="flex items-center space-x-3">
+            <span className={`font-mono text-xs font-bold ${totalPercentage === 100 ? 'text-emerald-600' : totalPercentage > 100 ? 'text-rose-600' : 'text-amber-600'}`}>
+              Total: {totalPercentage}% {totalPercentage === 100 ? '✓ Balanced' : totalPercentage > 100 ? '⚠️ Exceeds 100%' : '(Target: 100%)'}
+            </span>
+            {totalPercentage !== 100 && pillars.length > 0 && (
+              <button
+                type="button"
+                onClick={handleAutoBalance}
+                className="px-2.5 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md border border-purple-200 transition cursor-pointer"
+              >
+                Auto-balance to 100%
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Multi-segmented Progress Bar */}
@@ -258,45 +294,45 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
                     </span>
                   </div>
 
-                <p className="text-xs text-slate-500 line-clamp-2">
-                  {pillar.description || 'Topic themes and educational angles for this pillar.'}
-                </p>
+                  <p className="text-xs text-slate-500 line-clamp-2">
+                    {pillar.description || 'Topic themes and educational angles for this pillar.'}
+                  </p>
 
-                {/* Sub-themes Chips */}
-                {pillar.subThemes && (
-                  <div className="space-y-1 pt-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sub-Themes</span>
-                    <div className="flex flex-wrap gap-1">
-                      {(Array.isArray(pillar.subThemes) ? pillar.subThemes : [pillar.subThemes]).map((theme: string, tIdx: number) => (
-                        <span
-                          key={tIdx}
-                          className="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] text-slate-600 font-medium"
-                        >
-                          #{theme}
-                        </span>
-                      ))}
+                  {/* Sub-themes Chips */}
+                  {pillar.subThemes && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sub-Themes</span>
+                      <div className="flex flex-wrap gap-1">
+                        {(Array.isArray(pillar.subThemes) ? pillar.subThemes : [pillar.subThemes]).map((theme: string, tIdx: number) => (
+                          <span
+                            key={tIdx}
+                            className="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] text-slate-600 font-medium"
+                          >
+                            #{theme}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Card Footer */}
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {pillar.weeklyCadence ? `${pillar.weeklyCadence} posts/wk` : '~2-3 posts/wk'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleDeletePillar(pillar.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                  title="Delete Pillar"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {/* Card Footer */}
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {pillar.weeklyCadence ? `${pillar.weeklyCadence} posts/wk` : '~2-3 posts/wk'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePillar(pillar.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                    title="Delete Pillar"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       ) : (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300">

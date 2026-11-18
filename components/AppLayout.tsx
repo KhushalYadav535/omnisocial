@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import CommandPalette from './CommandPalette';
 import { getStoredUser, apiRequest } from '../lib/api';
 import { Sparkles } from 'lucide-react';
 
@@ -18,11 +19,40 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadCommentsCount, setUnreadCommentsCount] = useState(0);
   const [unreadDmsCount, setUnreadDmsCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
   const [dmsCount, setDmsCount] = useState(0);
+
+  // Global Keyboard Shortcuts for Command Palette (Ctrl+K, Cmd+K, '/')
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+        return;
+      }
+
+      if (e.key === '/') {
+        const target = e.target as HTMLElement;
+        const isEditing =
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.getAttribute('contenteditable') === 'true';
+
+        if (!isEditing) {
+          e.preventDefault();
+          setSearchOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -87,6 +117,7 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
           commentsCount={commentsCount}
           dmsCount={dmsCount}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onOpenSearch={() => setSearchOpen(true)}
         />
 
         {/* Scrollable Page Body */}
@@ -96,6 +127,9 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
           </div>
         </main>
       </div>
+
+      {/* Global Command Palette (Ctrl+K, Cmd+K, '/') */}
+      <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
