@@ -110,13 +110,18 @@ export default function SettingsPage() {
     try {
       const res = await apiRequest('/brands');
       if (res.brands && res.brands.length > 0) {
-        setBrands(res.brands);
+        const uniqueBrands = res.brands.filter(
+          (b: any, index: number, self: any[]) =>
+            index === self.findIndex((item: any) => item.name?.trim().toLowerCase() === b.name?.trim().toLowerCase())
+        );
+        setBrands(uniqueBrands);
+        const preferred = uniqueBrands.find((b: any) => /apex/i.test(b.name)) || uniqueBrands[0];
         if (!selectedBrandId) {
-          const defaultId = res.brands[0].id;
+          const defaultId = preferred.id;
           setSelectedBrandId(defaultId);
-          loadBrandVoice(res.brands[0]);
+          loadBrandVoice(preferred);
         } else {
-          const current = res.brands.find((b: any) => b.id === selectedBrandId) || res.brands[0];
+          const current = uniqueBrands.find((b: any) => b.id === selectedBrandId) || preferred;
           loadBrandVoice(current);
         }
       }

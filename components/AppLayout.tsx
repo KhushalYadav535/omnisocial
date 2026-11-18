@@ -98,6 +98,8 @@ export default function AppLayout({ children, activeBrandId, onBrandChange }: Ap
       {/* StudioFlow Left Sidebar Navigation */}
       <Sidebar
         unreadInboxCount={unreadCount}
+        unreadCommentsCount={unreadCommentsCount}
+        unreadDmsCount={unreadDmsCount}
         commentsCount={commentsCount}
         dmsCount={dmsCount}
         userRole={user?.role}

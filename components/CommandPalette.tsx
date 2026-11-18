@@ -48,6 +48,7 @@ export default function CommandPalette({ isOpen, onClose }: CommandPaletteProps)
     { id: 'performance', name: 'Analytics & Telemetry', category: 'Navigation', href: '/analytics', icon: BarChart2 },
     { id: 'inbox', name: 'Inbox & Community Engage', category: 'Navigation', href: '/inbox?type=COMMENT', icon: MessageSquare },
     { id: 'accounts', name: 'Connected Channels', category: 'Navigation', href: '/accounts', icon: Share2 },
+    { id: 'funnels', name: 'Lead Funnels & Inbound Capture', category: 'Navigation', href: '/funnels', icon: Layers },
     { id: 'team', name: 'Team & Collaborators', category: 'Navigation', href: '/team', icon: Users },
     { id: 'settings', name: 'Organization Settings', category: 'Navigation', href: '/settings', icon: Settings },
 

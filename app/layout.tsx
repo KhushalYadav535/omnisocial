@@ -5,7 +5,7 @@ import CursorGlow from '../components/ui/CursorGlow';
 import NoiseOverlay from '../components/ui/NoiseOverlay';
 
 export const metadata: Metadata = {
-  title: 'OmniSocial AI — Multi-Tenant Autonomous Social Media Engine',
+  title: 'StudioFlow by OmniSocial — Sovereign Multi-Channel Marketing Engine',
   description:
     'Awwwards-level enterprise social media suite for agencies & creators. Single-click Meta OAuth, Unified Engagement Inbox, and Guardrailed Brand Voice AI.',
   keywords: [

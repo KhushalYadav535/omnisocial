@@ -35,11 +35,12 @@ import { apiRequest } from '../../../lib/api';
 
 interface StrategyTabProps {
   brandId: string;
+  brand?: any;
   onRefreshOverview?: () => void;
   onNavigateTab?: (tab: string) => void;
 }
 
-export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab }: StrategyTabProps) {
+export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavigateTab }: StrategyTabProps) {
   const [strategy, setStrategy] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,28 +54,38 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
 
   // FORM DATA STATE
   // Step 1: Business & Brand Analysis
-  const [businessName, setBusinessName] = useState('Sentient Digital');
-  const [businessType, setBusinessType] = useState('IT Services & Consulting');
+  const [businessName, setBusinessName] = useState(brand?.name || 'Apex Digital');
+  const [businessType, setBusinessType] = useState('Technology Solutions & Growth Engine');
   const [industrySector, setIndustrySector] = useState('Technology');
   const [businessDescription, setBusinessDescription] = useState(
-    'An IT services and consulting company focused on digital transformation, AI solutions and product development for BFSI, Healthcare and Education sectors.'
+    'A premier digital growth and technology firm delivering AI solutions, automated operations, and verified multi-channel audience expansion for modern enterprises.'
   );
   const [productsServices, setProductsServices] = useState<string[]>([
-    'IT Consulting & Digital Transformation',
-    'Application Development & Integration',
-    'AI Solutions & Automation',
-    'Training & Capability Building'
+    'Enterprise AI Solutions & Automated Workflows',
+    'Full-Stack Digital Transformation & Integration',
+    'Omni-Channel Content Architecture & Retainers',
+    'Strategic Executive Advisory & Training'
   ]);
   const [differentiators, setDifferentiators] = useState<string[]>([
-    'Business + Technology expertise',
-    'AI and automation focus',
-    'Domain experience in BFSI and Healthcare',
-    'End-to-end: Consulting, Development and Training'
+    'Proprietary AI automation workflows with 3x velocity',
+    'Verified client ROI and transparent performance attribution',
+    'Deep domain expertise across BFSI, Tech, and Healthcare',
+    'Sovereign multi-channel infrastructure with zero lock-in'
   ]);
   const [newProductInput, setNewProductInput] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newDiffInput, setNewDiffInput] = useState('');
   const [showAddDiff, setShowAddDiff] = useState(false);
+  const [swotData, setSwotData] = useState<any | null>(null);
+  const [showStrategyModal, setShowStrategyModal] = useState(false);
+
+  // Sync business name when brand prop loads
+  useEffect(() => {
+    if (brand?.name) {
+      setBusinessName(brand.name);
+      setPositioning(prev => prev.replace(/Sentient Digital/g, brand.name));
+    }
+  }, [brand]);
 
   // Step 2: Market & Competitors
   const [marketTrends, setMarketTrends] = useState('Accelerating adoption of Generative AI, cloud modernization, and automation in high-trust enterprise sectors.');
@@ -167,7 +178,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#DDD6FE]/70',
         text: 'text-[#7C3AED]'
       },
-      isCompleted: productsServices.length > 0 && differentiators.length > 0
+      isCompleted: Boolean(strategy?.businessContext && businessDescription.length > 20)
     },
     {
       step: 2,
@@ -179,7 +190,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#BFDBFE]/70',
         text: 'text-[#2563EB]'
       },
-      isCompleted: competitors.length > 0
+      isCompleted: Boolean(strategy?.updatedAt && competitors.length > 0)
     },
     {
       step: 3,
@@ -191,7 +202,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#BBF7D0]/70',
         text: 'text-[#16A34A]'
       },
-      isCompleted: targetPersonas.length > 0
+      isCompleted: Boolean(strategy?.targetAudience && strategy.targetAudience !== '[]')
     },
     {
       step: 4,
@@ -203,7 +214,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#FED7AA]/70',
         text: 'text-[#EA580C]'
       },
-      isCompleted: marketingObjectives.length > 0
+      isCompleted: Boolean(strategy?.marketingObjectives && strategy.marketingObjectives !== '[]')
     },
     {
       step: 5,
@@ -215,7 +226,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#FECDD3]/70',
         text: 'text-[#E11D48]'
       },
-      isCompleted: Boolean(positioning && valueProposition)
+      isCompleted: Boolean(strategy?.positioning && strategy?.valueProposition)
     },
     {
       step: 6,
@@ -227,7 +238,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#DDD6FE]/70',
         text: 'text-[#9333EA]'
       },
-      isCompleted: channelStrategy.length > 0
+      isCompleted: Boolean(strategy?.channelStrategy && strategy.channelStrategy !== '[]')
     },
     {
       step: 7,
@@ -239,7 +250,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         border: 'border-[#BFDBFE]/70',
         text: 'text-[#0284C7]'
       },
-      isCompleted: channelRoadmap.length > 0
+      isCompleted: Boolean(strategy?.roadmap && strategy.roadmap !== '[]')
     }
   ];
 
@@ -405,18 +416,26 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
         if (res.data.description) setBusinessDescription(res.data.description);
         if (res.data.productsServices) setProductsServices(res.data.productsServices);
         if (res.data.differentiators) setDifferentiators(res.data.differentiators);
-        setNotification({ type: 'success', message: 'AI drafted business overview & differentiators!' });
+        setNotification({ type: 'success', message: 'AI drafted business overview, products & differentiators!' });
       } else if (action === 'suggest_differentiators' && Array.isArray(res.data)) {
         setDifferentiators(res.data);
         setNotification({ type: 'success', message: 'Key differentiators updated with AI suggestions!' });
       } else if ((action.includes('persona') || action.includes('audience')) && Array.isArray(res.data)) {
-        setTargetPersonas(res.data);
-        setNotification({ type: 'success', message: 'Audience personas synthesized with AI!' });
+        const normalized = res.data.map((p: any) => ({
+          name: p.name,
+          role: p.role,
+          pains: p.pains || p.painPoints || '',
+          goals: p.goals || p.objectives || ''
+        }));
+        setTargetPersonas(normalized);
+        setNotification({ type: 'success', message: `Synthesized ${normalized.length} audience personas with AI!` });
       } else if (action === 'refine_value_prop' && res.data) {
-        setValueProposition(res.data);
+        setValueProposition(typeof res.data === 'string' ? res.data : res.data.valueProposition);
         setNotification({ type: 'success', message: 'Value proposition refined by AI Copilot!' });
       } else if (action === 'swot' && res.data) {
-        setNotification({ type: 'success', message: 'SWOT analysis completed: Strengths & opportunities evaluated!' });
+        setSwotData(res.data);
+        setActiveSubtab('swot');
+        setNotification({ type: 'success', message: 'SWOT analysis generated and displayed in SWOT & Assets!' });
       } else {
         setNotification({ type: 'success', message: res.data?.tip || 'Section reviewed and aligned to strategic frameworks!' });
       }
@@ -632,7 +651,7 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
 
         <button
           type="button"
-          onClick={() => setActiveSection(null)}
+          onClick={() => setShowStrategyModal(true)}
           className="px-4 py-2 text-xs font-bold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer self-start sm:self-center"
         >
           <Eye className="w-3.5 h-3.5 text-neutral-500" />
@@ -1244,6 +1263,90 @@ export default function StrategyTab({ brandId, onRefreshOverview, onNavigateTab 
           )}
         </div>
       </div>
+
+      {/* FULL STRATEGY SUMMARY MODAL */}
+      {showStrategyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl border border-neutral-200/90 shadow-2xl max-w-3xl w-full p-6 sm:p-8 space-y-6 max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-neutral-900">{businessName} Strategy Blueprint</h3>
+                  <p className="text-xs text-neutral-500">Executive Summary & Operational Pillars</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStrategyModal(false)}
+                className="p-2 rounded-full hover:bg-neutral-100 text-neutral-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs text-neutral-700">
+              <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-100 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800">Positioning Statement</span>
+                <p className="text-neutral-900 font-medium leading-relaxed">{positioning}</p>
+              </div>
+
+              <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Value Proposition</span>
+                <p className="text-neutral-900 font-medium leading-relaxed">{valueProposition}</p>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-2">Key Differentiators</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {differentiators.map((d, i) => (
+                    <div key={i} className="p-2.5 rounded-xl bg-white border border-neutral-200 text-neutral-800 font-medium">
+                      ✓ {d}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-2">Audience Personas ({targetPersonas.length})</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {targetPersonas.map((p, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 space-y-1">
+                      <p className="font-bold text-neutral-900">{p.name}</p>
+                      <p className="text-[11px] text-purple-700 font-medium">{p.role}</p>
+                      <p className="text-[11px] text-neutral-600"><strong>Pains:</strong> {p.pains || p.painPoints}</p>
+                      <p className="text-[11px] text-neutral-600"><strong>Goals:</strong> {p.goals || p.objectives}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const summaryText = `MARKETING STRATEGY: ${businessName}\n\nPOSITIONING:\n${positioning}\n\nVALUE PROPOSITION:\n${valueProposition}\n\nDIFFERENTIATORS:\n${differentiators.map(d => '- ' + d).join('\n')}`;
+                  navigator.clipboard.writeText(summaryText);
+                  setNotification({ type: 'success', message: 'Strategy blueprint copied to clipboard!' });
+                }}
+                className="px-4 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-full border border-purple-200 cursor-pointer"
+              >
+                📋 Copy Summary
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowStrategyModal(false)}
+                className="px-5 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-full cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

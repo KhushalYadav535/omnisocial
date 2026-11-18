@@ -32,6 +32,7 @@ export default function OutcomePromptBar({
     { label: 'Architect Content Pillars', prompt: 'Generate 4 balanced content pillars with distribution percentages and sub-themes', tab: 'pillars' },
     { label: 'Brainstorm 5 Viral Ideas', prompt: 'Brainstorm 5 high-engagement post ideas based on our industry and trends', tab: 'ideas' },
     { label: 'LinkedIn Carousel Deck', prompt: 'Architect a 5-slide educational LinkedIn carousel deck on industry best practices', tab: 'composer' },
+    { label: 'Generate Social Post', prompt: 'Craft a high-converting multi-platform social post with viral hook, caption, and hashtags', tab: 'composer' },
     { label: 'Brand Launchpad Wizard', prompt: 'Run Brand Marketing Launchpad to set up our brand foundation from zero', tab: 'launchpad' },
   ];
 
@@ -285,8 +286,74 @@ export default function OutcomePromptBar({
                     ))}
                   </div>
                 </div>
+              ) : Array.isArray(executionResult.output.slides) || Array.isArray(executionResult.output.deck) ? (
+                /* Case D: LinkedIn Carousel Deck Deliverable */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs flex items-center space-x-1.5">
+                      <span>🎨 5-Slide Carousel Deck</span>
+                      <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full font-mono">
+                        {(executionResult.output.slides || executionResult.output.deck).length} Slides
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('composer')}
+                      className="px-3 py-1 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-1 cursor-pointer transition shadow-2xs"
+                    >
+                      <span>Open in Post Composer</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {(executionResult.output.slides || executionResult.output.deck).map((s: any, sIdx: number) => (
+                      <div key={sIdx} className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/90 space-y-1">
+                        <span className="text-[10px] font-mono font-bold text-purple-700 bg-purple-100/60 px-1.5 py-0.2 rounded">
+                          Slide {s.slideNumber || sIdx + 1}
+                        </span>
+                        <p className="font-bold text-xs text-neutral-900 mt-1">{s.title || s.header || `Slide ${sIdx + 1}`}</p>
+                        <p className="text-[11px] text-neutral-600 leading-snug line-clamp-3">{s.body || s.content || s.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : executionResult.output.caption || executionResult.output.hook ? (
+                /* Case E: Social Post Copywriter Deliverable */
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-100">
+                    <span className="font-bold text-neutral-900 text-xs">Generated Social Post</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('composer')}
+                      className="px-3 py-1 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-1 cursor-pointer transition shadow-2xs"
+                    >
+                      <span>Load into Composer</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {executionResult.output.hook && (
+                    <div className="p-2.5 bg-purple-50/70 border border-purple-100 rounded-xl">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800 block mb-0.5">Hook</span>
+                      <p className="text-xs text-neutral-800 font-semibold">{executionResult.output.hook}</p>
+                    </div>
+                  )}
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-xl space-y-2">
+                    <p className="text-xs text-neutral-800 whitespace-pre-line leading-relaxed font-sans">
+                      {executionResult.output.caption}
+                    </p>
+                    {Array.isArray(executionResult.output.hashtags) && executionResult.output.hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {executionResult.output.hashtags.map((tag: string, tIdx: number) => (
+                          <span key={tIdx} className="text-[11px] text-blue-600 font-mono bg-blue-50 px-1.5 py-0.5 rounded">
+                            {tag.startsWith('#') ? tag : `#${tag}`}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               ) : (
-                /* Case D: Formatted Text / Narrative Deliverable */
+                /* Case F: Formatted Narrative Summary */
                 <div className="space-y-2">
                   <div className="flex items-center justify-between pb-1 border-b border-neutral-100">
                     <span className="font-bold text-neutral-900 text-xs">Deliverable Summary</span>
@@ -294,11 +361,11 @@ export default function OutcomePromptBar({
                       ✓ Ready in Workspace
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-700 leading-relaxed whitespace-pre-line font-sans">
+                  <div className="text-xs text-neutral-700 leading-relaxed whitespace-pre-line font-sans p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                     {typeof executionResult.output === 'string'
                       ? executionResult.output
-                      : executionResult.output.summary || executionResult.output.message || executionResult.output.rawOutput || JSON.stringify(executionResult.output)}
-                  </p>
+                      : executionResult.output.summary || executionResult.output.message || executionResult.output.rawOutput || JSON.stringify(executionResult.output, null, 2)}
+                  </div>
                 </div>
               )}
             </div>

@@ -827,8 +827,23 @@ export default function CalendarPage() {
     const valuePercent = total > 0 ? 100 - promoPercent : 75;
 
     let status: 'HEALTHY' | 'MODERATE' | 'FATIGUE' = 'HEALTHY';
-    if (promoPercent > 45) status = 'FATIGUE';
-    else if (promoPercent > 32) status = 'MODERATE';
+    let statusLabel = '80/20 Optimal ✓';
+    if (promoPercent > 45) {
+      status = 'FATIGUE';
+      statusLabel = '⚠ Promo Fatigue Risk';
+    } else if (promoPercent > 30) {
+      status = 'MODERATE';
+      statusLabel = 'Moderate Ratio';
+    } else if (promoPercent === 0) {
+      status = 'HEALTHY';
+      statusLabel = '100% Value (Needs Offer Drops)';
+    } else if (promoPercent >= 15 && promoPercent <= 25) {
+      status = 'HEALTHY';
+      statusLabel = '80/20 Optimal ✓';
+    } else {
+      status = 'HEALTHY';
+      statusLabel = 'Healthy Distribution';
+    }
 
     return {
       total,
@@ -839,7 +854,8 @@ export default function CalendarPage() {
       cultureCount,
       promoPercent,
       valuePercent,
-      status
+      status,
+      statusLabel
     };
   }, [events]);
 
@@ -1743,10 +1759,31 @@ export default function CalendarPage() {
         })
       });
 
-      setNotice({ type: 'success', text: 'Post content updated successfully.' });
+      // If rescheduleDate was changed and post is not published, also save new schedule date
+      if (rescheduleDate && selectedEvent.status !== 'PUBLISHED') {
+        const newIso = new Date(rescheduleDate).toISOString();
+        if (newIso !== new Date(selectedEvent.scheduledFor).toISOString()) {
+          await apiRequest('/calendar/reschedule', {
+            method: 'POST',
+            body: JSON.stringify({
+              publicationId: selectedEvent.publicationId,
+              newDate: newIso
+            })
+          });
+        }
+      }
+
+      // Optimistic update of local events list immediately so title reflects without reload
+      setEvents(prev => prev.map(ev => 
+        (ev.id === selectedEvent.id || ev.publicationId === selectedEvent.publicationId)
+          ? { ...ev, title: editTitle, caption: editCaption, scheduledFor: rescheduleDate ? new Date(rescheduleDate).toISOString() : ev.scheduledFor }
+          : ev
+      ));
+
+      setNotice({ type: 'success', text: `Post "${editTitle}" updated successfully.` });
       setIsEditing(false);
       setSelectedEvent(null);
-      fetchCalendar();
+      await fetchCalendar();
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Edit failed' });
     } finally {
@@ -2282,7 +2319,7 @@ export default function CalendarPage() {
                       ? 'bg-amber-200 text-amber-900'
                       : 'bg-emerald-200 text-emerald-800'
                   }`}>
-                    {pillarStats.status === 'FATIGUE' ? '⚠ Promo Fatigue Risk' : pillarStats.status === 'MODERATE' ? 'Moderate Ratio' : '80/20 Optimal ✓'}
+                    {pillarStats.statusLabel}
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-600 mt-0.5 leading-relaxed">
@@ -2290,6 +2327,8 @@ export default function CalendarPage() {
                     ? 'Audience fatigue warning! When promo exceeds 40%, followers disengage and unfollow. Balance with educational drops or transformation stories.'
                     : pillarStats.status === 'MODERATE'
                     ? '80/20 Rule: 80% of your calendar should provide value & build trust; 20% should make offers.'
+                    : pillarStats.promoPercent === 0
+                    ? 'Your current calendar has 100% Value and Proof drops. Schedule an offer or product post to capture conversions.'
                     : 'Cadra Algorithm Health: Excellent balance between educational value, customer proof, and promotional offers.'}
                 </p>
               </div>
@@ -2458,10 +2497,12 @@ export default function CalendarPage() {
         </div>
 
         {notice && (
-          <div className={`p-3.5 rounded-xl border text-xs flex items-center space-x-2 animate-in fade-in duration-200 ${notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}>
+          <div className={`fixed top-6 right-6 z-50 p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 max-w-md ${
+            notice.type === 'success' ? 'bg-emerald-50/95 border-emerald-300 text-emerald-900' : 'bg-rose-50/95 border-rose-300 text-rose-900'
+          }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
-            <span>{notice.text}</span>
+            <span className="font-semibold">{notice.text}</span>
+            <button type="button" onClick={() => setNotice(null)} className="ml-auto text-neutral-400 hover:text-neutral-700 pl-2 cursor-pointer">✕</button>
           </div>
         )}
 

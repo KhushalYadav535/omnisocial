@@ -22,6 +22,8 @@ import {
 
 export interface SidebarProps {
   unreadInboxCount?: number;
+  unreadCommentsCount?: number;
+  unreadDmsCount?: number;
   commentsCount?: number;
   dmsCount?: number;
   userRole?: string;
@@ -31,6 +33,8 @@ export interface SidebarProps {
 
 function SidebarContent({
   unreadInboxCount = 0,
+  unreadCommentsCount = 0,
+  unreadDmsCount = 0,
   commentsCount = 0,
   dmsCount = 0,
   userRole,
@@ -41,7 +45,7 @@ function SidebarContent({
   const searchParams = useSearchParams();
   const currentTab = searchParams?.get('tab');
 
-  const totalUnreadEngage = (commentsCount || 0) + (dmsCount || 0) || unreadInboxCount || 0;
+  const totalUnreadEngage = (unreadCommentsCount || 0) + (unreadDmsCount || 0) || unreadInboxCount || 0;
 
   // 9 Core StudioFlow navigation items exactly matching the reference design
   const primaryNavItems = [
@@ -239,6 +243,25 @@ function SidebarContent({
                     }`}
                   />
                   <span className="truncate">Connected Channels</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/funnels"
+                onClick={onCloseMobile}
+                className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
+                  pathname === '/funnels' || pathname.startsWith('/funnel')
+                    ? 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center space-x-3 min-w-0">
+                  <Layers
+                    className={`w-4 h-4 shrink-0 ${
+                      pathname === '/funnels' || pathname.startsWith('/funnel') ? 'text-[#7C3AED]' : 'text-slate-500'
+                    }`}
+                  />
+                  <span className="truncate">Lead Funnels</span>
                 </div>
               </Link>
 
