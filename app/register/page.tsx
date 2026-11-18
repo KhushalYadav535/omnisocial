@@ -19,6 +19,12 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -106,7 +112,9 @@ export default function RegisterPage() {
                 >
                   <p className="text-xs font-bold text-slate-900">Starter Creator</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">Up to 5 Brands • 10 Accounts</p>
-                  <p className="text-xs font-black text-slate-900 mt-2 font-mono">$29/mo</p>
+                  <p className="text-xs font-black text-slate-900 mt-2 font-mono">
+                    $29/mo <span className="text-[10px] text-slate-500 font-normal">(Annual) · $39 (Monthly)</span>
+                  </p>
                 </button>
 
                 <button
@@ -123,7 +131,9 @@ export default function RegisterPage() {
                   </span>
                   <p className="text-xs font-bold text-slate-900">Agency Pro</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">25 Brands • 50 Accounts • BYOK</p>
-                  <p className="text-xs font-black text-slate-900 mt-2 font-mono">$99/mo</p>
+                  <p className="text-xs font-black text-slate-900 mt-2 font-mono">
+                    $99/mo <span className="text-[10px] text-slate-500 font-normal">(Annual) · $129 (Monthly)</span>
+                  </p>
                 </button>
               </div>
             </div>

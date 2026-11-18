@@ -1659,7 +1659,7 @@ export default function CalendarPage() {
       await apiRequest('/calendar/reschedule', {
         method: 'POST',
         body: JSON.stringify({
-          publicationId: eventToMove.publicationId,
+          publicationId: eventToMove.publicationId || eventToMove.id,
           newDate: newScheduled.toISOString()
         })
       });
@@ -1890,25 +1890,16 @@ export default function CalendarPage() {
     weekDays.push(d);
   }
 
-  const isSameDay = (d1: Date, d2: Date) => {
+  const isSameDay = (d1: Date | string, d2: Date | string) => {
     if (!d1 || !d2) return false;
-    // Direct local date comparison
-    if (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    ) {
-      return true;
-    }
-    // Timezone-resilient UTC date comparison (for UTC ISO strings)
-    if (
-      d1.getUTCFullYear() === d2.getFullYear() &&
-      d1.getUTCMonth() === d2.getMonth() &&
-      d1.getUTCDate() === d2.getDate()
-    ) {
-      return true;
-    }
-    return false;
+    const date1 = new Date(d1);
+    const date2 = new Date(d2);
+    if (isNaN(date1.getTime()) || isNaN(date2.getTime())) return false;
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
   };
 
   // Filtered events based on platform and status filters
@@ -1918,8 +1909,8 @@ export default function CalendarPage() {
     return true;
   });
 
-  // Upcoming publications for sidebar
-  const upcomingPosts = events
+  // Upcoming publications for sidebar (respects active platform and status filters)
+  const upcomingPosts = filteredEvents
     .filter(e => e.status === 'QUEUED')
     .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
     .slice(0, 5);
@@ -3180,7 +3171,7 @@ export default function CalendarPage() {
                   <span>Live Pipeline</span>
                 </h3>
                 <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full font-mono">
-                  {events.filter(e => e.status === 'QUEUED').length} Queued
+                  {filteredEvents.filter(e => e.status === 'QUEUED').length} Queued
                 </span>
               </div>
 

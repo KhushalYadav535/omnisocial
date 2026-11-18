@@ -110,25 +110,23 @@ export function PricingSection() {
           <div className="mt-8 inline-flex items-center p-1.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
             <button
               onClick={() => handleToggle('monthly')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-                billingCycle === 'monthly'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${billingCycle === 'monthly'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Monthly Billing
             </button>
             <button
               onClick={() => handleToggle('annual')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-                billingCycle === 'annual'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${billingCycle === 'annual'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <span>Annual Billing</span>
               <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white text-indigo-700 font-extrabold shadow-2xs">
-                Save 20%
+                Save up to 25%
               </span>
             </button>
           </div>
@@ -143,11 +141,10 @@ export function PricingSection() {
               <ScrollReveal key={idx} direction="up" delay={0.1 * idx}>
                 <SpotlightCard
                   enableTilt={!plan.isPopular}
-                  className={`h-full flex flex-col justify-between relative ${
-                    plan.isPopular
-                      ? 'ring-2 ring-indigo-600 bg-gradient-to-b from-indigo-50/40 via-white to-white shadow-xl shadow-indigo-500/10'
-                      : 'bg-white'
-                  }`}
+                  className={`h-full flex flex-col justify-between relative ${plan.isPopular
+                    ? 'ring-2 ring-indigo-600 bg-gradient-to-b from-indigo-50/40 via-white to-white shadow-xl shadow-indigo-500/10'
+                    : 'bg-white'
+                    }`}
                   spotlightColor={plan.isPopular ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.1)'}
                 >
                   {plan.badge && (
@@ -189,11 +186,10 @@ export function PricingSection() {
                   <div className="mt-8 pt-4">
                     <Link
                       href={plan.ctaHref}
-                      className={`w-full py-3.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs ${
-                        plan.isPopular
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md'
-                          : 'bg-slate-900 hover:bg-slate-800 text-white'
-                      }`}
+                      className={`w-full py-3.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs ${plan.isPopular
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-md'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                        }`}
                     >
                       <span>{plan.ctaText}</span>
                       <ArrowRight className="w-3.5 h-3.5" />

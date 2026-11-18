@@ -227,20 +227,38 @@ function DashboardContent() {
           days: reportDateRange === '7D' ? 7 : reportDateRange === '90D' ? 90 : 30
         })
       });
-      if (res.report?.pdfUrl) {
+      if (res.report?.pdfBase64) {
+        const byteCharacters = atob(res.report.pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = res.report.pdfUrl;
-        link.target = '_blank';
-        link.download = res.report.filename || 'Executive_Report.pdf';
+        link.href = blobUrl;
+        link.download = res.report.filename || `OmniSocial_Report_${reportDateRange}_${new Date().toISOString().slice(0, 10)}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setNotice({ type: 'success', text: 'Executive Report PDF downloaded successfully!' });
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        setNotice({ type: 'success', text: 'Executive Performance Report PDF downloaded successfully!' });
+      } else if (res.report?.pdfUrl) {
+        const link = document.createElement('a');
+        link.href = res.report.pdfUrl;
+        link.target = '_blank';
+        link.download = res.report.filename || `OmniSocial_Report_${reportDateRange}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setNotice({ type: 'success', text: 'Executive Performance Report PDF downloaded successfully!' });
       } else {
-        handleExportBuilderCsv();
+        setNotice({ type: 'error', text: 'PDF report service temporarily unavailable. Please try again or export CSV.' });
       }
-    } catch {
-      handleExportBuilderCsv();
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      setNotice({ type: 'error', text: err.message || 'Failed to generate PDF report.' });
     } finally {
       setReportExporting(false);
     }

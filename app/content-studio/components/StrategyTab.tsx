@@ -437,8 +437,16 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         if (res.data.differentiators) setDifferentiators(res.data.differentiators);
         setNotification({ type: 'success', message: 'AI drafted business overview, products & differentiators!' });
       } else if (action === 'suggest_differentiators' && Array.isArray(res.data)) {
-        setDifferentiators(res.data);
-        setNotification({ type: 'success', message: 'Key differentiators updated with AI suggestions!' });
+        const existingLower = new Set(differentiators.map(d => d.trim().toLowerCase()));
+        const fresh = res.data.filter((item: string) => !existingLower.has(item.trim().toLowerCase()));
+        const merged = fresh.length > 0 ? [...differentiators, ...fresh] : res.data;
+        setDifferentiators(merged);
+        setNotification({
+          type: 'success',
+          message: fresh.length > 0
+            ? `Added ${fresh.length} fresh AI differentiators! (Total: ${merged.length})`
+            : 'Key differentiators refreshed with strategic AI recommendations!'
+        });
       } else if ((action.includes('persona') || action.includes('audience')) && Array.isArray(res.data)) {
         const normalized = res.data.map((p: any) => ({
           name: p.name,

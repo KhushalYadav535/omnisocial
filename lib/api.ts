@@ -21,6 +21,8 @@ export function clearAuthToken() {
     localStorage.removeItem('omni_token');
     localStorage.removeItem('omni_user');
     localStorage.removeItem('omni_tenant');
+    localStorage.removeItem('omni_active_brand_id');
+    localStorage.removeItem('omni_active_brand_name');
   }
 }
 
