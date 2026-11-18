@@ -1065,184 +1065,276 @@ export default function ContentStudioPage() {
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 max-w-[1500px] mx-auto pb-16 px-1 sm:px-2">
-        {/* CADRA SUB-HEADER WITH CLEAN BREADCRUMB & CAPSULE ACTIONS */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
-          <div>
-            <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
-              <span className="hover:text-neutral-700 cursor-pointer">OmniSocial</span>
-              <span>›</span>
-              <span className="hover:text-neutral-700 cursor-pointer">Marketing Studio</span>
-              <span>›</span>
-              <span className="text-neutral-900 font-semibold">{studioTabs.find(t => t.id === activeTab)?.label || 'AI Studio'}</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight mt-1">
-              Content Studio & Marketing Engine
-            </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Outcome-first AI orchestration across Strategy, Pillars, Campaigns, Multi-Channel Execution & Governance.
-            </p>
-          </div>
+        {/* CADRA SUB-HEADER / STUDIO HERO */}
+        {activeTab === 'overview' ? (
+          /* STUDIO HERO HEADER (EXACT REFERENCE DESIGN) */
+          <div className="relative bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
+            {/* Elegant Organic Flowing Wave in Top Right (Exact match to reference) */}
+            <svg
+              className="absolute right-0 top-0 h-full w-[340px] sm:w-[500px] pointer-events-none select-none opacity-90"
+              viewBox="0 0 500 200"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="waveGold" x1="500" y1="0" x2="200" y2="180" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#F59E0B" stopOpacity="0.45" />
+                  <stop offset="0.5" stopColor="#FBBF24" stopOpacity="0.25" />
+                  <stop offset="1" stopColor="#FEF3C7" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="wavePeach" x1="500" y1="20" x2="260" y2="200" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#FB7185" stopOpacity="0.32" />
+                  <stop offset="0.6" stopColor="#FDA4AF" stopOpacity="0.15" />
+                  <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="wavePurple" x1="500" y1="60" x2="300" y2="200" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#C084FC" stopOpacity="0.35" />
+                  <stop offset="0.7" stopColor="#E9D5FF" stopOpacity="0.1" />
+                  <stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M500 0 C380 40 300 30 180 90 C120 130 90 170 50 200 L500 200 Z" fill="url(#waveGold)" />
+              <path d="M500 20 C400 70 330 70 230 130 C160 180 130 200 90 200 L500 200 Z" fill="url(#wavePeach)" />
+              <path d="M500 50 C430 100 360 110 280 160 C210 200 170 200 130 200 L500 200 Z" fill="url(#wavePurple)" />
+            </svg>
 
-          {/* PRIMARY ACTION CAPSULES */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {activeTab !== 'launchpad' && (
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start space-x-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[#F6F3FF] border border-[#DDD6FE]/80 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Sparkles className="w-6 h-6 text-[#7C3AED] fill-[#7C3AED]" />
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F1012] tracking-tight">
+                    Studio
+                  </h1>
+                  <p className="text-xs sm:text-sm text-neutral-500 font-normal mt-1">
+                    Plan, create and manage your marketing and content activities.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons on Right */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('launchpad')}
+                  className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white/90 hover:bg-white border border-black/[0.08] rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer backdrop-blur-xs"
+                >
+                  <Rocket className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Launchpad Wizard</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRepurposeModal(true)}
+                  className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white/90 hover:bg-white border border-black/[0.08] rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer backdrop-blur-xs"
+                >
+                  <Globe className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Repurpose URL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateClientReviewLink}
+                  disabled={isGeneratingReviewLink || !activeBrandId}
+                  className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white/90 hover:bg-white border border-black/[0.08] rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50 backdrop-blur-xs"
+                >
+                  {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-neutral-500" />}
+                  <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('composer')}
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
+                >
+                  <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
+                  <span>Open Post Composer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* WORKSPACE TAB HEADER WHEN INSIDE A SUB-TAB */
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
+            <div>
+              <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="hover:text-neutral-900 font-semibold text-neutral-600 flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>Studio</span>
+                </button>
+                <span>›</span>
+                <span className="text-neutral-900 font-bold">{studioTabs.find(t => t.id === activeTab)?.label}</span>
+              </div>
+              <div className="flex items-center space-x-3 mt-1">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="text-xs font-bold text-neutral-600 hover:text-neutral-900 bg-white hover:bg-neutral-100 border border-black/[0.08] px-3 py-1.5 rounded-full transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
+                >
+                  <span>← Back to Studio</span>
+                </button>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F1012] tracking-tight">
+                  {studioTabs.find(t => t.id === activeTab)?.label}
+                </h1>
+              </div>
+            </div>
+
+            {/* ACTION CAPSULES FOR ACTIVE TAB */}
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <button
                 type="button"
-                onClick={() => setActiveTab('launchpad')}
+                onClick={() => setShowRepurposeModal(true)}
                 className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer"
               >
-                <Rocket className="w-3.5 h-3.5 text-neutral-500" />
-                <span>Launchpad Wizard</span>
+                <Globe className="w-3.5 h-3.5 text-neutral-500" />
+                <span>Repurpose URL</span>
               </button>
-            )}
 
-            {/* Feature 1A: Repurpose from URL / Blog */}
-            <button
-              type="button"
-              onClick={() => setShowRepurposeModal(true)}
-              className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer"
-            >
-              <Globe className="w-3.5 h-3.5 text-neutral-500" />
-              <span>Repurpose URL</span>
-            </button>
-
-            {/* Feature 3A: Agency Client Review Magic Link */}
-            <button
-              type="button"
-              onClick={handleGenerateClientReviewLink}
-              disabled={isGeneratingReviewLink || !activeBrandId}
-              className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
-            >
-              {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-neutral-500" />}
-              <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
-            </button>
-
-            {activeTab === 'composer' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleSavePost(false)}
-                  disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition disabled:opacity-50"
-                >
-                  {scheduledFor ? 'Schedule' : 'Save Draft'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSavePost(true)}
-                  disabled={submitting || selectedAccountIds.length === 0}
-                  className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>
-                    {submitting
-                      ? 'Transmitting...'
-                      : selectedAccountIds.length > 1
-                      ? 'Publish All'
-                      : 'Publish Now'}
-                  </span>
-                </button>
-              </>
-            ) : (
               <button
                 type="button"
-                onClick={() => setActiveTab('composer')}
-                className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
+                onClick={handleGenerateClientReviewLink}
+                disabled={isGeneratingReviewLink || !activeBrandId}
+                className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
               >
-                <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
-                <span>Open Post Composer</span>
+                {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-neutral-500" />}
+                <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
               </button>
-            )}
-          </div>
-        </div>
 
-        {/* OUTCOME-FIRST PROMPT BAR */}
-        <OutcomePromptBar
-          brandId={activeBrandId}
-          onNavigateTab={(tabId) => setActiveTab(tabId as any)}
-          onRefreshData={fetchOverview}
-        />
-
-        {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR WITH SMOOTH SCROLL) */}
-        <div className="relative flex items-center w-full group/tabbar">
-          {/* Left subtle fade mask */}
-          {canScrollTabsLeft && (
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#F4F5F7] to-transparent pointer-events-none z-10" />
-          )}
-
-          {/* Left Scroll Chevron Arrow */}
-          {canScrollTabsLeft && (
-            <button
-              type="button"
-              onClick={() => handleScrollTabs('left')}
-              className="absolute left-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
-              aria-label="Scroll tabs left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Scrollable Container with Wheel, Drag & Touch Support */}
-          <div
-            ref={tabsContainerRef}
-            onScroll={checkTabsScroll}
-            onWheel={handleTabsWheel}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUpOrLeave}
-            onMouseLeave={handleMouseUpOrLeave}
-            className={`w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none ${
-              isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'
-            }`}
-          >
-            <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
-              {studioTabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
+              {activeTab === 'composer' ? (
+                <>
                   <button
-                    key={tab.id}
                     type="button"
-                    onClick={(e) => {
-                      setActiveTab(tab.id as any);
-                      e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      isActive
-                        ? 'bg-white text-neutral-900 shadow-xs'
-                        : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
-                    }`}
+                    onClick={() => handleSavePost(false)}
+                    disabled={submitting}
+                    className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.07] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] transition disabled:opacity-50"
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
-                    <span>{tab.label}</span>
-                    {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
-                        {overviewData.stats.pendingApprovalsCount}
-                      </span>
-                    )}
+                    {scheduledFor ? 'Schedule' : 'Save Draft'}
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => handleSavePost(true)}
+                    disabled={submitting || selectedAccountIds.length === 0}
+                    className="px-5 py-2 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-1.5 transition disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>
+                      {submitting
+                        ? 'Transmitting...'
+                        : selectedAccountIds.length > 1
+                        ? 'Publish All'
+                        : 'Publish Now'}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('composer')}
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
+                >
+                  <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
+                  <span>Open Post Composer</span>
+                </button>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Right subtle fade mask */}
-          {canScrollTabsRight && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F4F5F7] to-transparent pointer-events-none z-10" />
-          )}
+        {/* WORKSPACE SUB-NAVIGATION TABS & WORKSPACE PROMPT BAR (SHOWN IN SUB-WORKSPACES) */}
+        {activeTab !== 'overview' && (
+          <>
+            {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR WITH SMOOTH SCROLL) */}
+            <div className="relative flex items-center w-full group/tabbar">
+              {/* Left subtle fade mask */}
+              {canScrollTabsLeft && (
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#F4F5F7] to-transparent pointer-events-none z-10" />
+              )}
 
-          {/* Right Scroll Chevron Arrow */}
-          {canScrollTabsRight && (
-            <button
-              type="button"
-              onClick={() => handleScrollTabs('right')}
-              className="absolute right-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
-              aria-label="Scroll tabs right"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+              {/* Left Scroll Chevron Arrow */}
+              {canScrollTabsLeft && (
+                <button
+                  type="button"
+                  onClick={() => handleScrollTabs('left')}
+                  className="absolute left-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+                  aria-label="Scroll tabs left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Scrollable Container with Wheel, Drag & Touch Support */}
+              <div
+                ref={tabsContainerRef}
+                onScroll={checkTabsScroll}
+                onWheel={handleTabsWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUpOrLeave}
+                onMouseLeave={handleMouseUpOrLeave}
+                className={`w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none ${
+                  isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'
+                }`}
+              >
+                <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
+                  {studioTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={(e) => {
+                          setActiveTab(tab.id as any);
+                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        }}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                          isActive
+                            ? 'bg-white text-neutral-900 shadow-xs'
+                            : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
+                        <span>{tab.label}</span>
+                        {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
+                          <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
+                            {overviewData.stats.pendingApprovalsCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right subtle fade mask */}
+              {canScrollTabsRight && (
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F4F5F7] to-transparent pointer-events-none z-10" />
+              )}
+
+              {/* Right Scroll Chevron Arrow */}
+              {canScrollTabsRight && (
+                <button
+                  type="button"
+                  onClick={() => handleScrollTabs('right')}
+                  className="absolute right-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+                  aria-label="Scroll tabs right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* OUTCOME-FIRST PROMPT BAR (INSIDE SUB-TABS) */}
+            <OutcomePromptBar
+              brandId={activeBrandId}
+              onNavigateTab={(tabId) => setActiveTab(tabId as any)}
+              onRefreshData={fetchOverview}
+            />
+          </>
+        )}
 
         {/* Global Feedback Banner */}
         {statusMessage && (
@@ -1282,26 +1374,37 @@ export default function ContentStudioPage() {
           </div>
         )}
 
-        {/* TAB 1: OVERVIEW */}
+        {/* TAB 1: OVERVIEW (STUDIO HUB 8 BENTO CARDS MATCHING REFERENCE UI) */}
         {activeTab === 'overview' && (
-          <OverviewTab
-            brand={overviewData?.brand}
-            strategy={overviewData?.strategy}
-            stats={overviewData?.stats || {
-              pillarsCount: 0,
-              ideasCount: 0,
-              requestsCount: 0,
-              campaignsCount: 0,
-              postsCount: 0,
-              pendingApprovalsCount: 0,
-              launchpadStage: 1,
-              launchpadStatus: 'NOT_STARTED'
-            }}
-            recentExecutions={overviewData?.recentExecutions || []}
-            isLoading={isLoadingOverview}
-            onNavigateTab={(t) => setActiveTab(t as any)}
-            onRefresh={fetchOverview}
-          />
+          <div className="space-y-6">
+            <OverviewTab
+              brand={overviewData?.brand}
+              strategy={overviewData?.strategy}
+              stats={overviewData?.stats || {
+                pillarsCount: 0,
+                ideasCount: 0,
+                requestsCount: 0,
+                campaignsCount: 0,
+                postsCount: 0,
+                pendingApprovalsCount: 0,
+                launchpadStage: 1,
+                launchpadStatus: 'NOT_STARTED'
+              }}
+              recentExecutions={overviewData?.recentExecutions || []}
+              isLoading={isLoadingOverview}
+              onNavigateTab={(t) => setActiveTab(t as any)}
+              onRefresh={fetchOverview}
+            />
+
+            {/* Sovereign Outcome-First AI Content Prompt Bar at Bottom */}
+            <div className="pt-2">
+              <OutcomePromptBar
+                brandId={activeBrandId}
+                onNavigateTab={(tabId) => setActiveTab(tabId as any)}
+                onRefreshData={fetchOverview}
+              />
+            </div>
+          </div>
         )}
 
         {/* TAB 2: STRATEGY (LEVEL 1) */}

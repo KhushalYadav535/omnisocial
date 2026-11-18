@@ -4,20 +4,19 @@ import React from 'react';
 import {
   Sparkles,
   Target,
-  Compass,
-  Layers,
-  Calendar,
   Lightbulb,
-  FileCheck2,
+  FilePlus2,
+  CalendarCheck2,
+  Megaphone,
+  Image as ImageIcon,
+  Film,
+  Layers,
+  ChevronRight,
   Rocket,
-  ArrowRight,
-  Clock,
+  RefreshCw,
   CheckCircle2,
-  AlertCircle,
   Cpu,
-  Zap,
-  BarChart2,
-  RefreshCw
+  ArrowRight
 } from 'lucide-react';
 
 interface OverviewTabProps {
@@ -48,267 +47,217 @@ export default function OverviewTab({
   onNavigateTab,
   onRefresh
 }: OverviewTabProps) {
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full border border-emerald-300">✓ Approved</span>;
-      case 'IN_REVIEW':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-amber-100 text-amber-800 rounded-full border border-amber-300">⏳ In Review</span>;
-      case 'DRAFT':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full border border-blue-300">📝 Draft</span>;
-      default:
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-full border border-slate-300">○ Not Started</span>;
+  // 8 High-Impact Bento Action Cards matching the requested luxury Studio UI
+  const studioCards = [
+    {
+      id: 'strategy',
+      title: 'Marketing Strategy',
+      description: 'Create or refine marketing strategy.',
+      icon: Target,
+      tab: 'strategy',
+      badge: strategy?.status ? `${strategy.status}` : null,
+      color: {
+        bg: 'bg-[#FFF6EE]',
+        border: 'border-[#FED7AA]/70',
+        iconColor: 'text-[#EA580C]',
+        arrowBg: 'bg-[#FFF6EE]',
+        arrowHover: 'group-hover:bg-[#FFEDD5]',
+        arrowBorder: 'border-[#FED7AA]/60'
+      }
+    },
+    {
+      id: 'ideas',
+      title: 'Ideas & Inspiration',
+      description: 'Explore and develop content ideas.',
+      icon: Lightbulb,
+      tab: 'ideas',
+      badge: stats.ideasCount > 0 ? `${stats.ideasCount} Ideas` : null,
+      color: {
+        bg: 'bg-[#F6F3FF]',
+        border: 'border-[#DDD6FE]/70',
+        iconColor: 'text-[#7C3AED]',
+        arrowBg: 'bg-[#F6F3FF]',
+        arrowHover: 'group-hover:bg-[#EDE9FE]',
+        arrowBorder: 'border-[#DDD6FE]/60'
+      }
+    },
+    {
+      id: 'requests',
+      title: 'Content Requests',
+      description: 'Create and manage content requests.',
+      icon: FilePlus2,
+      tab: 'ideas',
+      badge: stats.requestsCount > 0 ? `${stats.requestsCount} Requests` : null,
+      color: {
+        bg: 'bg-[#F0F8FF]',
+        border: 'border-[#BAE6FD]/70',
+        iconColor: 'text-[#0284C7]',
+        arrowBg: 'bg-[#F0F8FF]',
+        arrowHover: 'group-hover:bg-[#E0F2FE]',
+        arrowBorder: 'border-[#BAE6FD]/60'
+      }
+    },
+    {
+      id: 'planning',
+      title: 'Content Planning',
+      description: 'Create content pillars and calendars.',
+      icon: CalendarCheck2,
+      tab: 'pillars',
+      badge: stats.pillarsCount > 0 ? `${stats.pillarsCount} Pillars` : null,
+      color: {
+        bg: 'bg-[#F0FDF4]',
+        border: 'border-[#BBF7D0]/70',
+        iconColor: 'text-[#16A34A]',
+        arrowBg: 'bg-[#F0FDF4]',
+        arrowHover: 'group-hover:bg-[#DCFCE7]',
+        arrowBorder: 'border-[#BBF7D0]/60'
+      }
+    },
+    {
+      id: 'campaigns',
+      title: 'Campaigns',
+      description: 'Plan and manage marketing campaigns.',
+      icon: Megaphone,
+      tab: 'campaigns',
+      badge: stats.campaignsCount > 0 ? `${stats.campaignsCount} Active` : null,
+      color: {
+        bg: 'bg-[#FFF1F2]',
+        border: 'border-[#FECDD3]/70',
+        iconColor: 'text-[#E11D48]',
+        arrowBg: 'bg-[#FFF1F2]',
+        arrowHover: 'group-hover:bg-[#FFE4E6]',
+        arrowBorder: 'border-[#FECDD3]/60'
+      }
+    },
+    {
+      id: 'composer',
+      title: 'Posts & Content',
+      description: 'Create posts, carousels, reels and other content.',
+      icon: ImageIcon,
+      tab: 'composer',
+      badge: stats.postsCount > 0 ? `${stats.postsCount} Posts` : null,
+      color: {
+        bg: 'bg-[#EFF6FF]',
+        border: 'border-[#BFDBFE]/70',
+        iconColor: 'text-[#2563EB]',
+        arrowBg: 'bg-[#EFF6FF]',
+        arrowHover: 'group-hover:bg-[#DBEAFE]',
+        arrowBorder: 'border-[#BFDBFE]/60'
+      }
+    },
+    {
+      id: 'media',
+      title: 'Media Library',
+      description: 'Manage images, videos and creative assets.',
+      icon: Film,
+      tab: 'media',
+      badge: null,
+      color: {
+        bg: 'bg-[#F5F3FF]',
+        border: 'border-[#DDD6FE]/70',
+        iconColor: 'text-[#9333EA]',
+        arrowBg: 'bg-[#F5F3FF]',
+        arrowHover: 'group-hover:bg-[#EDE9FE]',
+        arrowBorder: 'border-[#DDD6FE]/60'
+      }
+    },
+    {
+      id: 'skills',
+      title: 'Skill Library',
+      description: 'Explore and manage AI skills.',
+      icon: Layers,
+      tab: 'skills',
+      badge: '10 Registered',
+      color: {
+        bg: 'bg-[#FEFCE8]',
+        border: 'border-[#FEF08A]/70',
+        iconColor: 'text-[#CA8A04]',
+        arrowBg: 'bg-[#FEFCE8]',
+        arrowHover: 'group-hover:bg-[#FEF9C3]',
+        arrowBorder: 'border-[#FEF08A]/60'
+      }
     }
-  };
+  ];
 
   return (
     <div className="space-y-6">
-      {/* BRAND & STRATEGY HEALTH HERO CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start space-x-3.5">
-            {brand?.logoUrl ? (
-              <img src={brand.logoUrl} alt={brand.name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-2xs" />
-            ) : (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-extrabold text-lg flex items-center justify-center shadow-2xs">
-                {(brand?.name || 'Brand').slice(0, 2).toUpperCase()}
+      {/* 8 BENTO ACTION CARDS GRID (2 COLUMNS x 4 ROWS) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        {studioCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.id}
+              onClick={() => onNavigateTab(card.tab)}
+              className="bg-white rounded-2xl sm:rounded-3xl border border-black/[0.06] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-black/[0.12] transition-all duration-200 flex items-center justify-between group cursor-pointer"
+            >
+              <div className="flex items-center space-x-4 sm:space-x-5 min-w-0">
+                {/* Colorful Soft Tinted Icon Container */}
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${card.color.bg} ${card.color.border} border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform duration-200`}>
+                  <Icon className={`w-7 h-7 sm:w-8 sm:h-8 ${card.color.iconColor}`} />
+                </div>
+
+                {/* Text: Big Bold Title + Short Description */}
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-extrabold text-[#0F1012] group-hover:text-black tracking-tight truncate">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs sm:text-[13px] text-neutral-500 font-normal mt-0.5 leading-snug line-clamp-1">
+                    {card.description}
+                  </p>
+                </div>
               </div>
-            )}
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-bold text-slate-900">{brand?.name || 'Current Brand'}</h2>
-                {getStatusBadge(strategy?.status)}
+
+              {/* Circular Action Arrow */}
+              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${card.color.arrowBg} ${card.color.arrowBorder} border ${card.color.iconColor} ${card.color.arrowHover} flex items-center justify-center shrink-0 ml-3 transition-all duration-200 group-hover:translate-x-1 shadow-2xs`}>
+                <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
-              <p className="text-xs text-slate-500 mt-0.5 line-clamp-1 max-w-xl">
-                {strategy?.positioning || brand?.description || 'Build an intentional, automated marketing engine with connected Strategy, Content Pillars & Multi-Platform Publishing.'}
-              </p>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-3 shrink-0">
-            {/* Launchpad Status Pill */}
-            <button
-              onClick={() => onNavigateTab('launchpad')}
-              className="px-3.5 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100/80 border border-purple-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
-            >
-              <Rocket className="w-3.5 h-3.5 text-purple-600" />
-              <span>Launchpad: Stage {stats.launchpadStage || 1}/4</span>
-            </button>
-
-            <button
-              onClick={onRefresh}
-              disabled={isLoading}
-              className="p-2 text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 rounded-full border border-slate-200 transition cursor-pointer"
-              title="Refresh studio overview"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      {/* 6 EXECUTIVE KPI CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {/* Strategy */}
-        <div
-          onClick={() => onNavigateTab('strategy')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Strategy</span>
-            <Target className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+      {/* QUICK BRAND TELEMETRY & STRATEGY CONTEXT FOOTER */}
+      <div className="bg-white rounded-3xl border border-black/[0.06] p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3.5 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-800 font-bold text-sm shrink-0">
+            {(brand?.name || 'OmniSocial').slice(0, 2).toUpperCase()}
           </div>
-          <div className="text-lg font-bold text-slate-900">
-            {strategy?.status ? strategy.status : 'None'}
+          <div className="min-w-0">
+            <div className="flex items-center space-x-2">
+              <span className="font-extrabold text-sm text-[#0F1012] tracking-tight truncate">
+                {brand?.name || 'OmniSocial Workspace'}
+              </span>
+              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ACTIVE
+              </span>
+            </div>
+            <p className="text-xs text-neutral-400 mt-0.5 truncate max-w-lg">
+              {strategy?.positioning || 'Sovereign AI Social Management Suite with end-to-end multi-channel orchestration.'}
+            </p>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">Level 1 Blueprint</p>
         </div>
 
-        {/* Content Pillars */}
-        <div
-          onClick={() => onNavigateTab('pillars')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-purple-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pillars</span>
-            <Layers className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-lg font-bold text-slate-900">
-            {stats.pillarsCount} Active
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Distribution Mixer</p>
-        </div>
-
-        {/* Campaigns */}
-        <div
-          onClick={() => onNavigateTab('campaigns')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-amber-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Campaigns</span>
-            <Calendar className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-lg font-bold text-slate-900">
-            {stats.campaignsCount} Sprints
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Sequential Roadmaps</p>
-        </div>
-
-        {/* Idea Bank */}
-        <div
-          onClick={() => onNavigateTab('ideas')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-emerald-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Idea Bank</span>
-            <Lightbulb className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-lg font-bold text-slate-900">
-            {stats.ideasCount} Ideas
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Brainstormed Bank</p>
-        </div>
-
-        {/* Requests */}
-        <div
-          onClick={() => onNavigateTab('ideas')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-sky-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Requests</span>
-            <Zap className="w-4 h-4 text-sky-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-lg font-bold text-slate-900">
-            {stats.requestsCount} Open
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Internal Intake</p>
-        </div>
-
-        {/* Approvals */}
-        <div
-          onClick={() => onNavigateTab('approvals')}
-          className="bg-white p-4 rounded-xl border border-slate-200 hover:border-rose-400 hover:shadow-sm transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Approvals</span>
-            <FileCheck2 className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-lg font-bold text-slate-900">
-            {stats.pendingApprovalsCount} Pending
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">Governance Queue</p>
-        </div>
-      </div>
-
-      {/* QUICK WORKSPACE LAUNCHERS */}
-      <div className="bg-slate-50/80 rounded-2xl border border-slate-200/80 p-5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3.5">
-          Workspace Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Card 1 */}
+        <div className="flex items-center space-x-2.5 shrink-0">
           <button
+            type="button"
             onClick={() => onNavigateTab('launchpad')}
-            className="p-4 bg-white hover:bg-purple-50/50 border border-slate-200 hover:border-purple-300 rounded-xl text-left transition group shadow-2xs"
+            className="px-4 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100/80 border border-purple-200/90 rounded-full shadow-2xs flex items-center space-x-1.5 transition cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
-                🚀
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition" />
-            </div>
-            <div className="text-sm font-bold text-slate-900">Brand Launchpad</div>
-            <p className="text-[11px] text-slate-500 mt-0.5">4-stage onboarding from zero to active publishing.</p>
+            <Rocket className="w-3.5 h-3.5 text-purple-600" />
+            <span>Launchpad Stage {stats.launchpadStage || 1}/4</span>
           </button>
 
-          {/* Card 2 */}
           <button
-            onClick={() => onNavigateTab('strategy')}
-            className="p-4 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-300 rounded-xl text-left transition group shadow-2xs"
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="p-2 text-neutral-500 hover:text-neutral-800 bg-neutral-50 hover:bg-neutral-100 rounded-full border border-neutral-200 transition cursor-pointer"
+            title="Refresh studio overview"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                🎯
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition" />
-            </div>
-            <div className="text-sm font-bold text-slate-900">Marketing Strategy</div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Define personas, positioning and channel roadmap.</p>
-          </button>
-
-          {/* Card 3 */}
-          <button
-            onClick={() => onNavigateTab('pillars')}
-            className="p-4 bg-white hover:bg-amber-50/50 border border-slate-200 hover:border-amber-300 rounded-xl text-left transition group shadow-2xs"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
-                🏛️
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition" />
-            </div>
-            <div className="text-sm font-bold text-slate-900">Pillar Distribution</div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Balance content pillars & target percentages.</p>
-          </button>
-
-          {/* Card 4 */}
-          <button
-            onClick={() => onNavigateTab('composer')}
-            className="p-4 bg-white hover:bg-emerald-50/50 border border-slate-200 hover:border-emerald-300 rounded-xl text-left transition group shadow-2xs"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                ✍️
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition" />
-            </div>
-            <div className="text-sm font-bold text-slate-900">Post & Creative Composer</div>
-            <p className="text-[11px] text-slate-500 mt-0.5">Craft viral copy, carousels, visuals & schedule.</p>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
-      </div>
-
-      {/* RECENT SKILL EXECUTIONS AUDIT FEED */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3.5">
-          <div className="flex items-center space-x-2">
-            <Cpu className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-900">Recent AI Skill Executions</h3>
-          </div>
-          <button
-            onClick={() => onNavigateTab('skills')}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
-          >
-            <span>Explore All Skills</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {recentExecutions && recentExecutions.length > 0 ? (
-          <div className="divide-y divide-slate-100">
-            {recentExecutions.map((exec) => (
-              <div key={exec.id} className="py-2.5 flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
-                  <span className={`w-2 h-2 rounded-full ${exec.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                  <div>
-                    <span className="font-semibold text-slate-800">{exec.skill?.name || exec.skillId}</span>
-                    <span className="text-[11px] text-slate-400 ml-2">({exec.skill?.category || 'AI'})</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-4 text-slate-400 text-[11px]">
-                  <span>{exec.latencyMs ? `${exec.latencyMs}ms` : '—'}</span>
-                  <span>{exec.tokensUsed ? `${exec.tokensUsed} tokens` : '—'}</span>
-                  <span>{new Date(exec.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-6 text-center text-xs text-slate-400">
-            No skill executions recorded yet. Use the prompt bar above to run your first skill!
-          </div>
-        )}
       </div>
     </div>
   );
