@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AppLayout from '../../components/AppLayout';
 import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
@@ -110,7 +111,10 @@ function AccountPillAvatar({
   );
 }
 
-export default function ContentStudioPage() {
+function ContentStudioContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get('tab');
+
   const [activeBrandId, setActiveBrandId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return getStoredActiveBrandId() || '';
@@ -142,27 +146,19 @@ export default function ContentStudioPage() {
     }
   };
 
+  // Synchronize activeTab whenever searchParams or URL changes
   useEffect(() => {
-    const handleUrlSync = () => {
-      if (typeof window === 'undefined') return;
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      if (
-        tabParam &&
-        ['overview', 'strategy', 'pillars', 'campaigns', 'ideas', 'composer', 'media', 'approvals', 'launchpad', 'skills'].includes(
-          tabParam
-        )
-      ) {
-        setActiveTab(tabParam as any);
-      } else if (!tabParam) {
-        setActiveTab('overview');
-      }
-    };
-
-    handleUrlSync();
-    window.addEventListener('popstate', handleUrlSync);
-    return () => window.removeEventListener('popstate', handleUrlSync);
-  }, []);
+    if (
+      tabParam &&
+      ['overview', 'strategy', 'pillars', 'campaigns', 'ideas', 'composer', 'media', 'approvals', 'launchpad', 'skills'].includes(
+        tabParam
+      )
+    ) {
+      setActiveTab(tabParam as any);
+    } else if (!tabParam) {
+      setActiveTab('overview');
+    }
+  }, [tabParam]);
 
   const [overviewData, setOverviewData] = useState<any | null>(null);
   const [isLoadingOverview, setIsLoadingOverview] = useState(false);
@@ -274,6 +270,14 @@ export default function ContentStudioPage() {
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+
+  const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
+    if (data.title) setTitle(data.title);
+    if (data.caption) setCaption(data.caption);
+    if (data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0) setHashtags(data.hashtags);
+    if (data.format) setFormat(data.format as any);
+    handleTabChange('composer');
+  };
 
   // Media Creator Hub State (AI Video & Reel, AI Image, AI Carousel, Upload, URL)
   const [mediaMode, setMediaMode] = useState<'ai-video' | 'ai-image' | 'carousel' | 'upload' | 'url'>('ai-video');
@@ -1383,8 +1387,9 @@ export default function ContentStudioPage() {
             {/* OUTCOME-FIRST PROMPT BAR (INSIDE SUB-TABS) */}
             <OutcomePromptBar
               brandId={activeBrandId}
-              onNavigateTab={(tabId) => setActiveTab(tabId as any)}
+              onNavigateTab={(tabId) => handleTabChange(tabId as any)}
               onRefreshData={fetchOverview}
+              onLoadIntoComposer={handleLoadIntoComposer}
             />
           </>
         )}
@@ -1454,6 +1459,7 @@ export default function ContentStudioPage() {
                 brandId={activeBrandId}
                 onNavigateTab={(tabId) => handleTabChange(tabId as any)}
                 onRefreshData={fetchOverview}
+                onLoadIntoComposer={handleLoadIntoComposer}
               />
             </div>
           </div>
@@ -3623,5 +3629,19 @@ export default function ContentStudioPage() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+export default function ContentStudioPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F4F5F7] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <ContentStudioContent />
+    </Suspense>
   );
 }

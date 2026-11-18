@@ -196,100 +196,31 @@ function SidebarContent({
                 </Link>
               );
             })}
-
-            {/* Secondary Operational Links (Inbox & Channels) */}
-            <div className="pt-3 mt-3 border-t border-slate-100 space-y-1">
-              <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
-                Workspaces
-              </div>
-
-              <Link
-                href="/inbox?type=COMMENT"
-                onClick={onCloseMobile}
-                className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
-                  pathname.startsWith('/inbox')
-                    ? 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <MessageSquare
-                    className={`w-4 h-4 shrink-0 ${
-                      pathname.startsWith('/inbox') ? 'text-[#7C3AED]' : 'text-slate-500'
-                    }`}
-                  />
-                  <span className="truncate">Inbox & Engage</span>
-                </div>
-                {totalUnreadEngage > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#7C3AED] shrink-0">
-                    {totalUnreadEngage}
-                  </span>
-                )}
-              </Link>
-
-              <Link
-                href="/accounts"
-                onClick={onCloseMobile}
-                className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
-                  pathname === '/accounts'
-                    ? 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Share2
-                    className={`w-4 h-4 shrink-0 ${
-                      pathname === '/accounts' ? 'text-[#7C3AED]' : 'text-slate-500'
-                    }`}
-                  />
-                  <span className="truncate">Connected Channels</span>
-                </div>
-              </Link>
-
-              <Link
-                href="/funnels"
-                onClick={onCloseMobile}
-                className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
-                  pathname === '/funnels' || pathname.startsWith('/funnel')
-                    ? 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Layers
-                    className={`w-4 h-4 shrink-0 ${
-                      pathname === '/funnels' || pathname.startsWith('/funnel') ? 'text-[#7C3AED]' : 'text-slate-500'
-                    }`}
-                  />
-                  <span className="truncate">Lead Funnels</span>
-                </div>
-              </Link>
-
-              {userRole === 'SUPERADMIN' && (
-                <Link
-                  href="/superadmin"
-                  onClick={onCloseMobile}
-                  className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
-                    pathname === '/superadmin'
-                      ? 'bg-amber-100 text-amber-900 font-bold shadow-2xs'
-                      : 'text-amber-800 hover:bg-amber-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="truncate">Platform Admin</span>
-                  </div>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-amber-200/80 text-amber-900">
-                    ROOT
-                  </span>
-                </Link>
-              )}
-            </div>
           </nav>
         </div>
 
-        {/* Bottom Pinned Link: Settings */}
-        <div className="p-3 border-t border-slate-100">
+        {/* Bottom Pinned Link: Settings & Platform Admin if ROOT */}
+        <div className="p-3 border-t border-slate-100 space-y-1">
+          {userRole === 'SUPERADMIN' && (
+            <Link
+              href="/superadmin"
+              onClick={onCloseMobile}
+              className={`flex items-center justify-between px-3.5 py-2 text-xs font-semibold rounded-xl transition-all ${
+                pathname === '/superadmin'
+                  ? 'bg-amber-100 text-amber-900 font-bold shadow-2xs'
+                  : 'text-amber-800 hover:bg-amber-50'
+              }`}
+            >
+              <div className="flex items-center space-x-3 min-w-0">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="truncate">Platform Admin</span>
+              </div>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-amber-200/80 text-amber-900">
+                ROOT
+              </span>
+            </Link>
+          )}
+
           <Link
             href="/settings"
             onClick={onCloseMobile}

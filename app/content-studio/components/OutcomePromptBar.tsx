@@ -8,12 +8,14 @@ interface OutcomePromptBarProps {
   brandId: string;
   onNavigateTab: (tabId: string) => void;
   onRefreshData?: () => void;
+  onLoadIntoComposer?: (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => void;
 }
 
 export default function OutcomePromptBar({
   brandId,
   onNavigateTab,
-  onRefreshData
+  onRefreshData,
+  onLoadIntoComposer
 }: OutcomePromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [isOrchestrating, setIsOrchestrating] = useState(false);
@@ -298,7 +300,24 @@ export default function OutcomePromptBar({
                     </span>
                     <button
                       type="button"
-                      onClick={() => onNavigateTab('composer')}
+                      onClick={() => {
+                        const slides = executionResult.output.slides || executionResult.output.deck || [];
+                        const slideText = slides
+                          .map((s: any, idx: number) => `Slide ${s.slideNumber || idx + 1}: ${s.title || s.header || ''}\n${s.body || s.content || s.text || ''}`)
+                          .join('\n\n');
+                        const hook = executionResult.output.hook || '';
+                        const fullCaption = hook ? `${hook}\n\n${slideText}` : slideText;
+                        if (onLoadIntoComposer) {
+                          onLoadIntoComposer({
+                            caption: fullCaption,
+                            title: slides[0]?.title ? `LinkedIn Carousel: ${slides[0].title}` : '5-Slide Educational Carousel',
+                            hashtags: executionResult.output.hashtags || ['#Marketing', '#Strategy', '#Leadership'],
+                            format: 'CAROUSEL'
+                          });
+                        } else {
+                          onNavigateTab('composer');
+                        }
+                      }}
                       className="px-3 py-1 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-1 cursor-pointer transition shadow-2xs"
                     >
                       <span>Open in Post Composer</span>
@@ -324,7 +343,21 @@ export default function OutcomePromptBar({
                     <span className="font-bold text-neutral-900 text-xs">Generated Social Post</span>
                     <button
                       type="button"
-                      onClick={() => onNavigateTab('composer')}
+                      onClick={() => {
+                        const cap = executionResult.output.caption || executionResult.output.hook || '';
+                        const hook = executionResult.output.hook;
+                        const hashtags = Array.isArray(executionResult.output.hashtags) ? executionResult.output.hashtags : [];
+                        if (onLoadIntoComposer) {
+                          onLoadIntoComposer({
+                            caption: cap,
+                            title: hook ? (hook.slice(0, 30) + '...') : 'AI Generated Social Post',
+                            hashtags,
+                            format: 'POST'
+                          });
+                        } else {
+                          onNavigateTab('composer');
+                        }
+                      }}
                       className="px-3 py-1 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-1 cursor-pointer transition shadow-2xs"
                     >
                       <span>Load into Composer</span>

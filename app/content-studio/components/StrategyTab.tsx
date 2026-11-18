@@ -76,7 +76,26 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newDiffInput, setNewDiffInput] = useState('');
   const [showAddDiff, setShowAddDiff] = useState(false);
-  const [swotData, setSwotData] = useState<any | null>(null);
+  const [swotData, setSwotData] = useState<any>({
+    strengths: [
+      'Proprietary AI automation workflows delivering 3x velocity',
+      'Deep domain expertise across BFSI, Tech, and Healthcare',
+      'End-to-end capabilities: Strategic consulting through verified multi-channel execution'
+    ],
+    weaknesses: [
+      'Nascent brand awareness in emerging international markets',
+      'Content production velocity bottlenecks during peak client intake'
+    ],
+    opportunities: [
+      'Accelerating enterprise demand for sovereign AI social orchestration',
+      'Direct client retainer expansions through automated review portals',
+      'Multi-platform repurposing capturing untapped executive reach'
+    ],
+    threats: [
+      'Rapidly shifting Meta and LinkedIn algorithmic distribution rules',
+      'Low-barrier agency commoditization and generic AI tools'
+    ]
+  });
   const [showStrategyModal, setShowStrategyModal] = useState(false);
 
   // Sync business name when brand prop loads
@@ -267,10 +286,10 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
           if (ctx.businessType) setBusinessType(ctx.businessType);
           if (ctx.industrySector) setIndustrySector(ctx.industrySector);
           if (ctx.description) setBusinessDescription(ctx.description);
-          if (Array.isArray(ctx.productsServices) && ctx.productsServices.length > 0) {
+          if (Array.isArray(ctx.productsServices)) {
             setProductsServices(ctx.productsServices);
           }
-          if (Array.isArray(ctx.differentiators) && ctx.differentiators.length > 0) {
+          if (Array.isArray(ctx.differentiators)) {
             setDifferentiators(ctx.differentiators);
           }
         } else if (typeof ctx === 'string' && ctx.trim()) {
@@ -280,10 +299,10 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
             if (parsed.businessType) setBusinessType(parsed.businessType);
             if (parsed.industrySector) setIndustrySector(parsed.industrySector);
             if (parsed.description) setBusinessDescription(parsed.description);
-            if (Array.isArray(parsed.productsServices) && parsed.productsServices.length > 0) {
+            if (Array.isArray(parsed.productsServices)) {
               setProductsServices(parsed.productsServices);
             }
-            if (Array.isArray(parsed.differentiators) && parsed.differentiators.length > 0) {
+            if (Array.isArray(parsed.differentiators)) {
               setDifferentiators(parsed.differentiators);
             }
           } catch {
@@ -754,8 +773,8 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
               </div>
             )}
 
-            {/* STEP 1: FORM FIELDS */}
-            {activeSection === 1 && (
+            {/* STEP 1: FORM FIELDS (BUSINESS OVERVIEW SUBTAB) */}
+            {activeSection === 1 && (activeSubtab === 'overview' || !activeSubtab) && (
               <div className="space-y-5">
                 {/* Row 1: Name, Type, Industry */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -970,6 +989,219 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
                       ))}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 1: SWOT & ASSETS SUBTAB */}
+            {activeSection === 1 && activeSubtab === 'swot' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-neutral-100">
+                  <div>
+                    <h4 className="text-xs font-bold text-neutral-900">SWOT &amp; Strategic Brand Assets</h4>
+                    <p className="text-[11px] text-neutral-500">Internal strengths and gaps versus external market forces synthesized by AI Copilot.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopilotAction('swot')}
+                    disabled={copilotLoading === 'swot'}
+                    className="px-3 py-1.5 text-xs font-bold text-[#7C3AED] bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 flex items-center space-x-1 cursor-pointer transition shrink-0"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{copilotLoading === 'swot' ? 'Analyzing...' : 'Refresh SWOT with AI'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* STRENGTHS */}
+                  <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between text-emerald-900 font-extrabold text-xs">
+                      <span className="flex items-center space-x-1.5">
+                        <span>🛡️</span>
+                        <span>Strengths (Internal)</span>
+                      </span>
+                      <span className="text-[10px] bg-emerald-100/90 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                        {(swotData?.strengths || []).length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {(swotData?.strengths || []).map((s: string, idx: number) => (
+                        <div key={idx} className="bg-white/95 rounded-xl p-2.5 text-xs text-neutral-800 border border-emerald-100 flex items-center justify-between shadow-2xs">
+                          <span className="leading-snug pr-2">{s}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (swotData.strengths || []).filter((_: any, i: number) => i !== idx);
+                              setSwotData({ ...swotData, strengths: updated });
+                            }}
+                            className="text-neutral-300 hover:text-rose-600 cursor-pointer shrink-0"
+                            title="Remove point"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* WEAKNESSES */}
+                  <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between text-amber-900 font-extrabold text-xs">
+                      <span className="flex items-center space-x-1.5">
+                        <span>⚠️</span>
+                        <span>Weaknesses / Gaps (Internal)</span>
+                      </span>
+                      <span className="text-[10px] bg-amber-100/90 text-amber-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                        {(swotData?.weaknesses || []).length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {(swotData?.weaknesses || []).map((w: string, idx: number) => (
+                        <div key={idx} className="bg-white/95 rounded-xl p-2.5 text-xs text-neutral-800 border border-amber-100 flex items-center justify-between shadow-2xs">
+                          <span className="leading-snug pr-2">{w}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (swotData.weaknesses || []).filter((_: any, i: number) => i !== idx);
+                              setSwotData({ ...swotData, weaknesses: updated });
+                            }}
+                            className="text-neutral-300 hover:text-rose-600 cursor-pointer shrink-0"
+                            title="Remove point"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* OPPORTUNITIES */}
+                  <div className="p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between text-indigo-900 font-extrabold text-xs">
+                      <span className="flex items-center space-x-1.5">
+                        <span>🚀</span>
+                        <span>Opportunities (External)</span>
+                      </span>
+                      <span className="text-[10px] bg-indigo-100/90 text-indigo-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                        {(swotData?.opportunities || []).length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {(swotData?.opportunities || []).map((o: string, idx: number) => (
+                        <div key={idx} className="bg-white/95 rounded-xl p-2.5 text-xs text-neutral-800 border border-indigo-100 flex items-center justify-between shadow-2xs">
+                          <span className="leading-snug pr-2">{o}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (swotData.opportunities || []).filter((_: any, i: number) => i !== idx);
+                              setSwotData({ ...swotData, opportunities: updated });
+                            }}
+                            className="text-neutral-300 hover:text-rose-600 cursor-pointer shrink-0"
+                            title="Remove point"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* THREATS */}
+                  <div className="p-4 bg-rose-50/70 border border-rose-200/80 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between text-rose-900 font-extrabold text-xs">
+                      <span className="flex items-center space-x-1.5">
+                        <span>⚡</span>
+                        <span>Threats (External)</span>
+                      </span>
+                      <span className="text-[10px] bg-rose-100/90 text-rose-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                        {(swotData?.threats || []).length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {(swotData?.threats || []).map((t: string, idx: number) => (
+                        <div key={idx} className="bg-white/95 rounded-xl p-2.5 text-xs text-neutral-800 border border-rose-100 flex items-center justify-between shadow-2xs">
+                          <span className="leading-snug pr-2">{t}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (swotData.threats || []).filter((_: any, i: number) => i !== idx);
+                              setSwotData({ ...swotData, threats: updated });
+                            }}
+                            className="text-neutral-300 hover:text-rose-600 cursor-pointer shrink-0"
+                            title="Remove point"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 1: BRAND PROFILE SUBTAB */}
+            {activeSection === 1 && activeSubtab === 'profile' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-neutral-700 block">Brand Mission &amp; Purpose</label>
+                  <textarea
+                    rows={3}
+                    value={positioning}
+                    onChange={(e) => setPositioning(e.target.value)}
+                    className="w-full text-xs p-3 rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-neutral-800 leading-relaxed resize-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-neutral-700 block">Brand Tone &amp; Executive Voice</label>
+                  <input
+                    type="text"
+                    value="Authoritative, Data-Driven, Visionary and Practical"
+                    readOnly
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-700"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* STEP 1: OFFERINGS SUBTAB */}
+            {activeSection === 1 && activeSubtab === 'offerings' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="flex items-center justify-between pb-1 border-b border-neutral-100">
+                  <h4 className="text-xs font-bold text-neutral-900">Active Products &amp; Solutions</h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddProduct(true)}
+                    className="text-xs font-bold text-[#7C3AED] hover:text-[#6D28D9] flex items-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Service</span>
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {productsServices.map((prod, idx) => (
+                    <div key={idx} className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 flex items-center justify-between text-xs">
+                      <span className="font-semibold text-neutral-800">{prod}</span>
+                      <button type="button" onClick={() => handleRemoveProduct(idx)} className="text-neutral-400 hover:text-rose-600">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 1: VALUE PROPOSITION SUBTAB */}
+            {activeSection === 1 && activeSubtab === 'value_prop' && (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-neutral-700 block">Core Value Proposition</label>
+                  <textarea
+                    rows={4}
+                    value={valueProposition}
+                    onChange={(e) => setValueProposition(e.target.value)}
+                    className="w-full text-xs p-3 rounded-xl border border-neutral-200 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-neutral-800 leading-relaxed resize-none"
+                  />
                 </div>
               </div>
             )}

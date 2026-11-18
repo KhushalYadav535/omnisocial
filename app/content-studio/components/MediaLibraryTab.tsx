@@ -122,7 +122,8 @@ export default function MediaLibraryTab({
 
   const handleDeleteMedia = async (mediaId: string) => {
     try {
-      await apiRequest(`/content-studio/media/${mediaId}`, { method: 'DELETE' });
+      const q = brandId ? `?brandId=${brandId}` : '';
+      await apiRequest(`/content-studio/media/${mediaId}${q}`, { method: 'DELETE' });
       setMediaList(prev => prev.filter(m => m.id !== mediaId));
       setNotification({ type: 'success', message: 'Asset deleted.' });
     } catch (err: any) {

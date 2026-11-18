@@ -63,6 +63,21 @@ export function setStoredActiveBrandId(brandId: string) {
   }
 }
 
+export function getStoredActiveBrandName(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('omni_active_brand_name');
+}
+
+export function setStoredActiveBrandName(brandName: string) {
+  if (typeof window !== 'undefined') {
+    if (brandName) {
+      localStorage.setItem('omni_active_brand_name', brandName);
+    } else {
+      localStorage.removeItem('omni_active_brand_name');
+    }
+  }
+}
+
 export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}

@@ -9,7 +9,9 @@ import {
   clearAuthToken, 
   apiRequest,
   getStoredActiveBrandId,
-  setStoredActiveBrandId
+  setStoredActiveBrandId,
+  getStoredActiveBrandName,
+  setStoredActiveBrandName
 } from '../lib/api';
 import { 
   Building2, 
@@ -121,10 +123,20 @@ function NavbarContent({
             const savedBrandId = getStoredActiveBrandId();
             if (!currentBrandId && onBrandChange) {
               if (savedBrandId && uniqueBrands.some((b: any) => b.id === savedBrandId)) {
+                const targetBrand = uniqueBrands.find((b: any) => b.id === savedBrandId);
+                if (targetBrand) setStoredActiveBrandName(targetBrand.name);
                 onBrandChange(savedBrandId);
               } else {
-                onBrandChange(uniqueBrands[0].id);
+                // Strictly prioritize Apex Digital over dummy brands
+                const apex = uniqueBrands.find((b: any) => b.name?.toLowerCase().includes('apex'));
+                const defaultBrand = apex || uniqueBrands[0];
+                setStoredActiveBrandId(defaultBrand.id);
+                setStoredActiveBrandName(defaultBrand.name);
+                onBrandChange(defaultBrand.id);
               }
+            } else if (currentBrandId) {
+              const currentBrand = uniqueBrands.find((b: any) => b.id === currentBrandId);
+              if (currentBrand) setStoredActiveBrandName(currentBrand.name);
             }
           }
         })
@@ -361,7 +373,7 @@ function NavbarContent({
           >
             <Tag className="w-3.5 h-3.5 text-[#7C3AED] shrink-0" />
             <span className="max-w-[85px] sm:max-w-[130px] truncate">
-              Brand: {selectedBrand?.name || 'CredibilityCRM'}
+              Brand: {selectedBrand?.name || (typeof window !== 'undefined' ? (getStoredActiveBrandName() || 'Apex Digital') : 'Apex Digital')}
             </span>
             <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
           </button>
@@ -374,8 +386,8 @@ function NavbarContent({
 
               <div className="max-h-60 overflow-y-auto py-1">
                 {brands.length === 0 ? (
-                  <div className="px-3.5 py-2 text-xs text-slate-500">
-                    CredibilityCRM (Default)
+                  <div className="px-3.5 py-2 text-xs text-slate-500 font-semibold">
+                    {typeof window !== 'undefined' ? (getStoredActiveBrandName() || 'Apex Digital') : 'Apex Digital'} (Active)
                   </div>
                 ) : (
                   brands.map((b) => {
@@ -386,6 +398,7 @@ function NavbarContent({
                         type="button"
                         onClick={() => {
                           setStoredActiveBrandId(b.id);
+                          setStoredActiveBrandName(b.name);
                           if (onBrandChange) onBrandChange(b.id);
                           setShowBrandMenu(false);
                         }}

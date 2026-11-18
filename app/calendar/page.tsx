@@ -531,7 +531,7 @@ export default function CalendarPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY' | 'LIST' | 'GRID'>('MONTH');
-  const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-01T00:00:00Z'));
+  const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-15T12:00:00Z'));
   const [today, setToday] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [viewingDayDrops, setViewingDayDrops] = useState<{ date: Date; events: any[] } | null>(null);
@@ -1890,10 +1890,26 @@ export default function CalendarPage() {
     weekDays.push(d);
   }
 
-  const isSameDay = (d1: Date, d2: Date) =>
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate();
+  const isSameDay = (d1: Date, d2: Date) => {
+    if (!d1 || !d2) return false;
+    // Direct local date comparison
+    if (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    ) {
+      return true;
+    }
+    // Timezone-resilient UTC date comparison (for UTC ISO strings)
+    if (
+      d1.getUTCFullYear() === d2.getFullYear() &&
+      d1.getUTCMonth() === d2.getMonth() &&
+      d1.getUTCDate() === d2.getDate()
+    ) {
+      return true;
+    }
+    return false;
+  };
 
   // Filtered events based on platform and status filters
   const filteredEvents = events.filter(e => {
