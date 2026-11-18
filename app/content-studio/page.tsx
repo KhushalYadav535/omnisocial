@@ -1409,7 +1409,11 @@ export default function ContentStudioPage() {
 
         {/* TAB 2: STRATEGY (LEVEL 1) */}
         {activeTab === 'strategy' && (
-          <StrategyTab brandId={activeBrandId} onRefreshOverview={fetchOverview} />
+          <StrategyTab
+            brandId={activeBrandId}
+            onRefreshOverview={fetchOverview}
+            onNavigateTab={(t) => setActiveTab(t as any)}
+          />
         )}
 
         {/* TAB 3: CONTENT PILLARS (LEVEL 2) */}
