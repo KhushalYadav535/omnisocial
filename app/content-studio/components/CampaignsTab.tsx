@@ -22,10 +22,11 @@ import { apiRequest } from '../../../lib/api';
 interface CampaignsTabProps {
   brandId: string;
   onNavigateTab?: (tabId: string) => void;
+  onLoadComposerData?: (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => void;
   onRefreshOverview?: () => void;
 }
 
-export default function CampaignsTab({ brandId, onNavigateTab, onRefreshOverview }: CampaignsTabProps) {
+export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerData, onRefreshOverview }: CampaignsTabProps) {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -279,9 +280,19 @@ export default function CampaignsTab({ brandId, onNavigateTab, onRefreshOverview
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  {onNavigateTab && (
+                  {(onNavigateTab || onLoadComposerData) && (
                     <button
-                      onClick={() => onNavigateTab('composer')}
+                      onClick={() => {
+                        if (onLoadComposerData) {
+                          onLoadComposerData({
+                            title: `[${camp.name}] Campaign Drop`,
+                            caption: `🚀 ${camp.name}: ${camp.coreMessage || camp.description || 'Campaign update'}\n\nKey Focus: ${camp.targetAudience ? `Targeting ${camp.targetAudience}` : 'Brand growth'}\n\n#${(camp.name || 'Campaign').replace(/[^a-zA-Z0-9]/g, '')} #CampaignLaunch`,
+                            format: 'POST'
+                          });
+                        } else if (onNavigateTab) {
+                          onNavigateTab('composer');
+                        }
+                      }}
                       className="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center space-x-1 cursor-pointer"
                     >
                       <span>Create Post</span>

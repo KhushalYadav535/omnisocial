@@ -91,12 +91,20 @@ function DashboardContent() {
         apiRequest(`/social-accounts${query}`)
       ]);
 
+      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED');
+      const activePlatforms = Array.from(new Set((accountsRes.accounts || []).filter((a: any) => a.isConnected !== false).map((a: any) => a.platform?.toUpperCase()))).filter(Boolean) as string[];
+
       setData({
         analytics: analyticsRes,
         recentInteractions: (inboxRes.interactions || []).slice(0, 5),
-        upcomingPosts: (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED').slice(0, 3),
-        accounts: accountsRes.accounts || []
+        upcomingPosts: queuedEvents.slice(0, 3),
+        accounts: accountsRes.accounts || [],
+        queuedEventsCount: queuedEvents.length
       });
+
+      if (activePlatforms.length > 0) {
+        setReportPlatforms(activePlatforms);
+      }
     } catch (err) {
       console.error('Failed to load dashboard:', err);
     } finally {
@@ -141,7 +149,7 @@ function DashboardContent() {
   const metaInsights = data?.analytics?.metaInsights;
 
   const totalPublishedPosts = kpis.totalPublishedPosts ?? 0;
-  const totalQueuedPosts = kpis.totalQueuedPosts ?? 0;
+  const totalQueuedPosts = data?.queuedEventsCount !== undefined ? data.queuedEventsCount : (kpis.totalQueuedPosts ?? 0);
   const totalFailedPosts = kpis.totalFailedPosts ?? 0;
   const totalInteractions = kpis.totalInteractions ?? 0;
   const engagementRate = kpis.engagementRate ?? (totalPublishedPosts > 0 ? (totalInteractions / totalPublishedPosts).toFixed(1) : '0');
@@ -667,7 +675,7 @@ function DashboardContent() {
                           <span>Upcoming Editorial Queue</span>
                         </td>
                         <td className="py-4 px-6 font-mono font-bold text-neutral-900 text-sm">
-                          {totalQueuedPosts} Posts
+                          {totalQueuedPosts} {totalQueuedPosts === 1 ? 'Post' : 'Posts'}
                         </td>
                         <td className="py-4 px-6 text-neutral-500 font-medium">
                           Automated Scheduler

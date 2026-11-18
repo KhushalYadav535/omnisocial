@@ -1458,6 +1458,7 @@ function ContentStudioContent() {
           <CampaignsTab
             brandId={activeBrandId}
             onNavigateTab={(t) => handleTabChange(t as any)}
+            onLoadComposerData={handleLoadIntoComposer}
             onRefreshOverview={fetchOverview}
           />
         )}
@@ -1523,6 +1524,8 @@ function ContentStudioContent() {
             accounts={accounts}
             selectedAccountIds={selectedAccountIds}
             setSelectedAccountIds={setSelectedAccountIds}
+            rawIdea={rawIdea}
+            setRawIdea={setRawIdea}
             caption={caption}
             setCaption={setCaption}
             mediaUrl={mediaUrl}

@@ -118,7 +118,7 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
               Governance & Compliance
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              {approvals.length} Posts in Queue
+              {approvals.length} {approvals.length === 1 ? 'Post' : 'Posts'} in Queue
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Content Approval Queue</h2>

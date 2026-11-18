@@ -163,7 +163,7 @@ function InboxContent() {
     } finally {
       setLoading(false);
     }
-  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit, selectedInteraction]);
+  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit]);
 
   const loadInteractionDetail = async (id: string) => {
     try {
@@ -1078,7 +1078,7 @@ function InboxContent() {
           <div className="flex items-center space-x-3 shrink-0">
             <div className="flex items-center space-x-1.5 font-bold text-neutral-900">
               <span className="w-2 h-2 rounded-full bg-indigo-600" />
-              <span>Total: {totalCount} items</span>
+              <span>Total: {commentsTotal + dmsTotal} items</span>
             </div>
             <span className="text-neutral-300">•</span>
             <div className="flex items-center space-x-1">

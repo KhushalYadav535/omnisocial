@@ -2403,7 +2403,7 @@ export default function CalendarPage() {
                 </span>
               </div>
               <span className="font-mono text-xs font-bold text-neutral-600">
-                {pillarStats.total} Total Calendar Drops ({events.filter((e: any) => e.status === 'QUEUED').length} Queued • {events.filter((e: any) => e.status === 'PUBLISHED').length} Published{events.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${events.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
+                {filteredEvents.length} Total Calendar Drops ({filteredEvents.filter((e: any) => e.status === 'QUEUED').length} Queued • {filteredEvents.filter((e: any) => e.status === 'PUBLISHED').length} Published{filteredEvents.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
               </span>
             </div>
           </div>

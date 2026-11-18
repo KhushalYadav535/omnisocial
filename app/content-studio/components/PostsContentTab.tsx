@@ -42,7 +42,8 @@ import {
   Target,
   Compass,
   Layers,
-  FileText
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../../components/Icons';
 
@@ -53,6 +54,8 @@ export interface PostsContentTabProps {
   accounts: any[];
   selectedAccountIds: string[];
   setSelectedAccountIds: (ids: string[]) => void;
+  rawIdea?: string;
+  setRawIdea?: (idea: string) => void;
   caption: string;
   setCaption: (caption: string) => void;
   mediaUrl: string;
@@ -84,6 +87,8 @@ export default function PostsContentTab({
   accounts,
   selectedAccountIds,
   setSelectedAccountIds,
+  rawIdea = '',
+  setRawIdea,
   caption,
   setCaption,
   mediaUrl,
@@ -138,6 +143,62 @@ export default function PostsContentTab({
   // Hashtag input state
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
+  const [previousCaption, setPreviousCaption] = useState<string | null>(null);
+
+  // Dynamic virality computation evaluated in real-time
+  const computeLiveVirality = (text: string, tags: string[]) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed || trimmed.length < 25) {
+      return {
+        score: 22,
+        grade: 'D',
+        badge: 'Low Dwell Time',
+        color: 'text-rose-600 bg-rose-50 border-rose-200',
+        verdict: 'Caption is too short to generate feed dwell-time or algorithmic reach.'
+      };
+    }
+    if (trimmed.length < 80) {
+      return {
+        score: 54,
+        grade: 'C',
+        badge: 'Needs Hook & Spacing',
+        color: 'text-amber-600 bg-amber-50 border-amber-200',
+        verdict: 'Good start. Add paragraph spacing, bullet points and a concluding question.'
+      };
+    }
+    if (trimmed.length < 180) {
+      return {
+        score: 76,
+        grade: 'B',
+        badge: 'Good Engagement',
+        color: 'text-blue-600 bg-blue-50 border-blue-200',
+        verdict: 'Solid post structure with clear value proposition and readability.'
+      };
+    }
+    const hasBullets = text.includes('•') || text.includes('✅') || text.includes('- ') || text.includes('1.');
+    const hasQuestion = text.includes('?');
+    const hasTags = tags && tags.length > 0;
+    let base = 88;
+    if (hasBullets) base += 3;
+    if (hasQuestion) base += 2;
+    if (hasTags) base += 1;
+    const finalScore = Math.min(base, 94);
+    return {
+      score: finalScore,
+      grade: finalScore >= 90 ? 'A+' : 'A',
+      badge: 'High Virality',
+      color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+      verdict: 'Scroll-stopping opening hook, clear whitespace formatting, and proven CTA velocity.'
+    };
+  };
+
+  const liveVirality = viralityScore?.score ? {
+    score: viralityScore.score,
+    grade: viralityScore.grade || (viralityScore.score >= 90 ? 'A+' : viralityScore.score >= 75 ? 'A' : viralityScore.score >= 50 ? 'C' : 'D'),
+    badge: viralityScore.score >= 80 ? 'High Virality' : viralityScore.score >= 60 ? 'Standard' : 'Low Dwell Time',
+    color: viralityScore.score >= 80 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200',
+    verdict: viralityScore.verdict || 'Algorithmic engagement benchmark.'
+  } : computeLiveVirality(caption, hashtags);
 
   // Native file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -220,28 +281,39 @@ Take the first step today.`,
     setSelectedCta(defaultVariants[nextIdx].cta);
   };
 
-  // Rewrite post copy using specific angles
+  // Rewrite post copy using specific angles with backup
   const handleApplyRewrite = (angle: string) => {
     setShowRewriteMenu(false);
+    setPreviousCaption(caption);
+
     let revisedCopy = caption;
     if (angle === 'punchier') {
-      revisedCopy = caption
-        .split('\n')
-        .filter(l => l.trim().length > 0)
-        .map(l => l.replace(/^(Here are 3 practical steps|It's not just about)/i, 'Key:'))
-        .join('\n\n');
+      const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
+      const firstLine = lines[0] || 'Thinking about a career move in 2026?';
+      const points = lines.slice(1, 4).map(l => l.replace(/^(\d+\.|\*|-|✅|Key:)\s*/i, '').trim()).filter(l => l.length > 5);
+      revisedCopy = `${firstLine.replace(/\?$/, '')} — here is the 2026 short reality:\n\n• ${points[0] || 'Audit current leverage & outcome value'}\n• ${points[1] || 'Compound visible skills and public proof'}\n• ${points[2] || 'Position for authority, not just titles'}\n\nKey: Impact compounds when you act early.`;
     } else if (angle === 'executive') {
-      revisedCopy = `Strategic Outlook for 2026 Leadership:\n\n${caption}\n\nKey Takeaway: Sustainable organizational value stems from proactive positioning and deliberate capability compounding.`;
+      revisedCopy = `Strategic Leadership Perspective (2026 Roadmap):\n\n${caption}\n\nCore Takeaway: Enterprise leverage compounds when leaders position value proactively rather than reacting to headcount cycles.`;
     } else if (angle === 'data') {
-      revisedCopy = `${caption}\n\n📊 Key Benchmark:\n• 3x higher retention when strategic career goals are articulated early\n• 42% faster promotion velocity with transparent value milestones.`;
+      revisedCopy = `${caption}\n\n📊 High-Signal Industry Benchmarks:\n• 3.4x accelerated advancement velocity with transparent outcome milestones\n• 48% higher retention when strategic objectives align to execution capabilities.`;
     } else if (angle === 'hook') {
-      revisedCopy = `90% of professionals overlook this one principle when mapping their 2026 trajectory:\n\n${caption}`;
+      revisedCopy = `92% of ambitious operators get this wrong when planning their 2026 trajectory:\n\n${caption}`;
     } else if (angle === 'question') {
-      revisedCopy = `${caption}\n\nWhat is your #1 focus area as you map your 2026 career roadmap? Drop your perspective below.`;
+      revisedCopy = `${caption}\n\nWhat is your single most important priority as you structure your 2026 growth roadmap? Share your perspective below.`;
     }
     setCaption(revisedCopy);
     if (setStatusMessage) {
       setStatusMessage({ type: 'success', text: `✨ Post rewritten with "${angle}" angle!` });
+    }
+  };
+
+  const handleRestoreCaption = () => {
+    if (previousCaption) {
+      setCaption(previousCaption);
+      setPreviousCaption(null);
+      if (setStatusMessage) {
+        setStatusMessage({ type: 'success', text: 'Restored previous caption draft!' });
+      }
     }
   };
 
@@ -466,14 +538,28 @@ Take the first step today.`,
 
             {/* Dropdown Menu for Schedule / Publish */}
             {showScheduleMenu && (
-              <div className="absolute right-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 text-xs space-y-1 animate-in fade-in">
+              <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 text-xs space-y-1 animate-in fade-in">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowScheduleMenu(false);
+                    onSaveDraft();
+                    if (setStatusMessage) {
+                      setStatusMessage({ type: 'success', text: 'Post submitted to Client Approvals queue!' });
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl font-bold text-slate-800 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-2 transition cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Submit for Client Approval</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowScheduleMenu(false);
                     onPublishNow();
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl font-bold text-slate-800 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-2 transition"
+                  className="w-full text-left px-3 py-2 rounded-xl font-bold text-slate-800 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-2 transition cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5 text-orange-600" />
                   <span>Publish to All Channels Now</span>
@@ -491,7 +577,7 @@ Take the first step today.`,
                       setStatusMessage({ type: 'success', text: 'Set publication to tomorrow 10:00 AM peak window.' });
                     }
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition"
+                  className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition cursor-pointer"
                 >
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
                   <span>Schedule for Optimal Peak Time</span>
@@ -502,7 +588,7 @@ Take the first step today.`,
                     setShowScheduleMenu(false);
                     setActiveStep(1);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition"
+                  className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition cursor-pointer"
                 >
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   <span>Custom Date &amp; Time Picker...</span>
@@ -537,6 +623,37 @@ Take the first step today.`,
               <span>Continue to Generated Posts</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          {/* Campaign Topic & Creative Brief */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Campaign Idea &amp; Topic Brief</span>
+              <span className="text-[11px] font-normal text-slate-400">Describe your product, topic or angle</span>
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                type="text"
+                value={rawIdea}
+                onChange={(e) => setRawIdea && setRawIdea(e.target.value)}
+                placeholder="e.g. Introduce our upcoming eco-friendly resort capsule collection with lightweight breathable linen"
+                className="flex-1 text-xs font-medium border border-slate-200 rounded-xl px-3.5 py-3 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (onGenerateAi) {
+                    onGenerateAi(rawIdea);
+                    setActiveStep(2);
+                  }
+                }}
+                disabled={isGenerating}
+                className="px-5 py-3 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs flex items-center justify-center space-x-1.5 transition cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                <span>Generate with AI</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -638,8 +755,8 @@ Take the first step today.`,
             </div>
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">AI Virality Index</span>
-              <p className="text-sm font-extrabold text-emerald-600">
-                {viralityScore?.score ? `${viralityScore.score}/100 High Virality` : '92/100 Optimal Engagement'}
+              <p className={`text-sm font-extrabold ${liveVirality.score >= 80 ? 'text-emerald-600' : liveVirality.score >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
+                {liveVirality.score}/100 • Grade {liveVirality.grade} ({liveVirality.badge})
               </p>
             </div>
           </div>
@@ -661,18 +778,24 @@ Take the first step today.`,
               type="button"
               onClick={onSaveDraft}
               disabled={submitting}
-              className="px-5 py-2.5 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition"
+              className="px-5 py-2.5 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer"
             >
               Save Draft Only
             </button>
             <button
               type="button"
-              onClick={onPublishNow}
+              onClick={() => {
+                if (scheduledFor) {
+                  onSaveDraft();
+                } else {
+                  onPublishNow();
+                }
+              }}
               disabled={submitting}
               className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-md flex items-center space-x-2 transition cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>Confirm &amp; Launch Campaign</span>
+              <span>{scheduledFor ? 'Confirm & Schedule Drop' : 'Confirm & Launch Campaign'}</span>
             </button>
           </div>
         </div>
@@ -794,17 +917,30 @@ Take the first step today.`,
                       <span className="text-red-500">*</span>
                     </label>
 
-                    {/* Rewrite Dropdown */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowRewriteMenu(!showRewriteMenu)}
-                        className="border border-slate-200 hover:border-amber-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-amber-50/60 flex items-center space-x-1.5 transition cursor-pointer"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                        <span>Rewrite</span>
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
-                      </button>
+                    <div className="flex items-center space-x-2">
+                      {previousCaption && (
+                        <button
+                          type="button"
+                          onClick={handleRestoreCaption}
+                          className="border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded-lg px-2.5 py-1 text-xs font-bold text-amber-900 flex items-center space-x-1.5 transition cursor-pointer shadow-2xs"
+                          title="Restore caption before last AI rewrite"
+                        >
+                          <RotateCcw className="w-3 h-3 text-amber-700" />
+                          <span>Restore</span>
+                        </button>
+                      )}
+
+                      {/* Rewrite Dropdown */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowRewriteMenu(!showRewriteMenu)}
+                          className="border border-slate-200 hover:border-amber-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-amber-50/60 flex items-center space-x-1.5 transition cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          <span>Rewrite</span>
+                          <ChevronDown className="w-3 h-3 text-slate-400" />
+                        </button>
 
                       {showRewriteMenu && (
                         <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 z-40 text-xs space-y-0.5 animate-in fade-in">
@@ -862,7 +998,14 @@ Take the first step today.`,
                       placeholder="Write or refine your post content..."
                       className="w-full p-3.5 text-xs text-slate-800 leading-relaxed rounded-xl focus:outline-hidden resize-none bg-transparent"
                     />
-                    <div className="px-3 pb-2 flex justify-end">
+                    <div className="px-3 pb-2 flex items-center justify-between border-t border-slate-100 pt-2">
+                      <div className="flex items-center space-x-1.5">
+                        <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span className="text-[10px] font-bold text-slate-600">AI Virality Index:</span>
+                        <span className={`px-2 py-0.2 rounded-full text-[10px] font-extrabold border ${liveVirality.color}`}>
+                          {liveVirality.score}/100 • Grade {liveVirality.grade} ({liveVirality.badge})
+                        </span>
+                      </div>
                       <span className="text-[11px] font-mono text-slate-400">
                         {caption.length} / {currentSpec.maxChars.toLocaleString()}
                       </span>
@@ -1179,9 +1322,10 @@ Take the first step today.`,
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* RIGHT COLUMN: STICKY LIVE VISUAL PREVIEW (approx 4.8 of 12 cols) */}
-            <div className="lg:col-span-5 space-y-3 sticky top-20">
+          {/* RIGHT COLUMN: STICKY LIVE VISUAL PREVIEW (approx 4.8 of 12 cols) */}
+          <div className="lg:col-span-5 space-y-3 sticky top-20">
               {/* Preview Header & Device Switcher */}
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm font-bold text-slate-900">Preview</span>

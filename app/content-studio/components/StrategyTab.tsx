@@ -197,7 +197,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#DDD6FE]/70',
         text: 'text-[#7C3AED]'
       },
-      isCompleted: Boolean(strategy?.businessContext && businessDescription.length > 20)
+      isCompleted: Boolean(businessDescription?.trim() || businessName?.trim() || productsServices?.length > 0)
     },
     {
       step: 2,
@@ -209,7 +209,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#BFDBFE]/70',
         text: 'text-[#2563EB]'
       },
-      isCompleted: Boolean(strategy?.updatedAt && competitors.length > 0)
+      isCompleted: Boolean(competitors && competitors.length > 0)
     },
     {
       step: 3,
@@ -221,7 +221,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#BBF7D0]/70',
         text: 'text-[#16A34A]'
       },
-      isCompleted: Boolean(strategy?.targetAudience && strategy.targetAudience !== '[]')
+      isCompleted: Boolean(targetPersonas && targetPersonas.length > 0)
     },
     {
       step: 4,
@@ -233,7 +233,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#FED7AA]/70',
         text: 'text-[#EA580C]'
       },
-      isCompleted: Boolean(strategy?.marketingObjectives && strategy.marketingObjectives !== '[]')
+      isCompleted: Boolean(marketingObjectives && marketingObjectives.length > 0)
     },
     {
       step: 5,
@@ -245,7 +245,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#FECDD3]/70',
         text: 'text-[#E11D48]'
       },
-      isCompleted: Boolean(strategy?.positioning && strategy?.valueProposition)
+      isCompleted: Boolean(positioning?.trim() || valueProposition?.trim() || differentiators?.length > 0)
     },
     {
       step: 6,
@@ -257,7 +257,19 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
         border: 'border-[#DDD6FE]/70',
         text: 'text-[#9333EA]'
       },
-      isCompleted: Boolean(strategy?.channelStrategy && strategy.channelStrategy !== '[]')
+      isCompleted: Boolean(channelStrategy && channelStrategy.length > 0)
+    },
+    {
+      step: 7,
+      title: 'Marketing Roadmap',
+      description: 'Quarterly priorities and initiatives.',
+      icon: Calendar,
+      color: {
+        bg: 'bg-[#ECFDF5]',
+        border: 'border-[#A7F3D0]/70',
+        text: 'text-[#059669]'
+      },
+      isCompleted: Boolean(channelRoadmap && channelRoadmap.length > 0)
     },
     {
       step: 7,
@@ -439,8 +451,10 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
       } else if (action === 'suggest_differentiators' && Array.isArray(res.data)) {
         const existingLower = new Set(differentiators.map(d => d.trim().toLowerCase()));
         const fresh = res.data.filter((item: string) => !existingLower.has(item.trim().toLowerCase()));
-        const merged = fresh.length > 0 ? [...differentiators, ...fresh] : res.data;
+        const merged = fresh.length > 0 ? [...differentiators, ...fresh].slice(0, 5) : res.data.slice(0, 4);
         setDifferentiators(merged);
+        setActiveSection(1);
+        setActiveSubtab('overview');
         setNotification({
           type: 'success',
           message: fresh.length > 0
@@ -455,12 +469,16 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
           goals: p.goals || p.objectives || ''
         }));
         setTargetPersonas(normalized);
+        setActiveSection(3);
         setNotification({ type: 'success', message: `Synthesized ${normalized.length} audience personas with AI!` });
       } else if (action === 'refine_value_prop' && res.data) {
         setValueProposition(typeof res.data === 'string' ? res.data : res.data.valueProposition);
+        setActiveSection(1);
+        setActiveSubtab('value_prop');
         setNotification({ type: 'success', message: 'Value proposition refined by AI Copilot!' });
       } else if (action === 'swot' && res.data) {
         setSwotData(res.data);
+        setActiveSection(1);
         setActiveSubtab('swot');
         setNotification({ type: 'success', message: 'SWOT analysis generated and displayed in SWOT & Assets!' });
       } else {
@@ -562,7 +580,7 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
             </span>
 
             <span className="text-xs text-neutral-400 font-normal">
-              Last updated — {strategy?.updatedAt ? new Date(strategy.updatedAt).toLocaleDateString() : 'Not started'}
+              Last updated — {strategy?.updatedAt ? new Date(strategy.updatedAt).toLocaleDateString() : 'Active Draft'}
             </span>
           </div>
 
