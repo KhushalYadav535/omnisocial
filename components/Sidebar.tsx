@@ -17,7 +17,9 @@ import {
   MessageSquare,
   Share2,
   ShieldCheck,
-  X
+  X,
+  Lightbulb,
+  PenTool
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -47,7 +49,7 @@ function SidebarContent({
 
   const totalUnreadEngage = (unreadCommentsCount || 0) + (unreadDmsCount || 0) || unreadInboxCount || 0;
 
-  // 9 Core StudioFlow navigation items exactly matching the reference design
+  // Core StudioFlow navigation items exactly matching the reference design
   const primaryNavItems = [
     {
       name: 'Overview',
@@ -61,13 +63,26 @@ function SidebarContent({
       icon: Sparkles,
       isActive: () =>
         pathname === '/content-studio' &&
-        (!currentTab || currentTab === 'overview' || currentTab === 'composer' || currentTab === 'pillars')
+        (!currentTab || currentTab === 'overview' || currentTab === 'pillars')
     },
     {
-      name: 'Strategy',
+      name: 'Marketing Strategy',
       href: '/content-studio?tab=strategy',
       icon: Target,
       isActive: () => pathname === '/content-studio' && currentTab === 'strategy'
+    },
+    {
+      name: 'Ideas & Inspiration',
+      href: '/content-studio?tab=ideas',
+      icon: Lightbulb,
+      isActive: () => pathname === '/content-studio' && currentTab === 'ideas'
+    },
+    {
+      name: 'Posts & Content',
+      href: '/content-studio?tab=composer',
+      icon: PenTool,
+      themeColor: 'amber',
+      isActive: () => pathname === '/content-studio' && currentTab === 'composer'
     },
     {
       name: 'Content Calendar',
@@ -80,12 +95,6 @@ function SidebarContent({
       href: '/content-studio?tab=campaigns',
       icon: Megaphone,
       isActive: () => pathname === '/content-studio' && currentTab === 'campaigns'
-    },
-    {
-      name: 'Content Library',
-      href: '/content-studio?tab=ideas',
-      icon: Layers,
-      isActive: () => pathname === '/content-studio' && currentTab === 'ideas'
     },
     {
       name: 'Media Library',
@@ -175,6 +184,7 @@ function SidebarContent({
             {primaryNavItems.map((item) => {
               const active = item.isActive();
               const Icon = item.icon;
+              const isAmber = (item as any).themeColor === 'amber';
 
               return (
                 <Link
@@ -183,13 +193,19 @@ function SidebarContent({
                   onClick={onCloseMobile}
                   className={`flex items-center space-x-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl transition-all duration-150 ${
                     active
-                      ? 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
+                      ? isAmber
+                        ? 'bg-[#FFEDD5] text-[#C2410C] font-bold shadow-2xs border border-orange-200/60'
+                        : 'bg-[#EDE9FE] text-[#7C3AED] font-bold shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
                   <Icon
                     className={`w-4 h-4 shrink-0 transition-colors ${
-                      active ? 'text-[#7C3AED]' : 'text-slate-500'
+                      active
+                        ? isAmber
+                          ? 'text-[#EA580C]'
+                          : 'text-[#7C3AED]'
+                        : 'text-slate-500'
                     }`}
                   />
                   <span className="truncate">{item.name}</span>

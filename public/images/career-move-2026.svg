@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A365D" />
+      <stop offset="35%" stop-color="#2B6CB0" />
+      <stop offset="65%" stop-color="#C05621" />
+      <stop offset="85%" stop-color="#DD6B20" />
+      <stop offset="100%" stop-color="#F6AD55" />
+    </linearGradient>
+
+    <linearGradient id="sunGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FEFCBF" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ED8936" stop-opacity="0" />
+    </linearGradient>
+
+    <filter id="cardShadow" x="-10%" y="-20%" width="125%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FFFDF7" />
+    </linearGradient>
+  </defs>
+
+  <!-- Sky Background -->
+  <rect width="800" height="800" fill="url(#skyGrad)" />
+
+  <!-- Sun Glow Horizon -->
+  <circle cx="580" cy="530" r="160" fill="url(#sunGlow)" />
+
+  <!-- Distant Mountains Layer 1 -->
+  <path d="M0,540 L120,470 L280,510 L420,440 L580,500 L720,450 L800,480 L800,800 L0,800 Z" fill="#2C3E50" opacity="0.45" />
+
+  <!-- Distant Mountains Layer 2 -->
+  <path d="M0,590 L160,520 L310,550 L470,490 L610,540 L760,510 L800,530 L800,800 L0,800 Z" fill="#1A202C" opacity="0.75" />
+
+  <!-- Foreground Mountain Summit Outcrop -->
+  <path d="M0,660 L80,620 L180,600 L260,570 L340,640 L440,680 L560,730 L800,750 L800,800 L0,800 Z" fill="#0D131F" />
+
+  <!-- Hiker Silhouette on Summit -->
+  <!-- Backpack -->
+  <ellipse cx="238" cy="505" rx="10" ry="15" fill="#0B0F19" />
+  <!-- Torso & Jacket -->
+  <path d="M244,492 C244,490 252,490 254,494 L258,525 L244,525 Z" fill="#0B0F19" />
+  <!-- Head & Hood -->
+  <circle cx="249" cy="482" r="7.5" fill="#0B0F19" />
+  <!-- Arms & Trekking pole -->
+  <path d="M253,497 L263,515 L267,545" stroke="#0B0F19" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <line x1="266" y1="510" x2="270" y2="570" stroke="#0B0F19" stroke-width="1.8" />
+  <!-- Legs -->
+  <path d="M246,525 L244,555 L241,568" stroke="#0B0F19" stroke-width="4.5" stroke-linecap="round" fill="none" />
+  <path d="M255,525 L258,552 L262,568" stroke="#0B0F19" stroke-width="4.5" stroke-linecap="round" fill="none" />
+
+  <!-- Title & Headline -->
+  <g transform="translate(60, 110)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Plan Your</text>
+    <text x="0" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">Next Career Move</text>
+    <text x="0" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="900" fill="#FACC15" letter-spacing="-0.5">in 2026</text>
+  </g>
+
+  <!-- Floating Feature Cards on the Right -->
+  <!-- Card 1: Higher Impact -->
+  <g transform="translate(480, 440)" filter="url(#cardShadow)">
+    <rect width="260" height="52" rx="26" fill="url(#cardGrad)" stroke="#FED7AA" stroke-width="1.5" />
+    <circle cx="28" cy="26" r="14" fill="#FFEDD5" />
+    <!-- Target icon -->
+    <circle cx="28" cy="26" r="7" stroke="#EA580C" stroke-width="2" fill="none" />
+    <circle cx="28" cy="26" r="2.5" fill="#EA580C" />
+    <text x="56" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#1E293B">Higher Impact</text>
+  </g>
+
+  <!-- Card 2: Better Role -->
+  <g transform="translate(480, 510)" filter="url(#cardShadow)">
+    <rect width="260" height="52" rx="26" fill="url(#cardGrad)" stroke="#FED7AA" stroke-width="1.5" />
+    <circle cx="28" cy="26" r="14" fill="#FFEDD5" />
+    <!-- Briefcase / layers icon -->
+    <rect x="21" y="21" width="14" height="10" rx="2" stroke="#EA580C" stroke-width="2" fill="none" />
+    <path d="M25,21 L25,18 L31,18 L31,21" stroke="#EA580C" stroke-width="1.8" fill="none" />
+    <text x="56" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#1E293B">Better Role</text>
+  </g>
+
+  <!-- Card 3: Long-term Growth -->
+  <g transform="translate(480, 580)" filter="url(#cardShadow)">
+    <rect width="260" height="52" rx="26" fill="url(#cardGrad)" stroke="#FED7AA" stroke-width="1.5" />
+    <circle cx="28" cy="26" r="14" fill="#FFEDD5" />
+    <!-- Trend upward icon -->
+    <path d="M21,30 L27,24 L31,27 L36,20" stroke="#EA580C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M32,20 L36,20 L36,24" stroke="#EA580C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <text x="56" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#1E293B">Long-term Growth</text>
+  </g>
+</svg>
