@@ -137,6 +137,7 @@ function ContentStudioContent() {
 
   const handleTabChange = (tabId: 'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'drafts' | 'media' | 'approvals' | 'launchpad' | 'skills') => {
     setActiveTab(tabId);
+    setStatusMessage(null);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       if (tabId === 'overview') {
@@ -319,6 +320,16 @@ function cleanMediaUrl(raw: any): string {
     if (tags.length > 0) setHashtags(tags);
     const img = cleanMediaUrl(draft.mediaUrls);
     setMediaUrl(img);
+    const draftSched = draft.scheduledFor || (draft.publications && draft.publications[0]?.scheduledFor);
+    if (draftSched) {
+      try {
+        setScheduledFor(new Date(draftSched).toISOString().slice(0, 16));
+      } catch {
+        setScheduledFor('');
+      }
+    } else {
+      setScheduledFor('');
+    }
     if (draft.platformCaptions) {
       try {
         const pc = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
@@ -1106,7 +1117,7 @@ function cleanMediaUrl(raw: any): string {
   const handleSavePost = async (
     immediatePublish = false,
     bypassGate = false,
-    approvalStatusOverride?: 'PENDING' | 'DRAFT',
+    approvalStatusOverride?: 'PENDING' | 'DRAFT' | 'APPROVED',
     isDraftOnly = false,
     isExplicitSchedule = false
   ) => {
@@ -1150,9 +1161,10 @@ function cleanMediaUrl(raw: any): string {
         } catch {}
       }
 
-      const finalApprovalStatus = isDraftOnly ? 'DRAFT' : (approvalStatusOverride || (isExplicitSchedule || scheduledFor ? 'PENDING' : 'DRAFT'));
-      const finalContentStatus = isDraftOnly ? 'DRAFT' : ((finalApprovalStatus === 'PENDING' || isExplicitSchedule || scheduledFor) ? 'SCHEDULED' : 'DRAFT');
+      const finalApprovalStatus = isDraftOnly ? 'DRAFT' : (approvalStatusOverride || (isExplicitSchedule || scheduledFor ? 'APPROVED' : 'DRAFT'));
+      const finalContentStatus = isDraftOnly ? 'DRAFT' : ((finalApprovalStatus === 'PENDING' || finalApprovalStatus === 'APPROVED' || isExplicitSchedule || scheduledFor) ? 'SCHEDULED' : 'DRAFT');
 
+      const scheduledIso = (!isDraftOnly && (isExplicitSchedule || scheduledFor)) ? new Date(scheduledFor || Date.now()).toISOString() : undefined;
       let targetContentId: string;
 
       if (activeDraftId && !immediatePublish) {
@@ -1167,12 +1179,14 @@ function cleanMediaUrl(raw: any): string {
             format: format === 'PORTRAIT' ? 'POST' : format,
             status: finalContentStatus,
             clientApprovalStatus: finalApprovalStatus,
+            scheduledFor: scheduledIso,
+            socialAccountIds: selectedAccountIds,
+            targetPlatforms,
             platformCaptions
           })
         });
         targetContentId = activeDraftId;
       } else {
-        const scheduledIso = (!isDraftOnly && (isExplicitSchedule || scheduledFor)) ? new Date(scheduledFor || Date.now()).toISOString() : undefined;
         const res = await apiRequest('/content', {
           method: 'POST',
           body: JSON.stringify({
@@ -1629,8 +1643,8 @@ function cleanMediaUrl(raw: any): string {
           </>
         )}
 
-        {/* Global Feedback Banner */}
-        {statusMessage && (
+        {/* Global Feedback Banner (Displayed on non-composer studio sub-tabs) */}
+        {statusMessage && activeTab !== 'composer' && (
           <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs ${statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
             }`}>
             {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
@@ -1808,7 +1822,7 @@ function cleanMediaUrl(raw: any): string {
             submitting={submitting}
             isGenerating={generating}
             onSaveDraft={() => handleSavePost(false, false, 'DRAFT', true)}
-            onScheduleDrop={() => handleSavePost(false, false, 'PENDING', false, true)}
+            onScheduleDrop={() => handleSavePost(false, false, 'APPROVED', false, true)}
             onPublishNow={() => handleSavePost(true)}
             onGenerateAi={handleGenerateAi}
             onGenerateAiImage={handleGenerateAiImage}

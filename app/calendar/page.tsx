@@ -1986,9 +1986,23 @@ export default function CalendarPage() {
     );
   };
 
-  const sanitizeMediaUrl = (url?: string | null): string => {
-    if (!url) return '';
-    let cleaned = url.trim();
+  const sanitizeMediaUrl = (raw?: any): string => {
+    if (!raw) return '';
+    let val = raw;
+    if (Array.isArray(val)) {
+      val = val[0];
+    }
+    if (typeof val !== 'string') return '';
+    let cleaned = val.trim();
+    if (cleaned === '[]' || cleaned === '{}' || cleaned === 'null' || cleaned === 'undefined') return '';
+    if (cleaned.startsWith('[') || cleaned.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(cleaned);
+        return sanitizeMediaUrl(parsed);
+      } catch {
+        return '';
+      }
+    }
     if (cleaned.startsWith('http://omnisocialbackend.onrender.com')) {
       cleaned = cleaned.replace('http://omnisocialbackend.onrender.com', 'https://omnisocialbackend.onrender.com');
     }
@@ -3968,6 +3982,9 @@ export default function CalendarPage() {
                           <img
                             src={mediaUrl}
                             alt=""
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop';
+                            }}
                             className="w-14 h-14 rounded-xl object-cover shrink-0 border border-black/10 shadow-2xs group-hover/item:scale-105 transition-transform"
                           />
                         ) : (

@@ -257,6 +257,20 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span>Approved</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await apiRequest(`/content-studio/approvals/${post.id}`, { method: 'DELETE' });
+                        fetchApprovals();
+                      } catch (err) {
+                        console.error('Delete approved card error:', err);
+                      }
+                    }}
+                    className="py-1.5 px-3 text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded-lg transition cursor-pointer"
+                  >
+                    Delete / Dismiss
+                  </button>
                 </div>
               ) : statusFilter === 'REJECTED' || post.clientApprovalStatus === 'REJECTED' ? (
                 <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">

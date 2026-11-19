@@ -272,11 +272,29 @@ export default function PostsContentTab({
     }
     setActivePlatform(plat);
     const nextCopy = updated[plat];
-    if (nextCopy && nextCopy.trim()) {
+    if (nextCopy !== undefined && nextCopy !== null && nextCopy.trim() !== '') {
       setCaption(nextCopy);
-    } else if (caption.trim()) {
-      setCaption(caption);
-      setPlatformCaptions(prev => ({ ...prev, [plat]: caption }));
+    } else {
+      // Use fallback LinkedIn or caption without overwriting other platforms
+      const fallback = updated.LINKEDIN || caption || '';
+      setCaption(fallback);
+      setPlatformCaptions(prev => ({ ...prev, [plat]: fallback }));
+    }
+  };
+
+  const handleUpdatePlatformVersion = (plat: string, val: string) => {
+    const updated = {
+      ...platformCaptions,
+      [plat]: val
+    };
+    setPlatformCaptions(updated);
+    if (activePlatform === plat) {
+      setCaption(val);
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
+      } catch {}
     }
   };
 
@@ -831,8 +849,20 @@ Take the first step today.`,
                 <input
                   type="datetime-local"
                   value={scheduledFor ? (scheduledFor.includes('T') ? scheduledFor.slice(0, 16) : scheduledFor) : ''}
-                  onChange={(e) => setScheduledFor(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (val) {
+                      const parts = val.split('-');
+                      if (parts[0] && parts[0].length > 4) {
+                        parts[0] = parts[0].slice(0, 4);
+                        val = parts.join('-');
+                      }
+                    }
+                    setScheduledFor(val);
+                  }}
+                  min="2024-01-01T00:00"
+                  max="2035-12-31T23:59"
+                  className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-mono"
                 />
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
@@ -1017,47 +1047,6 @@ Take the first step today.`,
       {/* STEP 2 VIEW: THE CORE SCREEN MATCHING REFERENCE IMAGE */}
       {activeStep === 2 && (
         <>
-          {/* Dynamic Status / Confirmation Banner in Step 2 */}
-          {statusMessage && (
-            <div className={`rounded-xl px-4 py-3.5 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
-              statusMessage.type === 'success'
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-                : statusMessage.type === 'error'
-                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
-                  : 'bg-amber-50 border border-amber-200 text-amber-900'
-            }`}>
-              <div className="flex items-center space-x-2.5 min-w-0">
-                {statusMessage.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                )}
-                <span className="truncate sm:whitespace-normal">{statusMessage.text}</span>
-              </div>
-              <div className="flex items-center space-x-2 shrink-0">
-                {statusMessage.text.includes('Content Calendar') && (
-                  <button
-                    type="button"
-                    onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
-                    className="px-3 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
-                  >
-                    <span>View Calendar</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                )}
-                {setStatusMessage && (
-                  <button
-                    type="button"
-                    onClick={() => setStatusMessage(null)}
-                    className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* IN-COMPOSER SCHEDULE CONFIRMATION BANNER */}
           {scheduledFor && (
             <div className="bg-indigo-50/90 border border-indigo-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
@@ -2033,8 +2022,9 @@ Take the first step today.`,
                 </div>
                 <textarea
                   rows={4}
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
+                  value={platformCaptions.LINKEDIN !== undefined ? platformCaptions.LINKEDIN : (activePlatform === 'LINKEDIN' ? caption : '')}
+                  onChange={(e) => handleUpdatePlatformVersion('LINKEDIN', e.target.value)}
+                  placeholder="LinkedIn post copy..."
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white"
                 />
               </div>
@@ -2047,7 +2037,9 @@ Take the first step today.`,
                 </div>
                 <textarea
                   rows={4}
-                  defaultValue={caption}
+                  value={platformCaptions.INSTAGRAM !== undefined ? platformCaptions.INSTAGRAM : (activePlatform === 'INSTAGRAM' ? caption : '')}
+                  onChange={(e) => handleUpdatePlatformVersion('INSTAGRAM', e.target.value)}
+                  placeholder="Instagram post caption..."
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white"
                 />
               </div>
@@ -2060,7 +2052,9 @@ Take the first step today.`,
                 </div>
                 <textarea
                   rows={4}
-                  defaultValue={caption}
+                  value={platformCaptions.FACEBOOK !== undefined ? platformCaptions.FACEBOOK : (activePlatform === 'FACEBOOK' ? caption : '')}
+                  onChange={(e) => handleUpdatePlatformVersion('FACEBOOK', e.target.value)}
+                  placeholder="Facebook post copy..."
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white"
                 />
               </div>
@@ -2073,7 +2067,10 @@ Take the first step today.`,
                 </div>
                 <textarea
                   rows={4}
-                  defaultValue={caption.slice(0, 280)}
+                  value={platformCaptions.TWITTER !== undefined ? platformCaptions.TWITTER : (activePlatform === 'TWITTER' ? caption : '')}
+                  onChange={(e) => handleUpdatePlatformVersion('TWITTER', e.target.value)}
+                  placeholder="X post copy (max 280 chars)..."
+                  maxLength={280}
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white"
                 />
               </div>
