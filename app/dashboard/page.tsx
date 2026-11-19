@@ -91,15 +91,17 @@ function DashboardContent() {
         apiRequest(`/social-accounts${query}`)
       ]);
 
-      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED' || e.status === 'MISSED');
+      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED');
+      const missedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'MISSED');
       const activePlatforms = Array.from(new Set((accountsRes.accounts || []).filter((a: any) => a.isConnected !== false).map((a: any) => a.platform?.toUpperCase()))).filter(Boolean) as string[];
 
       setData({
         analytics: analyticsRes,
         recentInteractions: (inboxRes.interactions || []).slice(0, 5),
-        upcomingPosts: queuedEvents.slice(0, 3),
+        upcomingPosts: (queuedEvents.length > 0 ? queuedEvents : missedEvents).slice(0, 3),
         accounts: accountsRes.accounts || [],
-        queuedEventsCount: queuedEvents.length
+        queuedEventsCount: queuedEvents.length,
+        missedEventsCount: missedEvents.length
       });
 
       if (activePlatforms.length > 0) {
@@ -756,7 +758,9 @@ function DashboardContent() {
 
             <div className="flex items-center">
               <span className="inline-flex items-center text-[11px] font-semibold text-blue-800 bg-white/80 backdrop-blur-xs px-3 py-1 rounded-full border border-blue-200/50">
-                {loading ? 'Checking queue...' : `${totalQueuedPosts} Scheduled in Queue`}
+                {loading
+                  ? 'Checking queue...'
+                  : `${totalQueuedPosts} Scheduled in Queue${data?.missedEventsCount ? ` • ${data.missedEventsCount} Missed` : ''}`}
               </span>
             </div>
           </div>

@@ -82,6 +82,14 @@ export default function DraftsTab({
     setActionLoadingId(draftId);
     // Optimistically remove from list immediately (no blocking confirm dialog)
     setDrafts(prev => prev.filter(d => d.id !== draftId));
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('omnisocial_composer_draft');
+        localStorage.removeItem('omnisocial_platform_captions');
+        sessionStorage.removeItem('omnisocial_composer_draft');
+        sessionStorage.removeItem('omnisocial_platform_captions');
+      } catch {}
+    }
     try {
       await apiRequest(`/content/${draftId}`, {
         method: 'DELETE'

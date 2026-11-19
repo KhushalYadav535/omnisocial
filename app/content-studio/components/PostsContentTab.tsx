@@ -213,9 +213,9 @@ export default function PostsContentTab({
 
   const curatedStockAssets = [
     { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1080&h=1080&fit=crop' },
+    { title: 'Provide 3 effortless ways to style your linen scarf', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1080&h=1080&fit=crop' },
+    { title: 'Modern Minimalist Architecture', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&h=1080&fit=crop' },
     { title: 'Artisan Studio Pottery', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=1080&h=1080&fit=crop' },
-    { title: 'Sustainable Linen Wear', url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1080&h=1080&fit=crop' },
-    { title: 'Modern Creative Workspace', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&h=1080&fit=crop' },
     { title: 'Aesthetic Clean Flatlay', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1080&h=1080&fit=crop' },
     { title: 'Sunset Nature Escape', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1080&fit=crop' }
   ];
@@ -794,7 +794,7 @@ Take the first step today.`,
               <div className="space-y-1.5">
                 <input
                   type="datetime-local"
-                  value={scheduledFor}
+                  value={scheduledFor ? (scheduledFor.includes('T') ? scheduledFor.slice(0, 16) : scheduledFor) : ''}
                   onChange={(e) => setScheduledFor(e.target.value)}
                   className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
                 />
@@ -981,6 +981,37 @@ Take the first step today.`,
       {/* STEP 2 VIEW: THE CORE SCREEN MATCHING REFERENCE IMAGE */}
       {activeStep === 2 && (
         <>
+          {/* IN-COMPOSER SCHEDULE CONFIRMATION BANNER */}
+          {scheduledFor && (
+            <div className="bg-indigo-50/90 border border-indigo-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-indigo-950">
+                      Scheduled Drop Confirmed: {new Date(scheduledFor).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-md">
+                      {selectedAccountIds.length || 2} Channel{(selectedAccountIds.length || 2) > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-indigo-700 mt-0.5">
+                    Drop is scheduled for peak window. Click &quot;Confirm &amp; Schedule Drop&quot; to queue.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScheduledFor('')}
+                className="self-start sm:self-center px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-xl transition cursor-pointer"
+              >
+                Clear Schedule
+              </button>
+            </div>
+          )}
+
           {/* 4. PLATFORM SWITCHER PILLS */}
           <div className="flex items-center space-x-3 overflow-x-auto pb-1">
             {/* LinkedIn Pill */}
@@ -1433,6 +1464,9 @@ Take the first step today.`,
                         <img
                           src={mediaUrl}
                           alt="Post creative"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+                          }}
                           className="w-full h-full object-cover"
                         />
                       )
@@ -1591,7 +1625,14 @@ Take the first step today.`,
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
                         ) : (
-                          <img src={mediaUrl} alt="LinkedIn preview" className="w-full h-full object-cover" />
+                          <img
+                            src={mediaUrl}
+                            alt="LinkedIn preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                     )}
@@ -1655,7 +1696,14 @@ Take the first step today.`,
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
                         ) : (
-                          <img src={mediaUrl} alt="Instagram preview" className="w-full h-full object-cover" />
+                          <img
+                            src={mediaUrl}
+                            alt="Instagram preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                     )}
@@ -1712,7 +1760,14 @@ Take the first step today.`,
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
                         ) : (
-                          <img src={mediaUrl} alt="Facebook preview" className="w-full h-full object-cover" />
+                          <img
+                            src={mediaUrl}
+                            alt="Facebook preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                     )}
@@ -1770,7 +1825,14 @@ Take the first step today.`,
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
                         ) : (
-                          <img src={mediaUrl} alt="X preview" className="w-full h-full object-cover" />
+                          <img
+                            src={mediaUrl}
+                            alt="X preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80';
+                            }}
+                            className="w-full h-full object-cover"
+                          />
                         )}
                       </div>
                     )}

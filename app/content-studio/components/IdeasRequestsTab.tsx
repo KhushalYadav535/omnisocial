@@ -162,14 +162,16 @@ export default function IdeasRequestsTab({
   };
 
   const handleTurnIntoPost = async (idea: any) => {
+    // 1. Optimistically notify parent to load idea into composer and navigate immediately
+    setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, status: 'IN_PROGRESS' } : i));
+    if (onTurnIntoPost) {
+      onTurnIntoPost(idea);
+    }
+    // 2. Notify backend of idea status transition
     try {
       await apiRequest(`/content-studio/ideas/${idea.id}/turn-into-post`, { method: 'POST' });
-      setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, status: 'IN_PROGRESS' } : i));
-      if (onTurnIntoPost) {
-        onTurnIntoPost(idea);
-      }
     } catch (err: any) {
-      console.error('Turn into post error:', err);
+      console.warn('Turn into post backend notification notice:', err);
     }
   };
 

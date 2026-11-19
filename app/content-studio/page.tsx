@@ -263,84 +263,18 @@ function ContentStudioContent() {
     checkTabsScroll();
   }, [activeTab, checkTabsScroll]);
 
-  // Studio Form State (with localStorage draft restoration)
-  const [title, setTitle] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.title) return p.title;
-        }
-      } catch {}
-    }
-    return '';
-  });
-  const [rawIdea, setRawIdea] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.rawIdea) return p.rawIdea;
-        }
-      } catch {}
-    }
-    return '';
-  });
-  const [caption, setCaption] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.caption) return p.caption;
-        }
-      } catch {}
-    }
-    return '';
-  });
-  const [hashtags, setHashtags] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.hashtags && Array.isArray(p.hashtags) && p.hashtags.length > 0) return p.hashtags;
-        }
-      } catch {}
-    }
-    return [];
-  });
+  // Studio Form State (Fresh-start blank by default; populated via Edit Draft, Idea Bank, or Orchestrator)
+  const [title, setTitle] = useState('');
+  const [rawIdea, setRawIdea] = useState('');
+  const [caption, setCaption] = useState<string>('');
+  const [hashtags, setHashtags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
-  const [mediaUrl, setMediaUrl] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.mediaUrl) return p.mediaUrl;
-        }
-      } catch {}
-    }
-    return '';
-  });
+  const [mediaUrl, setMediaUrl] = useState('');
   const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>('POST');
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [activeDraftId, setActiveDraftId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.activeDraftId) return p.activeDraftId;
-        }
-      } catch {}
-    }
-    return null;
-  });
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
 
@@ -1768,9 +1702,16 @@ function ContentStudioContent() {
           <IdeasRequestsTab
             brandId={activeBrandId}
             onTurnIntoPost={(idea) => {
-              setTitle(idea.title || '');
-              setRawIdea(idea.hook || idea.title || '');
+              setTitle(idea.title || idea.hook || 'New Post from Idea Bank');
+              setRawIdea(idea.description ? `${idea.hook || idea.title}\n\n${idea.description}` : (idea.hook || idea.title || ''));
+              setCaption('');
+              setMediaUrl('');
+              setActiveDraftId(null);
+              if (idea.tags && Array.isArray(idea.tags)) {
+                setHashtags(idea.tags);
+              }
               handleTabChange('composer');
+              setStatusMessage({ type: 'success', text: `✨ Idea "${idea.title || idea.hook || 'Idea'}" loaded into composer! Ready to craft post with AI.` });
             }}
             onRefreshOverview={fetchOverview}
           />

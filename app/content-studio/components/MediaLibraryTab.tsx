@@ -227,7 +227,7 @@ export default function MediaLibraryTab({
 
                 <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 truncate">{asset.title}</h4>
+                    <h4 className="text-xs font-bold text-slate-900 truncate" title={asset.title} data-title={asset.title}>{asset.title}</h4>
                     {asset.tags && asset.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {asset.tags.slice(0, 2).map((t: string, idx: number) => (

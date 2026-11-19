@@ -3819,7 +3819,7 @@ export default function CalendarPage() {
                           <div className="flex items-center space-x-2">
                             <input
                               type="datetime-local"
-                              value={rescheduleDate}
+                              value={rescheduleDate ? (rescheduleDate.includes('T') ? rescheduleDate.slice(0, 16) : rescheduleDate) : ''}
                               onChange={(e) => setRescheduleDate(e.target.value)}
                               className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-neutral-900 font-mono bg-white"
                             />
