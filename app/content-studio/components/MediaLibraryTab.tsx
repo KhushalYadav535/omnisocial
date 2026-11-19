@@ -24,6 +24,25 @@ interface MediaLibraryTabProps {
   onRefreshOverview?: () => void;
 }
 
+const distinctFallbacks = [
+  'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80'
+];
+
+function getFallbackForAsset(idOrTitle: string): string {
+  let hash = 0;
+  for (let i = 0; i < (idOrTitle || '').length; i++) {
+    hash = (hash << 5) - hash + idOrTitle.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % distinctFallbacks.length;
+  return distinctFallbacks[idx];
+}
+
 export default function MediaLibraryTab({
   brandId,
   onSelectMediaForComposer,
@@ -200,7 +219,8 @@ export default function MediaLibraryTab({
       ) : mediaList.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {mediaList.map((asset) => {
-            const mediaSrc = asset.url || asset.fileUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+            const fallbackImg = getFallbackForAsset(asset.id || asset.title || 'asset');
+            const mediaSrc = asset.url || asset.fileUrl || fallbackImg;
             const mediaFormat = asset.format || asset.fileType || 'IMAGE';
             return (
               <div
@@ -215,7 +235,7 @@ export default function MediaLibraryTab({
                       src={mediaSrc}
                       alt={asset.title}
                       onError={(e) => {
-                        (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+                        (e.target as any).src = fallbackImg;
                       }}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />

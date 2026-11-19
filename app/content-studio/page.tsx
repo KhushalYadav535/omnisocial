@@ -501,7 +501,7 @@ function cleanMediaUrl(raw: any): string {
 
   useEffect(() => {
     if (statusMessage) {
-      const timer = setTimeout(() => setStatusMessage(null), 5000);
+      const timer = setTimeout(() => setStatusMessage(null), 8000);
       return () => clearTimeout(timer);
     }
   }, [statusMessage]);
@@ -1643,9 +1643,9 @@ function cleanMediaUrl(raw: any): string {
           </>
         )}
 
-        {/* Global Feedback Banner (Displayed on non-composer studio sub-tabs) */}
-        {statusMessage && activeTab !== 'composer' && (
-          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs ${statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+        {/* Global Feedback Banner (Displayed across all studio sub-tabs) */}
+        {statusMessage && (
+          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs transition-all ${statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
             }`}>
             {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
@@ -1677,6 +1677,14 @@ function cleanMediaUrl(raw: any): string {
                 </a>
               ) : null}
             </div>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500 shrink-0"
+              aria-label="Dismiss feedback banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
@@ -1744,8 +1752,14 @@ function cleanMediaUrl(raw: any): string {
           <IdeasRequestsTab
             brandId={activeBrandId}
             onTurnIntoPost={(idea) => {
-              setTitle(idea.title || idea.hook || 'New Post from Idea Bank');
-              setRawIdea(idea.description ? `${idea.hook || idea.title}\n\n${idea.description}` : (idea.hook || idea.title || ''));
+              const ideaTitle = (idea.title || idea.hook || '').trim();
+              const ideaDesc = (idea.description || '').trim();
+              const combinedBrief = ideaTitle && ideaDesc && !ideaDesc.includes(ideaTitle)
+                ? `${ideaTitle}: ${ideaDesc}`
+                : (ideaTitle || ideaDesc);
+
+              setTitle(ideaTitle || 'New Post from Idea Bank');
+              setRawIdea(combinedBrief);
               setCaption('');
               setMediaUrl('');
               setActiveDraftId(null);
@@ -1753,7 +1767,7 @@ function cleanMediaUrl(raw: any): string {
                 setHashtags(idea.tags);
               }
               handleTabChange('composer');
-              setStatusMessage({ type: 'success', text: `✨ Idea "${idea.title || idea.hook || 'Idea'}" loaded into composer! Ready to craft post with AI.` });
+              setStatusMessage({ type: 'success', text: `✨ Idea "${ideaTitle || 'Idea'}" loaded into composer! Ready to craft post with AI.` });
             }}
             onRefreshOverview={fetchOverview}
           />
@@ -2231,6 +2245,32 @@ function cleanMediaUrl(raw: any): string {
                   <span>Generate & Replace</span>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Global Floating Toast Notification across all Content Studio sub-tabs */}
+        {statusMessage && (
+          <div className="fixed bottom-6 right-6 z-[9999] max-w-md pointer-events-auto">
+            <div className={`rounded-2xl p-4 shadow-2xl flex items-center space-x-3 text-xs font-semibold border backdrop-blur-md transition-all duration-200 ${
+              statusMessage.type === 'success'
+                ? 'bg-slate-900/95 text-white border-slate-700 shadow-slate-900/40'
+                : 'bg-rose-950/95 text-rose-100 border-rose-800 shadow-rose-950/40'
+            }`}>
+              {statusMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              )}
+              <span className="flex-1 leading-snug">{statusMessage.text}</span>
+              <button
+                type="button"
+                onClick={() => setStatusMessage(null)}
+                className="p-1 hover:bg-white/10 rounded-md transition cursor-pointer text-slate-400 hover:text-white shrink-0 ml-1"
+                aria-label="Dismiss toast"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         )}

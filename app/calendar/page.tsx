@@ -537,6 +537,14 @@ export default function CalendarPage() {
   const [viewingDayDrops, setViewingDayDrops] = useState<{ date: Date; events: any[] } | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [previewModalPlatform, setPreviewModalPlatform] = useState<string>('INSTAGRAM');
+
+  useEffect(() => {
+    if (selectedEvent) {
+      const rawPlat = (selectedEvent.platform || selectedEvent.account?.platform || 'INSTAGRAM').toUpperCase();
+      const plat = rawPlat === 'X' ? 'TWITTER' : rawPlat;
+      setPreviewModalPlatform(plat);
+    }
+  }, [selectedEvent]);
   const [previewModalTab, setPreviewModalTab] = useState<'PREVIEW' | 'SETTINGS'>('PREVIEW');
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -1435,6 +1443,7 @@ export default function CalendarPage() {
         setGeneratedRoadmap(null);
         setWizardStep(1);
         await fetchCalendar();
+        setTimeout(() => fetchCalendar(), 800);
       } else {
         throw new Error(res.message || 'Campaign deployment failed');
       }
@@ -1500,6 +1509,7 @@ export default function CalendarPage() {
         setGeneratedInstantPost(null);
         setInstantTopic('');
         await fetchCalendar();
+        setTimeout(() => fetchCalendar(), 800);
       } else {
         throw new Error(res.message || 'Failed to deploy post');
       }
@@ -1607,6 +1617,18 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchCalendar();
+    const handleFocus = () => {
+      fetchCalendar();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCalendar();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [activeBrandId]);
 
   // Handle Drag and Drop Rescheduling
@@ -3372,7 +3394,7 @@ export default function CalendarPage() {
                           <span>Live Follower Preview</span>
                         </span>
                         <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
-                          {previewModalPlatform} Mockup
+                          {previewModalPlatform === 'LINKEDIN' ? 'LinkedIn' : previewModalPlatform === 'FACEBOOK' ? 'Facebook' : previewModalPlatform === 'TWITTER' ? 'X' : 'Instagram'} Mockup
                         </span>
                       </div>
 

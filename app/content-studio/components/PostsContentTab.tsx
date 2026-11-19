@@ -43,7 +43,8 @@ import {
   Compass,
   Layers,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../../components/Icons';
 
@@ -143,6 +144,46 @@ export default function PostsContentTab({
   const [showScheduleMenu, setShowScheduleMenu] = useState(false);
   const [showCropMenu, setShowCropMenu] = useState(false);
   const [showEditAllModal, setShowEditAllModal] = useState(false);
+  const [showAiGeneratedBanner, setShowAiGeneratedBanner] = useState(false);
+  const rewriteMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Monitor AI generation completion to show the banner only after AI generates
+  const wasGeneratingRef = useRef(false);
+  useEffect(() => {
+    if (wasGeneratingRef.current && !isGenerating && caption && caption.trim().length > 0) {
+      setShowAiGeneratedBanner(true);
+    }
+    wasGeneratingRef.current = isGenerating;
+  }, [isGenerating, caption]);
+
+  // Dismiss rewrite menu on Escape, outside click, or scroll
+  useEffect(() => {
+    if (!showRewriteMenu) return;
+    const handleClose = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key === 'Escape') {
+        setShowRewriteMenu(false);
+        return;
+      }
+      if (e instanceof MouseEvent && rewriteMenuRef.current && !rewriteMenuRef.current.contains(e.target as Node)) {
+        setShowRewriteMenu(false);
+      }
+    };
+    const handleScroll = () => setShowRewriteMenu(false);
+
+    window.addEventListener('keydown', handleClose);
+    window.addEventListener('mousedown', handleClose);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      window.removeEventListener('keydown', handleClose);
+      window.removeEventListener('mousedown', handleClose);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [showRewriteMenu]);
+
+  const handleResetWrapper = () => {
+    setShowAiGeneratedBanner(false);
+    if (onResetComposer) onResetComposer();
+  };
 
   // Hashtag input state
   const [isAddingTag, setIsAddingTag] = useState(false);
@@ -602,10 +643,19 @@ Take the first step today.`,
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2.5">
+          <a
+            href="/calendar"
+            className="px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+            title="Open 1-Click Quick Post & Reel Studio"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <span>1-Click Studio</span>
+          </a>
+
           {onResetComposer && (
             <button
               type="button"
-              onClick={onResetComposer}
+              onClick={handleResetWrapper}
               className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
               title="Start a fresh post (resets composer)"
             >
@@ -719,47 +769,6 @@ Take the first step today.`,
         </div>
       </div>
 
-      {/* Dynamic Status / Success Toast Banner in Composer */}
-      {statusMessage && (
-        <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
-          statusMessage.type === 'success'
-            ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-            : statusMessage.type === 'error'
-              ? 'bg-rose-50 border border-rose-200 text-rose-900'
-              : 'bg-amber-50 border border-amber-200 text-amber-900'
-        }`}>
-          <div className="flex items-center space-x-2.5 min-w-0">
-            {statusMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span className="truncate sm:whitespace-normal">{statusMessage.text}</span>
-          </div>
-          <div className="flex items-center space-x-2 shrink-0">
-            {statusMessage.text.includes('Content Calendar') && (
-              <button
-                type="button"
-                onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
-                className="px-3 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
-              >
-                <span>View Calendar</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            )}
-            {setStatusMessage && (
-              <button
-                type="button"
-                onClick={() => setStatusMessage(null)}
-                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* AI Generating Indicator */}
       {isGenerating && (
         <div className="bg-amber-50/90 border border-amber-200 text-amber-900 rounded-xl px-4 py-2.5 flex items-center space-x-2.5 text-xs font-semibold animate-pulse shadow-2xs">
@@ -768,13 +777,25 @@ Take the first step today.`,
         </div>
       )}
 
-      {/* 3. GREEN NOTIFICATION BANNER */}
-      <div className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] rounded-xl px-4 py-2.5 flex items-center space-x-2.5 text-xs font-medium shadow-2xs">
-        <div className="w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center shrink-0">
-          <Check className="w-2.5 h-2.5 stroke-[3]" />
+      {/* 3. GREEN NOTIFICATION BANNER (Only displayed after AI generation occurs) */}
+      {showAiGeneratedBanner && caption && caption.trim().length > 0 && (
+        <div className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] rounded-xl px-4 py-2.5 flex items-center justify-between space-x-2.5 text-xs font-medium shadow-2xs">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center shrink-0">
+              <Check className="w-2.5 h-2.5 stroke-[3]" />
+            </div>
+            <span>Platform-specific posts generated from your idea. Review, edit and customize each version.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAiGeneratedBanner(false)}
+            className="p-1 hover:bg-[#DCFCE7] rounded-md transition cursor-pointer text-[#166534] shrink-0"
+            aria-label="Dismiss banner"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <span>Platform-specific posts generated from your idea. Review, edit and customize each version.</span>
-      </div>
+      )}
 
       {/* STEP 1 VIEW: BRIEF & SETTINGS (If activeStep === 1) */}
       {activeStep === 1 && (
@@ -1007,7 +1028,7 @@ Take the first step today.`,
             {onResetComposer && (
               <button
                 type="button"
-                onClick={onResetComposer}
+                onClick={handleResetWrapper}
                 disabled={submitting}
                 className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition flex items-center space-x-1.5 cursor-pointer"
               >
@@ -1205,7 +1226,7 @@ Take the first step today.`,
                       )}
 
                       {/* Rewrite Dropdown */}
-                      <div className="relative">
+                      <div ref={rewriteMenuRef} className="relative">
                         <button
                           type="button"
                           onClick={() => setShowRewriteMenu(!showRewriteMenu)}
@@ -2232,25 +2253,6 @@ Take the first step today.`,
                 Done
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {/* Floating Global Toast Notification */}
-      {statusMessage && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-none">
-          <div className={`rounded-2xl p-4 shadow-2xl flex items-center space-x-3 text-xs font-semibold border pointer-events-auto ${
-            statusMessage.type === 'success'
-              ? 'bg-slate-900/95 text-white border-slate-800 backdrop-blur-md'
-              : statusMessage.type === 'error'
-                ? 'bg-rose-950/95 text-rose-100 border-rose-800 backdrop-blur-md'
-                : 'bg-amber-950/95 text-amber-100 border-amber-800 backdrop-blur-md'
-          }`}>
-            {statusMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            )}
-            <span className="flex-1 leading-snug">{statusMessage.text}</span>
           </div>
         </div>
       )}
