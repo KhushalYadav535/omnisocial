@@ -278,6 +278,33 @@ function ContentStudioContent() {
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
 
+function cleanMediaUrl(raw: any): string {
+  if (!raw) return '';
+  if (Array.isArray(raw)) {
+    const first = raw[0];
+    return typeof first === 'string' && (first.startsWith('http') || first.startsWith('data:') || first.startsWith('/')) ? first : '';
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed === '[]' || trimmed === '{}' || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'none') {
+      return '';
+    }
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return cleanMediaUrl(parsed);
+      } catch {
+        return '';
+      }
+    }
+    if (trimmed.startsWith('http') || trimmed.startsWith('data:') || trimmed.startsWith('/')) {
+      return trimmed;
+    }
+    return '';
+  }
+  return '';
+}
+
   const handleEditDraft = (draft: any) => {
     setActiveDraftId(draft.id);
     if (draft.title) setTitle(draft.title);
@@ -290,12 +317,8 @@ function ContentStudioContent() {
       try { tags = JSON.parse(draft.hashtags); } catch { tags = draft.hashtags.split(/\s+/).filter(Boolean); }
     }
     if (tags.length > 0) setHashtags(tags);
-    let img = '';
-    if (Array.isArray(draft.mediaUrls) && draft.mediaUrls[0]) img = draft.mediaUrls[0];
-    else if (typeof draft.mediaUrls === 'string') {
-      try { const p = JSON.parse(draft.mediaUrls); if (Array.isArray(p) && p[0]) img = p[0]; else img = draft.mediaUrls; } catch { img = draft.mediaUrls; }
-    }
-    setMediaUrl(img || '');
+    const img = cleanMediaUrl(draft.mediaUrls);
+    setMediaUrl(img);
     if (draft.platformCaptions) {
       try {
         const pc = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
@@ -341,6 +364,11 @@ function ContentStudioContent() {
             format,
             title
           }));
+        } catch {}
+      } else {
+        try {
+          localStorage.removeItem('omnisocial_composer_draft');
+          localStorage.removeItem('omnisocial_platform_captions');
         } catch {}
       }
     }
@@ -1799,6 +1827,12 @@ function ContentStudioContent() {
           <DraftsTab
             brandId={activeBrandId}
             onEditDraft={handleEditDraft}
+            onDeleteDraft={(deletedId) => {
+              if (activeDraftId === deletedId) {
+                handleResetComposer();
+              }
+            }}
+            onResetComposer={handleResetComposer}
             onNavigateTab={(t) => handleTabChange(t as any)}
             onRefreshOverview={fetchOverview}
           />

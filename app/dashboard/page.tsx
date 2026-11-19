@@ -760,7 +760,11 @@ function DashboardContent() {
               <span className="inline-flex items-center text-[11px] font-semibold text-blue-800 bg-white/80 backdrop-blur-xs px-3 py-1 rounded-full border border-blue-200/50">
                 {loading
                   ? 'Checking queue...'
-                  : `${totalQueuedPosts} Scheduled in Queue${data?.missedEventsCount ? ` • ${data.missedEventsCount} Missed` : ''}`}
+                  : totalQueuedPosts > 0
+                    ? `${totalQueuedPosts} Scheduled in Queue${data?.missedEventsCount ? ` • ${data.missedEventsCount} Missed` : ''}`
+                    : data?.missedEventsCount
+                      ? `0 Scheduled in Queue • ${data.missedEventsCount} Missed`
+                      : '0 Scheduled in Queue'}
               </span>
             </div>
           </div>

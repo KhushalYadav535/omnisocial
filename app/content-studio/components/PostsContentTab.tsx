@@ -212,17 +212,16 @@ export default function PostsContentTab({
   const [assetUrlInput, setAssetUrlInput] = useState('');
 
   const curatedStockAssets = [
-    { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1080&h=1080&fit=crop' },
-    { title: 'Provide 3 effortless ways to style your linen scarf', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1080&h=1080&fit=crop' },
-    { title: 'Modern Minimalist Architecture', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&h=1080&fit=crop' },
-    { title: 'Artisan Studio Pottery', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=1080&h=1080&fit=crop' },
-    { title: 'Aesthetic Clean Flatlay', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1080&h=1080&fit=crop' },
-    { title: 'Sunset Nature Escape', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1080&fit=crop' }
+    { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'Provide 3 effortless ways to style your linen scarf', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'Modern Minimalist Architecture', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'Artisan Studio Pottery', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'Aesthetic Clean Flatlay', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80' }
   ];
 
   // Platform-specific copies so switching platform preserves custom edits for each
   const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && caption) {
       try {
         const saved = localStorage.getItem('omnisocial_platform_captions');
         if (saved) return JSON.parse(saved);
@@ -236,13 +235,25 @@ export default function PostsContentTab({
     };
   });
 
-  // Re-sync platformCaptions whenever external caption changes or localStorage updates
+  // Re-sync platformCaptions whenever external caption changes
   useEffect(() => {
+    if (!caption) {
+      setPlatformCaptions({
+        LINKEDIN: '',
+        INSTAGRAM: '',
+        FACEBOOK: '',
+        TWITTER: ''
+      });
+      return;
+    }
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('omnisocial_platform_captions');
         if (saved) {
-          setPlatformCaptions(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setPlatformCaptions(parsed);
+          }
         }
       } catch {}
     }
@@ -268,6 +279,8 @@ export default function PostsContentTab({
       setPlatformCaptions(prev => ({ ...prev, [plat]: caption }));
     }
   };
+
+  const hasValidMedia = !!mediaUrl && mediaUrl !== '[]' && mediaUrl !== '{}' && (mediaUrl.startsWith('http') || mediaUrl.startsWith('data:') || mediaUrl.startsWith('/'));
 
   const handleCaptionChange = (val: string) => {
     setCaption(val);
@@ -690,19 +703,42 @@ Take the first step today.`,
 
       {/* Dynamic Status / Success Toast Banner in Composer */}
       {statusMessage && (
-        <div className={`rounded-xl px-4 py-3 flex items-center space-x-2.5 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
+        <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
           statusMessage.type === 'success'
             ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
             : statusMessage.type === 'error'
               ? 'bg-rose-50 border border-rose-200 text-rose-900'
               : 'bg-amber-50 border border-amber-200 text-amber-900'
         }`}>
-          {statusMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-          )}
-          <span className="flex-1">{statusMessage.text}</span>
+          <div className="flex items-center space-x-2.5 min-w-0">
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="truncate sm:whitespace-normal">{statusMessage.text}</span>
+          </div>
+          <div className="flex items-center space-x-2 shrink-0">
+            {statusMessage.text.includes('Content Calendar') && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
+                className="px-3 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+              >
+                <span>View Calendar</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+            {setStatusMessage && (
+              <button
+                type="button"
+                onClick={() => setStatusMessage(null)}
+                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -981,6 +1017,47 @@ Take the first step today.`,
       {/* STEP 2 VIEW: THE CORE SCREEN MATCHING REFERENCE IMAGE */}
       {activeStep === 2 && (
         <>
+          {/* Dynamic Status / Confirmation Banner in Step 2 */}
+          {statusMessage && (
+            <div className={`rounded-xl px-4 py-3.5 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
+              statusMessage.type === 'success'
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+                : statusMessage.type === 'error'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
+                  : 'bg-amber-50 border border-amber-200 text-amber-900'
+            }`}>
+              <div className="flex items-center space-x-2.5 min-w-0">
+                {statusMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span className="truncate sm:whitespace-normal">{statusMessage.text}</span>
+              </div>
+              <div className="flex items-center space-x-2 shrink-0">
+                {statusMessage.text.includes('Content Calendar') && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
+                    className="px-3 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Calendar</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                {setStatusMessage && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusMessage(null)}
+                    className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* IN-COMPOSER SCHEDULE CONFIRMATION BANNER */}
           {scheduledFor && (
             <div className="bg-indigo-50/90 border border-indigo-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
@@ -1451,13 +1528,13 @@ Take the first step today.`,
                 {/* SUB-COLUMN 2: MEDIA SECTION (MD: 4 COLS) */}
                 <div className="md:col-span-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">Media ({mediaUrl ? 1 : 0})</label>
+                    <label className="text-xs font-bold text-slate-800">Media ({hasValidMedia ? 1 : 0})</label>
                     <span className="text-[10px] font-mono text-slate-400">1:1 Square</span>
                   </div>
 
                   {/* Image Graphic Card with Toolbar */}
                   <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 aspect-square relative group shadow-2xs">
-                    {mediaUrl ? (
+                    {hasValidMedia ? (
                       mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                         <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
                       ) : (
@@ -1620,7 +1697,7 @@ Take the first step today.`,
                     </div>
 
                     {/* Post Media Display */}
-                    {mediaUrl && (
+                    {hasValidMedia && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
@@ -1691,7 +1768,7 @@ Take the first step today.`,
                     </div>
 
                     {/* Media */}
-                    {mediaUrl && (
+                    {hasValidMedia && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
@@ -1755,7 +1832,7 @@ Take the first step today.`,
                       )}
                     </div>
 
-                    {mediaUrl && (
+                    {hasValidMedia && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />
@@ -1820,7 +1897,7 @@ Take the first step today.`,
                       )}
                     </div>
 
-                    {mediaUrl && (
+                    {hasValidMedia && (
                       <div className="rounded-xl overflow-hidden border border-slate-200 aspect-video bg-slate-100">
                         {mediaUrl.endsWith('.mp4') || mediaUrl.includes('video') ? (
                           <video src={mediaUrl} className="w-full h-full object-cover" controls autoPlay loop muted playsInline />

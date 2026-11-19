@@ -284,9 +284,8 @@ export default function IdeasRequestsTab({
 
       {/* NOTIFICATIONS */}
       {notification && (
-        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${
-          notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-        }`}>
+        <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}>
           {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
           <span className="font-semibold">{notification.message}</span>
         </div>
@@ -312,9 +311,8 @@ export default function IdeasRequestsTab({
                       <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-700 rounded-md uppercase">
                         {idea.suggestedFormat || 'POST'}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        idea.status === 'NEW' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${idea.status === 'NEW' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
                         {idea.status}
                       </span>
                     </div>
@@ -411,11 +409,10 @@ export default function IdeasRequestsTab({
                       </td>
                       <td className="p-4 font-medium text-slate-700">{req.department || 'General'}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                          req.urgency === 'URGENT' ? 'bg-rose-100 text-rose-800' :
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${req.urgency === 'URGENT' ? 'bg-rose-100 text-rose-800' :
                           req.urgency === 'HIGH' ? 'bg-amber-100 text-amber-800' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
+                            'bg-slate-100 text-slate-700'
+                          }`}>
                           {req.urgency}
                         </span>
                       </td>
@@ -423,11 +420,10 @@ export default function IdeasRequestsTab({
                         {req.targetDate ? new Date(req.targetDate).toLocaleDateString() : 'Flexible'}
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                          req.status === 'FULFILLED' ? 'bg-emerald-100 text-emerald-800' :
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${req.status === 'FULFILLED' ? 'bg-emerald-100 text-emerald-800' :
                           req.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
+                            'bg-slate-100 text-slate-600'
+                          }`}>
                           {req.status}
                         </span>
                       </td>

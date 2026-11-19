@@ -19,14 +19,18 @@ import { apiRequest } from '../../../lib/api';
 interface DraftsTabProps {
   brandId: string;
   onEditDraft: (draft: any) => void;
+  onDeleteDraft?: (draftId: string) => void;
   onNavigateTab: (tabId: string) => void;
+  onResetComposer?: () => void;
   onRefreshOverview?: () => void;
 }
 
 export default function DraftsTab({
   brandId,
   onEditDraft,
+  onDeleteDraft,
   onNavigateTab,
+  onResetComposer,
   onRefreshOverview
 }: DraftsTabProps) {
   const [drafts, setDrafts] = useState<any[]>([]);
@@ -90,6 +94,9 @@ export default function DraftsTab({
         sessionStorage.removeItem('omnisocial_platform_captions');
       } catch {}
     }
+    if (onDeleteDraft) {
+      onDeleteDraft(draftId);
+    }
     try {
       await apiRequest(`/content/${draftId}`, {
         method: 'DELETE'
@@ -125,7 +132,10 @@ export default function DraftsTab({
 
         <button
           type="button"
-          onClick={() => onNavigateTab('composer')}
+          onClick={() => {
+            if (onResetComposer) onResetComposer();
+            onNavigateTab('composer');
+          }}
           className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-sm flex items-center space-x-1.5 transition cursor-pointer self-start md:self-auto"
         >
           <Plus className="w-3.5 h-3.5" />
