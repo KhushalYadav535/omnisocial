@@ -204,8 +204,15 @@ export default function PostsContentTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Platform-specific copies so switching platform preserves custom edits for each
-  const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>({
-    LINKEDIN: `Thinking about a career move in 2026?
+  const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('omnisocial_platform_captions');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      LINKEDIN: `Thinking about a career move in 2026?
 
 It's not just about a new job. It's about higher impact, a better role, and long-term growth.
 
@@ -213,7 +220,7 @@ Here are 3 practical steps to plan your next career move:
 ✅ Assess your current career value
 ✅ Build the right skills and body of work
 ✅ Create a focused and visible value story ...`,
-    INSTAGRAM: `Thinking about a career move in 2026? ✨
+      INSTAGRAM: `Thinking about a career move in 2026? ✨
 
 It's not just about a new job. It's about higher impact, a better role, and long-term growth. 🚀
 
@@ -223,7 +230,7 @@ Here are 3 practical steps to plan your next career move:
 ✅ Create a focused and visible value story ...
 
 #CareerGrowth #CareerMove #ProfessionalDevelopment`,
-    FACEBOOK: `Thinking about a career move in 2026?
+      FACEBOOK: `Thinking about a career move in 2026?
 
 It's not just about a new job. It's about higher impact, a better role, and long-term growth.
 
@@ -233,7 +240,7 @@ Here are 3 practical steps to plan your next career move:
 ✅ Create a focused and visible value story ...
 
 What is your biggest career milestone this year? Let us know in the comments below!`,
-    TWITTER: `Thinking about a career move in 2026? 🚀
+      TWITTER: `Thinking about a career move in 2026? 🚀
 
 It's not just about a new job—it's about higher impact, a better role, and compounding growth.
 
@@ -241,15 +248,22 @@ It's not just about a new job—it's about higher impact, a better role, and com
 ✅ Assess your career value
 ✅ Build observable proof of work
 ✅ Position for high-trust authority`
+    };
   });
 
   const handleSwitchPlatform = (plat: 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER') => {
-    setPlatformCaptions(prev => ({
-      ...prev,
+    const updated = {
+      ...platformCaptions,
       [activePlatform]: caption
-    }));
+    };
+    setPlatformCaptions(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
+      } catch {}
+    }
     setActivePlatform(plat);
-    const nextCopy = platformCaptions[plat];
+    const nextCopy = updated[plat];
     if (nextCopy) {
       setCaption(nextCopy);
     }
@@ -257,10 +271,16 @@ It's not just about a new job—it's about higher impact, a better role, and com
 
   const handleCaptionChange = (val: string) => {
     setCaption(val);
-    setPlatformCaptions(prev => ({
-      ...prev,
+    const updated = {
+      ...platformCaptions,
       [activePlatform]: val
-    }));
+    };
+    setPlatformCaptions(updated);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
+      } catch {}
+    }
   };
 
   // Local ISO datetime string helper (prevents UTC timezone shift bug)
@@ -349,11 +369,7 @@ Take the first step today.`,
       if (!hashtags || hashtags.length === 0) {
         setHashtags(defaultVariants[0].hashtags);
       }
-      if (!mediaUrl || mediaUrl.trim() === '') {
-        setMediaUrl('/images/career-move-2026.svg');
-      }
-    } else {
-      if (!mediaUrl || mediaUrl.trim() === '') {
+      if (!mediaUrl && (!caption || caption.toLowerCase().includes('career move'))) {
         setMediaUrl('/images/career-move-2026.svg');
       }
     }
@@ -673,6 +689,32 @@ Take the first step today.`,
           </div>
         </div>
       </div>
+
+      {/* Dynamic Status / Success Toast Banner in Composer */}
+      {statusMessage && (
+        <div className={`rounded-xl px-4 py-3 flex items-center space-x-2.5 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 ${
+          statusMessage.type === 'success'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+            : statusMessage.type === 'error'
+              ? 'bg-rose-50 border border-rose-200 text-rose-900'
+              : 'bg-amber-50 border border-amber-200 text-amber-900'
+        }`}>
+          {statusMessage.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span className="flex-1">{statusMessage.text}</span>
+        </div>
+      )}
+
+      {/* AI Generating Indicator */}
+      {isGenerating && (
+        <div className="bg-amber-50/90 border border-amber-200 text-amber-900 rounded-xl px-4 py-2.5 flex items-center space-x-2.5 text-xs font-semibold animate-pulse shadow-2xs">
+          <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+          <span>Crafting high-converting, platform-specific post variants with AI... ✨</span>
+        </div>
+      )}
 
       {/* 3. GREEN NOTIFICATION BANNER */}
       <div className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#166534] rounded-xl px-4 py-2.5 flex items-center space-x-2.5 text-xs font-medium shadow-2xs">
@@ -1388,14 +1430,22 @@ Take the first step today.`,
                       <Crop className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      type="button"
+                    <label
+                      htmlFor="creative-asset-upload"
                       title="Replace / Upload Creative Asset"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition cursor-pointer"
+                      aria-label="Replace / Upload Creative Asset"
+                      className="p-2 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition cursor-pointer inline-flex items-center justify-center"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
-                    </button>
+                      <input
+                        id="creative-asset-upload"
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
+                    </label>
 
                     <button
                       type="button"
@@ -1429,14 +1479,7 @@ Take the first step today.`,
                     </div>
                   )}
 
-                  {/* Hidden Native File Input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
+
                 </div>
               </div>
             </div>

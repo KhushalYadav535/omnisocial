@@ -351,9 +351,26 @@ function ContentStudioContent() {
       try { const p = JSON.parse(draft.mediaUrls); if (Array.isArray(p) && p[0]) img = p[0]; else img = draft.mediaUrls; } catch { img = draft.mediaUrls; }
     }
     setMediaUrl(img || '');
+    if (draft.platformCaptions) {
+      try {
+        const pc = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(pc));
+      } catch {}
+    }
     handleTabChange('composer');
     setStatusMessage({ type: 'success', text: `Loaded draft "${draft.title || 'Untitled'}" into composer.` });
   };
+
+  // Escape key listener for unapproved publish governance modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showUnapprovedPublishModal) {
+        setShowUnapprovedPublishModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showUnapprovedPublishModal]);
 
   // Composer Draft Auto-Persistence (Bug 4)
   useEffect(() => {
@@ -1049,7 +1066,7 @@ function ContentStudioContent() {
     }
   };
 
-  const handleSavePost = async (immediatePublish = false, bypassGate = false) => {
+  const handleSavePost = async (immediatePublish = false, bypassGate = false, approvalStatusOverride?: 'PENDING' | 'DRAFT') => {
     if (!caption.trim()) {
       setStatusMessage({ type: 'error', text: 'Please write or generate a post caption first.' });
       return;
@@ -1082,6 +1099,17 @@ function ContentStudioContent() {
       const tagsToAppend = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
       const finalCaption = tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim();
 
+      let platformCaptions: any = undefined;
+      if (typeof window !== 'undefined') {
+        try {
+          const pc = localStorage.getItem('omnisocial_platform_captions');
+          if (pc) platformCaptions = JSON.parse(pc);
+        } catch {}
+      }
+
+      const finalApprovalStatus = approvalStatusOverride || (scheduledFor ? 'PENDING' : 'DRAFT');
+      const finalContentStatus = (finalApprovalStatus === 'PENDING' || scheduledFor) ? 'SCHEDULED' : 'DRAFT';
+
       let targetContentId: string;
 
       if (activeDraftId && !immediatePublish) {
@@ -1094,8 +1122,9 @@ function ContentStudioContent() {
             hashtags,
             mediaUrls: mediaUrl ? [mediaUrl] : [],
             format: format === 'PORTRAIT' ? 'POST' : format,
-            status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
-            clientApprovalStatus: scheduledFor ? 'PENDING' : 'DRAFT'
+            status: finalContentStatus,
+            clientApprovalStatus: finalApprovalStatus,
+            platformCaptions
           })
         });
         targetContentId = activeDraftId;
@@ -1112,20 +1141,28 @@ function ContentStudioContent() {
             mediaUrls: mediaUrl ? [mediaUrl] : [],
             targetPlatforms,
             format: format === 'PORTRAIT' ? 'POST' : format,
-            status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
-            clientApprovalStatus: scheduledFor ? 'PENDING' : 'DRAFT',
+            status: finalContentStatus,
+            clientApprovalStatus: finalApprovalStatus,
             scheduledFor: immediatePublish ? undefined : scheduledIso,
             socialAccountIds: selectedAccountIds,
             firstComment: enableFirstComment && firstComment.trim() ? firstComment.trim() : undefined,
             viralityScore: viralityAnalysis?.score || undefined,
             isEvergreen,
-            recycleIntervalDays
+            recycleIntervalDays,
+            platformCaptions
           })
         });
         targetContentId = res.content.id;
-        if (!immediatePublish && !scheduledFor) {
+        if (!immediatePublish && !scheduledFor && finalApprovalStatus !== 'PENDING') {
           setActiveDraftId(targetContentId);
         }
+      }
+
+      if (approvalStatusOverride === 'PENDING') {
+        setStatusMessage({ type: 'success', text: 'Post draft successfully submitted to Approvals Queue for Client Review!' });
+        setActiveDraftId(null);
+        fetchOverview();
+        return;
       }
 
       if (immediatePublish && selectedAccountIds.length > 0) {
@@ -1740,8 +1777,25 @@ function ContentStudioContent() {
 
         {/* UNAPPROVED PUBLISH GOVERNANCE MODAL */}
         {showUnapprovedPublishModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-amber-200 animate-in fade-in zoom-in-95">
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowUnapprovedPublishModal(false);
+            }}
+          >
+            <div
+              className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-amber-200 animate-in fade-in zoom-in-95 cursor-default relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setShowUnapprovedPublishModal(false)}
+                aria-label="Close modal"
+                className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <div className="flex items-center space-x-3 text-amber-600">
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
                   <AlertCircle className="w-6 h-6" />
@@ -1764,9 +1818,9 @@ function ContentStudioContent() {
               <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setShowUnapprovedPublishModal(false);
-                    handleSavePost(false);
+                    await handleSavePost(false, false, 'PENDING');
                   }}
                   className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
                 >

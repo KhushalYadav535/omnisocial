@@ -40,8 +40,8 @@ export default function DraftsTab({
     try {
       const res = await apiRequest(`/content?brandId=${brandId}&status=DRAFT`);
       const contents = res.contents || [];
-      // Filter items that are drafts or clientApprovalStatus === 'DRAFT'
-      const draftList = contents.filter((c: any) => c.status === 'DRAFT' || c.clientApprovalStatus === 'DRAFT');
+      // Strictly filter items that are active drafts awaiting submission (not in Approvals or Scheduled)
+      const draftList = contents.filter((c: any) => c.status === 'DRAFT' && c.clientApprovalStatus === 'DRAFT');
       setDrafts(draftList);
     } catch (err: any) {
       console.error('Fetch drafts error:', err);
@@ -79,17 +79,18 @@ export default function DraftsTab({
   };
 
   const handleDeleteDraft = async (draftId: string) => {
-    if (!confirm('Are you sure you want to delete this draft?')) return;
     setActionLoadingId(draftId);
+    // Optimistically remove from list immediately (no blocking confirm dialog)
+    setDrafts(prev => prev.filter(d => d.id !== draftId));
     try {
       await apiRequest(`/content/${draftId}`, {
         method: 'DELETE'
       });
-      setDrafts(prev => prev.filter(d => d.id !== draftId));
       setNotice({ type: 'success', text: 'Draft deleted successfully.' });
       if (onRefreshOverview) onRefreshOverview();
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Failed to delete draft.' });
+      fetchDrafts();
     } finally {
       setActionLoadingId(null);
     }

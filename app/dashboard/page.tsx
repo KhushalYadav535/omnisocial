@@ -91,7 +91,7 @@ function DashboardContent() {
         apiRequest(`/social-accounts${query}`)
       ]);
 
-      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED');
+      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED' || e.status === 'MISSED');
       const activePlatforms = Array.from(new Set((accountsRes.accounts || []).filter((a: any) => a.isConnected !== false).map((a: any) => a.platform?.toUpperCase()))).filter(Boolean) as string[];
 
       setData({
@@ -1277,8 +1277,12 @@ function DashboardContent() {
                       <p className="text-xs font-semibold text-neutral-900 line-clamp-1">{post.title || post.captionText}</p>
                       <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-500 font-mono">
                         <span>{new Date(post.scheduledFor).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                        <span className="text-neutral-900 font-bold bg-neutral-200/80 px-2 py-0.5 rounded-full">
-                          QUEUED
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          post.status === 'MISSED' || new Date(post.scheduledFor).getTime() < Date.now()
+                            ? 'text-rose-700 bg-rose-100 border border-rose-200'
+                            : 'text-neutral-900 bg-neutral-200/80'
+                        }`}>
+                          {post.status === 'MISSED' || new Date(post.scheduledFor).getTime() < Date.now() ? 'MISSED' : 'QUEUED'}
                         </span>
                       </div>
                     </div>

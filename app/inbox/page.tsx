@@ -84,6 +84,37 @@ function InboxContent() {
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   const [showReplyComposerOnSent, setShowReplyComposerOnSent] = useState(false);
   const threadCache = useRef<Record<string, any>>({});
+  const selectedThreadKeyRef = useRef<string | null>(null);
+
+  // Pre-cache both Comments and DMs tabs on load so switching is instant with zero empty state
+  useEffect(() => {
+    const prefetchOtherTabs = async () => {
+      try {
+        const brandQuery = activeBrandId ? `&brandId=${activeBrandId}` : '';
+        const [commRes, dmRes] = await Promise.all([
+          apiRequest(`/inbox?type=COMMENT&page=1&limit=50${brandQuery}`),
+          apiRequest(`/inbox?type=DIRECT_MESSAGE&page=1&limit=50${brandQuery}`)
+        ]);
+        const commKey = `${activeBrandId || 'all'}_ALL_COMMENT_ALL_1`;
+        const dmKey = `${activeBrandId || 'all'}_ALL_DIRECT_MESSAGE_ALL_1`;
+        threadCache.current[commKey] = {
+          items: commRes.items || commRes.interactions || [],
+          total: commRes.total,
+          totalPages: commRes.totalPages,
+          commentsTotal: commRes.commentsCount,
+          dmsTotal: commRes.dmsCount
+        };
+        threadCache.current[dmKey] = {
+          items: dmRes.items || dmRes.interactions || [],
+          total: dmRes.total,
+          totalPages: dmRes.totalPages,
+          commentsTotal: dmRes.commentsCount,
+          dmsTotal: dmRes.dmsCount
+        };
+      } catch {}
+    };
+    prefetchOtherTabs();
+  }, [activeBrandId]);
 
   // Fetch Brand Name
   useEffect(() => {
@@ -170,7 +201,11 @@ function InboxContent() {
 
       // Auto-select first item only if current selection is invalid or absent
       if (items.length > 0) {
-        if (!selectedInteraction || !items.some((i: any) => i.id === selectedInteraction.id)) {
+        const hasActiveSelection = selectedInteraction && (
+          items.some((i: any) => i.id === selectedInteraction.id) ||
+          (selectedThreadKeyRef.current && items.some((i: any) => (i.parentPlatformId || i.authorId || i.id) === selectedThreadKeyRef.current))
+        );
+        if (!hasActiveSelection) {
           loadInteractionDetail(items[0].id);
         }
       } else {
@@ -186,6 +221,7 @@ function InboxContent() {
 
   // Instant 1-click selection handler
   const handleSelectThread = (thread: any) => {
+    selectedThreadKeyRef.current = thread.threadId;
     setSelectedInteraction(thread.latestMessage);
     setThreadMessages(thread.messages && thread.messages.length > 0 ? thread.messages : [thread.latestMessage]);
     setShowReplyComposerOnSent(false);

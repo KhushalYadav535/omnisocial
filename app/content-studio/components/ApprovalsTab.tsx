@@ -9,6 +9,8 @@ import {
   Clock,
   Share2,
   Check,
+  Copy,
+  X,
   MessageSquare,
   ArrowRight,
   Loader2,
@@ -31,6 +33,8 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
   // Magic review link
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState('');
 
   // Review Feedback modal
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
@@ -86,12 +90,14 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
 
       const token = res.shareToken || res.token || res.reviewToken || (res.reviewUrl ? res.reviewUrl.split('/review/').pop() : '');
       const origin = typeof window !== 'undefined' ? window.location.origin : 'https://omnisocial-l5uq.vercel.app';
-      const magicLink = `${origin}/review/${token}`;
+      const magicLink = res.reviewUrl || `${origin}/review/${token}`;
 
+      setGeneratedLink(magicLink);
+      setShowShareModal(true);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 4000);
       try {
         await navigator.clipboard.writeText(magicLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 4000);
       } catch {}
       setNotification({ type: 'success', message: `Client review link ready: ${magicLink}` });
     } catch (err: any) {
@@ -225,7 +231,8 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center space-x-1">
-                        <span>⚡ Unscheduled Draft • Dispatched on approval</span>
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Today'} • Dispatched on client approval</span>
                       </span>
                     )}
                   </div>
@@ -353,6 +360,80 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                 className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-lg shadow-md transition"
               >
                 Submit Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLIENT REVIEW MAGIC LINK MODAL */}
+      {showShareModal && generatedLink && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-neutral-200/90 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-neutral-900 text-white flex items-center justify-center">
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900">Client Review Magic Link</h3>
+                  <p className="text-[10px] text-neutral-500">Live passwordless review portal for stakeholders</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Send this link to your client or team. They can preview upcoming posts, provide line-item comments, and submit approvals without having an OmniSocial account.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Review Link URL</label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={generatedLink}
+                  className="w-full text-xs font-mono p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-800 select-all"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(generatedLink);
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 3000);
+                    } catch { }
+                  }}
+                  className="px-4 py-2.5 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-xl transition flex items-center space-x-1.5 shrink-0 cursor-pointer"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between border-t border-neutral-100">
+              <a
+                href={generatedLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 text-xs font-semibold text-neutral-700 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200 rounded-full transition cursor-pointer"
+              >
+                Open Portal ↗
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="px-4 py-2 text-xs font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-full transition cursor-pointer"
+              >
+                Done
               </button>
             </div>
           </div>

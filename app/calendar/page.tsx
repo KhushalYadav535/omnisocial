@@ -2060,10 +2060,10 @@ export default function CalendarPage() {
       accentBar = 'bg-emerald-500';
       dot = 'bg-emerald-500';
       badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    } else if (defaultStatus === 'FAILED') {
+    } else if (defaultStatus === 'FAILED' || defaultStatus === 'MISSED') {
       accentBar = 'bg-rose-500';
       dot = 'bg-rose-500';
-      badge = 'bg-rose-50 text-rose-700 border-rose-200';
+      badge = 'bg-rose-50 text-rose-700 border border-rose-200';
     } else if (defaultStatus === 'PUBLISHING') {
       accentBar = 'bg-amber-500';
       dot = 'bg-amber-500 animate-ping';
@@ -3171,7 +3171,7 @@ export default function CalendarPage() {
                   <span>Live Pipeline</span>
                 </h3>
                 <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full font-mono">
-                  {filteredEvents.filter(e => e.status === 'QUEUED').length} Queued
+                  {filteredEvents.filter(e => e.status === 'QUEUED' && new Date(e.scheduledFor).getTime() >= Date.now()).length} Queued
                 </span>
               </div>
 
@@ -3291,11 +3291,13 @@ export default function CalendarPage() {
                     <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
                       selectedEvent.status === 'PUBLISHED'
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : selectedEvent.status === 'QUEUED'
-                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : selectedEvent.status === 'MISSED' || (selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now())
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : selectedEvent.status === 'QUEUED'
+                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
                     }`}>
-                      {selectedEvent.status}
+                      {selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now() ? 'MISSED' : selectedEvent.status}
                     </span>
                   </div>
 
