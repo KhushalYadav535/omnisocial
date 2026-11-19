@@ -79,6 +79,7 @@ export interface PostsContentTabProps {
   statusMessage?: { type: 'success' | 'error' | 'info'; text: string } | null;
   setStatusMessage?: (msg: any) => void;
   onNavigateTab?: (tabId: string) => void;
+  onResetComposer?: () => void;
 }
 
 export default function PostsContentTab({
@@ -112,10 +113,11 @@ export default function PostsContentTab({
   viralityScore,
   statusMessage,
   setStatusMessage,
-  onNavigateTab
+  onNavigateTab,
+  onResetComposer
 }: PostsContentTabProps) {
-  // Stepper state: 1: Brief & Settings, 2: Generated Posts (default matching screenshot), 3: Review & Publish
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(2);
+  // Stepper state: 1: Brief & Settings, 2: Generated Posts, 3: Review & Publish
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(() => (caption || rawIdea ? 2 : 1));
 
   // Active Platform Selector: LINKEDIN | INSTAGRAM | FACEBOOK | TWITTER
   const [activePlatform, setActivePlatform] = useState<'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER'>('LINKEDIN');
@@ -348,31 +350,6 @@ Take the first step today.`,
     }
   ];
 
-  // Initialize caption and hashtags if empty and no draft exists
-  useEffect(() => {
-    let hasDraft = false;
-    if (typeof window !== 'undefined') {
-      try {
-        const d = localStorage.getItem('omnisocial_composer_draft');
-        if (d) {
-          const p = JSON.parse(d);
-          if (p.caption && p.caption.trim()) hasDraft = true;
-        }
-      } catch {}
-    }
-    if (!hasDraft) {
-      if (!caption || caption.trim() === '') {
-        setCaption(defaultVariants[0].copy);
-      }
-      if (!hashtags || hashtags.length === 0) {
-        setHashtags(defaultVariants[0].hashtags);
-      }
-      if (!mediaUrl && (!caption || caption.toLowerCase().includes('career move'))) {
-        setMediaUrl('/images/career-move-2026.svg');
-      }
-    }
-  }, []);
-
   // Filter hashtags that are not already written in caption (Bug 10/11)
   const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
 
@@ -594,6 +571,18 @@ Take the first step today.`,
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2.5">
+          {onResetComposer && (
+            <button
+              type="button"
+              onClick={onResetComposer}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+              title="Start a fresh post (resets composer)"
+            >
+              <Plus className="w-3.5 h-3.5 text-purple-600" />
+              <span>New Post</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onSaveDraft}
@@ -949,6 +938,17 @@ Take the first step today.`,
           </div>
 
           <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+            {onResetComposer && (
+              <button
+                type="button"
+                onClick={onResetComposer}
+                disabled={submitting}
+                className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-purple-600" />
+                <span>New Post</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onSaveDraft}
@@ -1176,9 +1176,23 @@ Take the first step today.`,
                       placeholder="Write or refine your post content..."
                       className="w-full p-3.5 text-xs text-slate-800 leading-relaxed rounded-xl focus:outline-hidden resize-none bg-transparent"
                     />
-                    <div className="px-3 pb-2 flex items-center justify-end">
-                      <span className="text-[11px] font-mono text-slate-400">
-                        {caption.length} / {currentSpec.maxChars.toLocaleString()}
+                    <div className="px-3 pb-2 flex items-center justify-between">
+                      {activePlatform === 'TWITTER' && (caption || '').length > 280 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const trimmed = caption.length <= 280 ? caption : (caption.slice(0, 277) + '...');
+                            handleCaptionChange(trimmed);
+                          }}
+                          className="text-[10px] text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded font-semibold transition cursor-pointer"
+                        >
+                          ⚡ Auto-fit to 280 chars
+                        </button>
+                      ) : <span />}
+                      <span className={`text-[11px] font-mono ${
+                        (caption || '').length > currentSpec.maxChars ? 'text-rose-600 font-bold' : 'text-slate-400'
+                      }`}>
+                        {(caption || '').length} / {currentSpec.maxChars.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -2082,6 +2096,25 @@ Take the first step today.`,
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Floating Global Toast Notification */}
+      {statusMessage && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md animate-in fade-in slide-in-from-bottom-3 duration-300 pointer-events-none">
+          <div className={`rounded-2xl p-4 shadow-2xl flex items-center space-x-3 text-xs font-semibold border pointer-events-auto ${
+            statusMessage.type === 'success'
+              ? 'bg-slate-900/95 text-white border-slate-800 backdrop-blur-md'
+              : statusMessage.type === 'error'
+                ? 'bg-rose-950/95 text-rose-100 border-rose-800 backdrop-blur-md'
+                : 'bg-amber-950/95 text-amber-100 border-amber-800 backdrop-blur-md'
+          }`}>
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            )}
+            <span className="flex-1 leading-snug">{statusMessage.text}</span>
           </div>
         </div>
       )}

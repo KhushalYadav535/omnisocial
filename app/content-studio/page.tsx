@@ -329,7 +329,18 @@ function ContentStudioContent() {
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.activeDraftId) return p.activeDraftId;
+        }
+      } catch {}
+    }
+    return null;
+  });
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
 
@@ -388,6 +399,7 @@ function ContentStudioContent() {
       if (caption || rawIdea || mediaUrl) {
         try {
           localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+            activeDraftId,
             caption,
             rawIdea,
             hashtags,
@@ -398,7 +410,24 @@ function ContentStudioContent() {
         } catch {}
       }
     }
-  }, [caption, rawIdea, hashtags, mediaUrl, format, title]);
+  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title]);
+
+  const handleResetComposer = () => {
+    setTitle('');
+    setRawIdea('');
+    setCaption('');
+    setHashtags([]);
+    setMediaUrl('');
+    setScheduledFor('');
+    setActiveDraftId(null);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('omnisocial_composer_draft');
+        localStorage.removeItem('omnisocial_platform_captions');
+      } catch {}
+    }
+    setStatusMessage({ type: 'success', text: 'Composer reset. Ready to author a new post.' });
+  };
 
   const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
     if (data.title) setTitle(data.title);
@@ -614,12 +643,20 @@ function ContentStudioContent() {
         setTitle(newTitle);
 
         // Populate platformCaptions across ALL 4 platforms so other tabs never retain stale copy
+        const formatTwitterCopy = (text: string): string => {
+          if (!text) return '';
+          if (text.length <= 280) return text;
+          const firstBlock = text.split('\n\n')[0] || text;
+          if (firstBlock.length <= 280) return firstBlock;
+          return firstBlock.slice(0, 277) + '...';
+        };
+
         const variants = res.generated.variants || {};
         const newPlatformCaptions: Record<string, string> = {
           LINKEDIN: variants.linkedin || res.generated.caption,
           INSTAGRAM: variants.instagram || res.generated.caption,
           FACEBOOK: variants.facebook || res.generated.caption,
-          TWITTER: variants.twitter || variants.linkedin || res.generated.caption
+          TWITTER: formatTwitterCopy(variants.twitter || variants.linkedin || res.generated.caption)
         };
 
         if (typeof window !== 'undefined') {
@@ -1178,6 +1215,7 @@ function ContentStudioContent() {
           method: 'POST',
           body: JSON.stringify({
             brandId: activeBrandId,
+            activeDraftId: isDraftOnly ? activeDraftId : undefined,
             title: title || caption.slice(0, 30) + '...',
             rawIdea,
             caption: finalCaption,
@@ -1301,6 +1339,7 @@ function ContentStudioContent() {
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+              activeDraftId: targetContentId,
               caption,
               rawIdea,
               hashtags,
@@ -1810,6 +1849,7 @@ function ContentStudioContent() {
             statusMessage={statusMessage}
             setStatusMessage={setStatusMessage}
             onNavigateTab={(tabId) => handleTabChange(tabId as any)}
+            onResetComposer={handleResetComposer}
           />
         )}
 

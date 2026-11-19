@@ -136,7 +136,7 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
         <div className="flex flex-wrap items-center gap-2">
           {/* Status Filter */}
           <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-semibold">
-            {['PENDING', 'APPROVED', 'CHANGES_REQUESTED'].map((st) => (
+            {['PENDING', 'APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
