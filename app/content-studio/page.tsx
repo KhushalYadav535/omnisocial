@@ -286,7 +286,7 @@ function ContentStudioContent() {
         }
       } catch {}
     }
-    return 'Introduce our upcoming eco-friendly resort capsule collection with lightweight breathable linen.';
+    return '';
   });
   const [caption, setCaption] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -310,7 +310,7 @@ function ContentStudioContent() {
         }
       } catch {}
     }
-    return ['#Resort2026', '#SustainableFashion', '#LinenStyle'];
+    return [];
   });
   const [newTagInput, setNewTagInput] = useState('');
   const [mediaUrl, setMediaUrl] = useState(() => {
@@ -354,6 +354,16 @@ function ContentStudioContent() {
     if (draft.platformCaptions) {
       try {
         const pc = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(pc));
+      } catch {}
+    } else if (draft.caption) {
+      const pc = {
+        LINKEDIN: draft.caption,
+        INSTAGRAM: draft.caption,
+        FACEBOOK: draft.caption,
+        TWITTER: draft.caption
+      };
+      try {
         localStorage.setItem('omnisocial_platform_captions', JSON.stringify(pc));
       } catch {}
     }
@@ -596,11 +606,39 @@ function ContentStudioContent() {
           setPreviousCaption(caption);
         }
         setCaption(res.generated.caption);
-        const newTags = res.generated.hashtags || ['#ResortCollection', '#SustainableLuxury'];
+        setMediaUrl(''); // Clear mediaUrl so prior post's image is never carried over!
+        setActiveDraftId(null);
+        const newTags = res.generated.hashtags || [];
         setHashtags(newTags);
-        if (!title) setTitle(promptToUse.slice(0, 35) + '...');
+        const newTitle = promptToUse.slice(0, 35) + '...';
+        setTitle(newTitle);
+
+        // Populate platformCaptions across ALL 4 platforms so other tabs never retain stale copy
+        const variants = res.generated.variants || {};
+        const newPlatformCaptions: Record<string, string> = {
+          LINKEDIN: variants.linkedin || res.generated.caption,
+          INSTAGRAM: variants.instagram || res.generated.caption,
+          FACEBOOK: variants.facebook || res.generated.caption,
+          TWITTER: variants.twitter || variants.linkedin || res.generated.caption
+        };
+
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('omnisocial_platform_captions', JSON.stringify(newPlatformCaptions));
+            localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+              caption: res.generated.caption,
+              rawIdea: promptToUse,
+              hashtags: newTags,
+              mediaUrl: '',
+              format,
+              title: newTitle,
+              platformCaptions: newPlatformCaptions
+            }));
+          } catch {}
+        }
+
         setViralityAnalysis(null);
-        setStatusMessage({ type: 'success', text: 'AI copy crafted successfully. Updating virality score...' });
+        setStatusMessage({ type: 'success', text: 'AI copy crafted successfully across all platforms. Updating virality score...' });
         handleAnalyzeVirality(res.generated.caption, newTags);
       }
     } catch (err: any) {
@@ -1066,7 +1104,13 @@ function ContentStudioContent() {
     }
   };
 
-  const handleSavePost = async (immediatePublish = false, bypassGate = false, approvalStatusOverride?: 'PENDING' | 'DRAFT') => {
+  const handleSavePost = async (
+    immediatePublish = false,
+    bypassGate = false,
+    approvalStatusOverride?: 'PENDING' | 'DRAFT',
+    isDraftOnly = false,
+    isExplicitSchedule = false
+  ) => {
     if (!caption.trim()) {
       setStatusMessage({ type: 'error', text: 'Please write or generate a post caption first.' });
       return;
@@ -1107,8 +1151,8 @@ function ContentStudioContent() {
         } catch {}
       }
 
-      const finalApprovalStatus = approvalStatusOverride || (scheduledFor ? 'PENDING' : 'DRAFT');
-      const finalContentStatus = (finalApprovalStatus === 'PENDING' || scheduledFor) ? 'SCHEDULED' : 'DRAFT';
+      const finalApprovalStatus = isDraftOnly ? 'DRAFT' : (approvalStatusOverride || (isExplicitSchedule || scheduledFor ? 'PENDING' : 'DRAFT'));
+      const finalContentStatus = isDraftOnly ? 'DRAFT' : ((finalApprovalStatus === 'PENDING' || isExplicitSchedule || scheduledFor) ? 'SCHEDULED' : 'DRAFT');
 
       let targetContentId: string;
 
@@ -1129,7 +1173,7 @@ function ContentStudioContent() {
         });
         targetContentId = activeDraftId;
       } else {
-        const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
+        const scheduledIso = (!isDraftOnly && (isExplicitSchedule || scheduledFor)) ? new Date(scheduledFor || Date.now()).toISOString() : undefined;
         const res = await apiRequest('/content', {
           method: 'POST',
           body: JSON.stringify({
@@ -1153,12 +1197,12 @@ function ContentStudioContent() {
           })
         });
         targetContentId = res.content.id;
-        if (!immediatePublish && !scheduledFor && finalApprovalStatus !== 'PENDING') {
+        if (!immediatePublish && isDraftOnly) {
           setActiveDraftId(targetContentId);
         }
       }
 
-      if (approvalStatusOverride === 'PENDING') {
+      if (approvalStatusOverride === 'PENDING' && !isExplicitSchedule) {
         setStatusMessage({ type: 'success', text: 'Post draft successfully submitted to Approvals Queue for Client Review!' });
         setActiveDraftId(null);
         fetchOverview();
@@ -1236,15 +1280,16 @@ function ContentStudioContent() {
             localStorage.removeItem('omnisocial_composer_draft');
           } catch {}
         }
-      } else if (scheduledFor) {
+      } else if (!isDraftOnly && (isExplicitSchedule || scheduledFor)) {
         const channelCount = selectedAccountIds.length || 2;
         setStatusMessage({
           type: 'success',
-          text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${new Date(scheduledFor).toLocaleString()}! Drops are live in your Content Calendar.`
+          text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${new Date(scheduledFor || Date.now()).toLocaleString()}! Drops are live in your Content Calendar.`
         });
         confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
         setActiveDraftId(null);
         setIsPublishGateConfirmed(false);
+        fetchOverview();
         if (typeof window !== 'undefined') {
           try {
             localStorage.removeItem('omnisocial_composer_draft');
@@ -1252,6 +1297,7 @@ function ContentStudioContent() {
         }
       } else {
         setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
+        fetchOverview();
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
@@ -1260,7 +1306,8 @@ function ContentStudioContent() {
               hashtags,
               mediaUrl,
               format,
-              title
+              title,
+              scheduledFor
             }));
           } catch {}
         }
@@ -1752,7 +1799,8 @@ function ContentStudioContent() {
             setScheduledFor={setScheduledFor}
             submitting={submitting}
             isGenerating={generating}
-            onSaveDraft={() => handleSavePost(false)}
+            onSaveDraft={() => handleSavePost(false, false, 'DRAFT', true)}
+            onScheduleDrop={() => handleSavePost(false, false, 'PENDING', false, true)}
             onPublishNow={() => handleSavePost(true)}
             onGenerateAi={handleGenerateAi}
             onGenerateAiImage={handleGenerateAiImage}

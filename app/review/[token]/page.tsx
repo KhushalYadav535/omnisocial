@@ -136,6 +136,7 @@ function ClientReviewContent() {
 
   const approvedCount = posts.filter(p => p.clientApprovalStatus === 'APPROVED').length;
   const pendingCount = posts.filter(p => p.clientApprovalStatus === 'PENDING').length;
+  const changesRequestedCount = posts.filter(p => p.clientApprovalStatus === 'CHANGES_REQUESTED').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 pb-20">
@@ -167,6 +168,12 @@ function ClientReviewContent() {
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>{approvedCount} Approved</span>
             </span>
+            {changesRequestedCount > 0 && (
+              <span className="px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 font-bold text-rose-700 flex items-center space-x-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                <span>{changesRequestedCount} Revision Requested</span>
+              </span>
+            )}
           </div>
         </div>
       </header>

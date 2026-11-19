@@ -1800,18 +1800,16 @@ export default function CalendarPage() {
     setSelectedEventRecycleInterval(ev.recycleIntervalDays || 60);
     setAiScoreAnalysis(null);
 
-    // Prefill reschedule picker with scheduled date
-    if (ev.scheduledFor) {
-      const dt = new Date(ev.scheduledFor);
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, '0');
-      const d = String(dt.getDate()).padStart(2, '0');
-      const hh = String(dt.getHours()).padStart(2, '0');
-      const mm = String(dt.getMinutes()).padStart(2, '0');
-      setRescheduleDate(`${y}-${m}-${d}T${hh}:${mm}`);
-    } else {
-      setRescheduleDate('');
-    }
+    // Prefill reschedule picker with scheduled date, or fallback to event date / tomorrow so input is never empty
+    const rawDate = ev.scheduledFor || ev.createdAt;
+    const dt = rawDate ? new Date(rawDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const validDt = isNaN(dt.getTime()) ? new Date(Date.now() + 24 * 60 * 60 * 1000) : dt;
+    const y = validDt.getFullYear();
+    const m = String(validDt.getMonth() + 1).padStart(2, '0');
+    const d = String(validDt.getDate()).padStart(2, '0');
+    const hh = String(validDt.getHours()).padStart(2, '0');
+    const mm = String(validDt.getMinutes()).padStart(2, '0');
+    setRescheduleDate(`${y}-${m}-${d}T${hh}:${mm}`);
   };
 
   const handleDeleteCalendarPost = async (event: any) => {
@@ -2403,7 +2401,7 @@ export default function CalendarPage() {
                 </span>
               </div>
               <span className="font-mono text-xs font-bold text-neutral-600">
-                {filteredEvents.length} Total Calendar Drops ({filteredEvents.filter((e: any) => e.status === 'QUEUED').length} Queued • {filteredEvents.filter((e: any) => e.status === 'PUBLISHED').length} Published{filteredEvents.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
+                {filteredEvents.length} Total Calendar Drops ({filteredEvents.filter((e: any) => e.status === 'QUEUED').length} Queued • {filteredEvents.filter((e: any) => e.status === 'PUBLISHED').length} Published{filteredEvents.filter((e: any) => e.status === 'MISSED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'MISSED').length} Missed` : ''}{filteredEvents.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
               </span>
             </div>
           </div>
@@ -2876,7 +2874,7 @@ export default function CalendarPage() {
                               <img
                                 src={mediaUrl}
                                 alt=""
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'; }}
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop'; }}
                                 className="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10"
                               />
                             ) : (
@@ -2934,7 +2932,7 @@ export default function CalendarPage() {
                           <img
                             src={mediaUrl}
                             alt=""
-                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=120&h=120&fit=crop'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=120&h=120&fit=crop'; }}
                             className="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/10"
                           />
                         ) : (
@@ -3395,7 +3393,7 @@ export default function CalendarPage() {
                                   <img
                                     src={mediaUrl}
                                     alt="Post preview"
-                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=800&fit=crop'; }}
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop'; }}
                                     className="w-full aspect-square object-cover"
                                   />
                                   <div className="absolute top-2 right-2 flex items-center space-x-1">

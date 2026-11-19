@@ -69,6 +69,7 @@ export interface PostsContentTabProps {
   submitting: boolean;
   isGenerating: boolean;
   onSaveDraft: () => void;
+  onScheduleDrop?: () => void;
   onPublishNow: () => void;
   onGenerateAi: (prompt?: string) => void;
   onGenerateAiImage?: () => void;
@@ -102,6 +103,7 @@ export default function PostsContentTab({
   submitting,
   isGenerating,
   onSaveDraft,
+  onScheduleDrop,
   onPublishNow,
   onGenerateAi,
   onGenerateAiImage,
@@ -203,6 +205,19 @@ export default function PostsContentTab({
   // Native file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Asset Picker Modal State
+  const [showAssetPickerModal, setShowAssetPickerModal] = useState(false);
+  const [assetUrlInput, setAssetUrlInput] = useState('');
+
+  const curatedStockAssets = [
+    { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=1080&h=1080&fit=crop' },
+    { title: 'Artisan Studio Pottery', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=1080&h=1080&fit=crop' },
+    { title: 'Sustainable Linen Wear', url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1080&h=1080&fit=crop' },
+    { title: 'Modern Creative Workspace', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1080&h=1080&fit=crop' },
+    { title: 'Aesthetic Clean Flatlay', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1080&h=1080&fit=crop' },
+    { title: 'Sunset Nature Escape', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&h=1080&fit=crop' }
+  ];
+
   // Platform-specific copies so switching platform preserves custom edits for each
   const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>(() => {
     if (typeof window !== 'undefined') {
@@ -212,44 +227,24 @@ export default function PostsContentTab({
       } catch {}
     }
     return {
-      LINKEDIN: `Thinking about a career move in 2026?
-
-It's not just about a new job. It's about higher impact, a better role, and long-term growth.
-
-Here are 3 practical steps to plan your next career move:
-✅ Assess your current career value
-✅ Build the right skills and body of work
-✅ Create a focused and visible value story ...`,
-      INSTAGRAM: `Thinking about a career move in 2026? ✨
-
-It's not just about a new job. It's about higher impact, a better role, and long-term growth. 🚀
-
-Here are 3 practical steps to plan your next career move:
-✅ Assess your current career value
-✅ Build the right skills and body of work
-✅ Create a focused and visible value story ...
-
-#CareerGrowth #CareerMove #ProfessionalDevelopment`,
-      FACEBOOK: `Thinking about a career move in 2026?
-
-It's not just about a new job. It's about higher impact, a better role, and long-term growth.
-
-Here are 3 practical steps to plan your next career move:
-✅ Assess your current career value
-✅ Build the right skills and body of work
-✅ Create a focused and visible value story ...
-
-What is your biggest career milestone this year? Let us know in the comments below!`,
-      TWITTER: `Thinking about a career move in 2026? 🚀
-
-It's not just about a new job—it's about higher impact, a better role, and compounding growth.
-
-3 steps to execute today:
-✅ Assess your career value
-✅ Build observable proof of work
-✅ Position for high-trust authority`
+      LINKEDIN: caption || '',
+      INSTAGRAM: caption || '',
+      FACEBOOK: caption || '',
+      TWITTER: caption || ''
     };
   });
+
+  // Re-sync platformCaptions whenever external caption changes or localStorage updates
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('omnisocial_platform_captions');
+        if (saved) {
+          setPlatformCaptions(JSON.parse(saved));
+        }
+      } catch {}
+    }
+  }, [caption]);
 
   const handleSwitchPlatform = (plat: 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER') => {
     const updated = {
@@ -264,8 +259,11 @@ It's not just about a new job—it's about higher impact, a better role, and com
     }
     setActivePlatform(plat);
     const nextCopy = updated[plat];
-    if (nextCopy) {
+    if (nextCopy && nextCopy.trim()) {
       setCaption(nextCopy);
+    } else if (caption.trim()) {
+      setCaption(caption);
+      setPlatformCaptions(prev => ({ ...prev, [plat]: caption }));
     }
   };
 
@@ -605,6 +603,18 @@ Take the first step today.`,
             Save as Draft
           </button>
 
+          {scheduledFor && onScheduleDrop && (
+            <button
+              type="button"
+              onClick={onScheduleDrop}
+              disabled={submitting}
+              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Confirm &amp; Schedule Drop</span>
+            </button>
+          )}
+
           <div className="relative">
             <button
               type="button"
@@ -619,21 +629,20 @@ Take the first step today.`,
 
             {/* Dropdown Menu for Schedule / Publish */}
             {showScheduleMenu && (
-              <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 text-xs space-y-1 animate-in fade-in">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowScheduleMenu(false);
-                    onSaveDraft();
-                    if (setStatusMessage) {
-                      setStatusMessage({ type: 'success', text: 'Post submitted to Client Approvals queue!' });
-                    }
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl font-bold text-slate-800 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-2 transition cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Submit for Client Approval</span>
-                </button>
+              <div className="absolute right-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 text-xs space-y-1 animate-in fade-in">
+                {scheduledFor && onScheduleDrop && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowScheduleMenu(false);
+                      onScheduleDrop();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 flex items-center space-x-2 transition cursor-pointer"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Confirm &amp; Schedule Drop</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -654,13 +663,13 @@ Take the first step today.`,
                     d.setHours(10, 0, 0, 0);
                     setScheduledFor(toLocalDatetimeString(d));
                     if (setStatusMessage) {
-                      setStatusMessage({ type: 'success', text: 'Set publication to tomorrow 10:00 AM peak window.' });
+                      setStatusMessage({ type: 'success', text: 'Set publication to tomorrow 10:00 AM peak window. Click "Confirm & Schedule Drop" to finalize.' });
                     }
                   }}
                   className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition cursor-pointer"
                 >
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Schedule for Optimal Peak Time</span>
+                  <span>Optimal Peak Time (Tomorrow 10:00 AM)</span>
                 </button>
                 <button
                   type="button"
@@ -951,7 +960,9 @@ Take the first step today.`,
             <button
               type="button"
               onClick={() => {
-                if (scheduledFor) {
+                if (scheduledFor && onScheduleDrop) {
+                  onScheduleDrop();
+                } else if (scheduledFor) {
                   onSaveDraft();
                 } else {
                   onPublishNow();
@@ -1395,7 +1406,7 @@ Take the first step today.`,
                 {/* SUB-COLUMN 2: MEDIA SECTION (MD: 4 COLS) */}
                 <div className="md:col-span-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800">Media (1)</label>
+                    <label className="text-xs font-bold text-slate-800">Media ({mediaUrl ? 1 : 0})</label>
                     <span className="text-[10px] font-mono text-slate-400">1:1 Square</span>
                   </div>
 
@@ -1412,10 +1423,15 @@ Take the first step today.`,
                         />
                       )
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAssetPickerModal(true)}
+                        className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400 hover:text-slate-600 hover:bg-slate-50/80 transition cursor-pointer space-y-2"
+                      >
                         <ImageIcon className="w-8 h-8 text-slate-300" />
                         <span className="text-[11px] font-semibold">No media attached</span>
-                      </div>
+                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">Click to Add Media +</span>
+                      </button>
                     )}
                   </div>
 
@@ -1430,22 +1446,15 @@ Take the first step today.`,
                       <Crop className="w-3.5 h-3.5" />
                     </button>
 
-                    <label
-                      htmlFor="creative-asset-upload"
+                    <button
+                      type="button"
                       title="Replace / Upload Creative Asset"
                       aria-label="Replace / Upload Creative Asset"
+                      onClick={() => setShowAssetPickerModal(true)}
                       className="p-2 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition cursor-pointer inline-flex items-center justify-center"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
-                      <input
-                        id="creative-asset-upload"
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,video/*"
-                        onChange={handleFileChange}
-                        className="sr-only"
-                      />
-                    </label>
+                    </button>
 
                     <button
                       type="button"
@@ -1924,6 +1933,153 @@ Take the first step today.`,
                 className="px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 Apply &amp; Return
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE: IN-APP ASSET PICKER MODAL (FILE UPLOAD, URL INPUT, AND PRESETS) */}
+      {showAssetPickerModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAssetPickerModal(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 border border-slate-200 animate-in fade-in zoom-in-95 cursor-default relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#EA580C] flex items-center justify-center">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Creative Asset Manager</h3>
+                  <p className="text-[11px] text-slate-400">Attach visual media to your post across social channels</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAssetPickerModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Option 1: Direct File Upload */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">1. Upload File from Device</label>
+              <label
+                htmlFor="modal-creative-asset-upload"
+                className="w-full border-2 border-dashed border-slate-200 hover:border-orange-400 bg-slate-50/50 hover:bg-orange-50/30 rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 transition cursor-pointer group"
+              >
+                <Upload className="w-6 h-6 text-slate-400 group-hover:text-[#EA580C] transition-colors" />
+                <span className="text-xs font-bold text-slate-700 group-hover:text-slate-900">Click to choose image or video</span>
+                <span className="text-[10px] text-slate-400">JPG, PNG, WebP, MP4 up to 50MB</span>
+                <input
+                  id="modal-creative-asset-upload"
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    handleFileChange(e);
+                    setShowAssetPickerModal(false);
+                  }}
+                  className="sr-only"
+                />
+              </label>
+            </div>
+
+            {/* Option 2: Enter Public Media URL */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">2. Or Paste Public Image / Video URL</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={assetUrlInput}
+                    onChange={(e) => setAssetUrlInput(e.target.value)}
+                    placeholder="https://images.unsplash.com/... or public media link"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#EA580C] bg-white font-mono text-slate-800"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (assetUrlInput.trim()) {
+                      setMediaUrl(assetUrlInput.trim());
+                      setAssetUrlInput('');
+                      setShowAssetPickerModal(false);
+                      if (setStatusMessage) {
+                        setStatusMessage({ type: 'success', text: 'Creative asset attached successfully!' });
+                      }
+                    }
+                  }}
+                  disabled={!assetUrlInput.trim()}
+                  className="px-4 py-2.5 text-xs font-bold text-white bg-[#EA580C] hover:bg-[#c2410c] rounded-xl transition disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  Attach Asset
+                </button>
+              </div>
+            </div>
+
+            {/* Option 3: Curated Stock Presets */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">3. Or Select from Curated High-Res Presets</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {curatedStockAssets.map((stock, sIdx) => (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    onClick={() => {
+                      setMediaUrl(stock.url);
+                      setShowAssetPickerModal(false);
+                      if (setStatusMessage) {
+                        setStatusMessage({ type: 'success', text: `Attached asset "${stock.title}".` });
+                      }
+                    }}
+                    className="group border border-slate-200 hover:border-[#EA580C] rounded-xl overflow-hidden bg-slate-100 text-left transition cursor-pointer relative shadow-2xs hover:shadow-xs"
+                  >
+                    <div className="aspect-square relative overflow-hidden bg-slate-900">
+                      <img src={stock.url} alt={stock.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    </div>
+                    <div className="p-2 bg-white">
+                      <span className="text-[10px] font-bold text-slate-700 line-clamp-1 block">{stock.title}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer with Clear & Close */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              {mediaUrl ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMediaUrl('');
+                    setShowAssetPickerModal(false);
+                    if (setStatusMessage) {
+                      setStatusMessage({ type: 'info', text: 'Removed attached creative asset.' });
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer flex items-center space-x-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove Current Asset</span>
+                </button>
+              ) : <div />}
+              <button
+                type="button"
+                onClick={() => setShowAssetPickerModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                Done
               </button>
             </div>
           </div>

@@ -75,6 +75,10 @@ function InboxContent() {
 
   // AI Reply Draft State
   const [replyText, setReplyText] = useState('');
+  const replyTextRef = useRef('');
+  replyTextRef.current = replyText;
+  const selectedInteractionRef = useRef<any | null>(null);
+  selectedInteractionRef.current = selectedInteraction;
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -199,25 +203,29 @@ function InboxContent() {
         dmsTotal: res.dmsCount
       };
 
-      // Auto-select first item only if current selection is invalid or absent
-      if (items.length > 0) {
-        const hasActiveSelection = selectedInteraction && (
-          items.some((i: any) => i.id === selectedInteraction.id) ||
-          (selectedThreadKeyRef.current && items.some((i: any) => (i.parentPlatformId || i.authorId || i.id) === selectedThreadKeyRef.current))
-        );
-        if (!hasActiveSelection) {
-          loadInteractionDetail(items[0].id);
+      // Auto-select first item ONLY on foreground initial fetch if no active selection exists
+      // Background auto-sync must NEVER touch active selection, re-render reply box, or reset thread
+      if (!isBackground) {
+        if (items.length > 0) {
+          const currentSel = selectedInteractionRef.current;
+          const hasActiveSelection = currentSel && (
+            items.some((i: any) => i.id === currentSel.id) ||
+            (selectedThreadKeyRef.current && items.some((i: any) => (i.parentPlatformId || i.authorId || i.id) === selectedThreadKeyRef.current))
+          );
+          if (!hasActiveSelection) {
+            loadInteractionDetail(items[0].id);
+          }
+        } else {
+          setSelectedInteraction(null);
+          setThreadMessages([]);
         }
-      } else {
-        setSelectedInteraction(null);
-        setThreadMessages([]);
       }
     } catch (err) {
       console.error('Failed to fetch inbox interactions:', err);
     } finally {
       if (!isBackground) setLoading(false);
     }
-  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit, selectedInteraction]);
+  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit]);
 
   // Instant 1-click selection handler
   const handleSelectThread = (thread: any) => {
@@ -233,22 +241,24 @@ function InboxContent() {
   const loadInteractionDetail = async (id: string) => {
     try {
       const res = await apiRequest(`/inbox/${id}`);
-      const isNewThread = !selectedInteraction || selectedInteraction.id !== id;
+      const isNewThread = !selectedInteractionRef.current || selectedInteractionRef.current.id !== id;
       setSelectedInteraction(res.interaction);
       setThreadMessages(res.thread && res.thread.length > 0 ? res.thread : [res.interaction]);
       if (isNewThread) {
         setShowReplyComposerOnSent(false);
       }
 
-      // Check if there is an existing draft reply
-      const draft = (res.interaction.replies || []).find((r: any) => r.status === 'DRAFT');
-      if (draft) {
-        setReplyText(draft.finalContent || draft.aiSuggestion || '');
-      } else if (res.interaction.replies && res.interaction.replies.length > 0) {
-        const sent = res.interaction.replies[0];
-        setReplyText(sent.finalContent || '');
-      } else {
-        setReplyText('');
+      // Check if user is actively typing; if so, preserve active keystrokes and NEVER overwrite
+      if (!replyTextRef.current.trim()) {
+        const draft = (res.interaction.replies || []).find((r: any) => r.status === 'DRAFT');
+        if (draft) {
+          setReplyText(draft.finalContent || draft.aiSuggestion || '');
+        } else if (res.interaction.replies && res.interaction.replies.length > 0) {
+          const sent = res.interaction.replies[0];
+          setReplyText(sent.finalContent || '');
+        } else {
+          setReplyText('');
+        }
       }
 
       // Auto-fetch AI suggestions if interaction needs response
