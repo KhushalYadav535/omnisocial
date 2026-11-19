@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, Suspense, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppLayout from '../../components/AppLayout';
 import { apiRequest } from '../../lib/api';
@@ -83,6 +83,7 @@ function InboxContent() {
   const [syncing, setSyncing] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   const [showReplyComposerOnSent, setShowReplyComposerOnSent] = useState(false);
+  const threadCache = useRef<Record<string, any>>({});
 
   // Fetch Brand Name
   useEffect(() => {
@@ -115,7 +116,7 @@ function InboxContent() {
         setSuccessNotice('Meta synchronization completed. No new items found.');
       }
       setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      await fetchInteractions(1);
+      await fetchInteractions(1, true);
     } catch (err: any) {
       console.error('Meta sync failed:', err);
       setSuccessNotice(null);
@@ -125,8 +126,17 @@ function InboxContent() {
     }
   };
 
-  const fetchInteractions = useCallback(async (targetPage?: number) => {
-    setLoading(true);
+  const fetchInteractions = useCallback(async (targetPage?: number, isBackground = false) => {
+    const cacheKey = `${activeBrandId || 'all'}_${platformFilter}_${typeFilter || 'ALL'}_${statusFilter}_${targetPage || page}`;
+    if (!isBackground && threadCache.current[cacheKey]) {
+      const cached = threadCache.current[cacheKey];
+      setInteractions(cached.items || []);
+      if (cached.total !== undefined) setTotalCount(cached.total);
+      if (cached.totalPages !== undefined) setTotalPages(cached.totalPages);
+    } else if (!isBackground) {
+      setLoading(true);
+    }
+
     try {
       const pageNum = typeof targetPage === 'number' ? targetPage : page;
       const params = new URLSearchParams();
@@ -149,7 +159,16 @@ function InboxContent() {
       if (res.unreadCommentsCount !== undefined) setUnreadCommentsTotal(res.unreadCommentsCount);
       if (res.unreadDmsCount !== undefined) setUnreadDmsTotal(res.unreadDmsCount);
 
-      // Auto-select first item if current selection is invalid or absent
+      // Save to cache
+      threadCache.current[cacheKey] = {
+        items,
+        total: res.total,
+        totalPages: res.totalPages,
+        commentsTotal: res.commentsCount,
+        dmsTotal: res.dmsCount
+      };
+
+      // Auto-select first item only if current selection is invalid or absent
       if (items.length > 0) {
         if (!selectedInteraction || !items.some((i: any) => i.id === selectedInteraction.id)) {
           loadInteractionDetail(items[0].id);
@@ -161,9 +180,19 @@ function InboxContent() {
     } catch (err) {
       console.error('Failed to fetch inbox interactions:', err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
-  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit]);
+  }, [activeBrandId, platformFilter, typeFilter, statusFilter, searchQuery, page, limit, selectedInteraction]);
+
+  // Instant 1-click selection handler
+  const handleSelectThread = (thread: any) => {
+    setSelectedInteraction(thread.latestMessage);
+    setThreadMessages(thread.messages && thread.messages.length > 0 ? thread.messages : [thread.latestMessage]);
+    setShowReplyComposerOnSent(false);
+    setReplyText('');
+    setSuggestions([]);
+    loadInteractionDetail(thread.latestMessage.id);
+  };
 
   const loadInteractionDetail = async (id: string) => {
     try {
@@ -610,7 +639,7 @@ function InboxContent() {
                     <button
                       key={thread.threadId}
                       type="button"
-                      onClick={() => loadInteractionDetail(thread.latestMessage.id)}
+                      onClick={() => handleSelectThread(thread)}
                       className={`w-full text-left p-3.5 transition-all flex items-start space-x-3 cursor-pointer relative ${isSelected
                         ? 'bg-indigo-50/80 border-l-4 border-indigo-600 shadow-2xs'
                         : 'hover:bg-slate-50/80'

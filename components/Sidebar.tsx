@@ -141,29 +141,14 @@ function SidebarContent({
               onClick={onCloseMobile}
               className="flex items-center space-x-2.5 group"
             >
-              {/* Sleek Gradient Ribbon S-Mark */}
-              <svg
-                className="w-7 h-7 shrink-0 group-hover:scale-105 transition-transform"
-                viewBox="0 0 32 32"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M10 8.5C10 6.01 12.01 4 14.5 4H19C22.31 4 25 6.69 25 10C25 12.87 22.98 15.26 20.25 15.82L13 17.5C10.79 17.95 9 19.86 9 22.12C9 24.82 11.18 27 13.88 27H19C21.76 27 24 24.76 24 22"
-                  stroke="url(#sf-sidebar-grad)"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                />
-                <defs>
-                  <linearGradient id="sf-sidebar-grad" x1="8" y1="4" x2="25" y2="27" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#6366F1" />
-                    <stop offset="0.5" stopColor="#7C3AED" />
-                    <stop offset="1" stopColor="#EC4899" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <span className="font-extrabold text-[19px] text-[#0F172A] tracking-tight font-sans">
-                StudioFlow
+              {/* Vibrant Orange Play Mark matching Reference Design */}
+              <div className="w-7 h-7 rounded-lg bg-[#EA580C] flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
+                <svg className="w-4 h-4 fill-white translate-x-0.5" viewBox="0 0 24 24">
+                  <path d="M5 3l14 9-14 9V3z" />
+                </svg>
+              </div>
+              <span className="font-extrabold text-[20px] text-slate-900 tracking-tight font-sans">
+                Studio
               </span>
             </Link>
 

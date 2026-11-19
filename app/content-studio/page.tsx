@@ -51,7 +51,8 @@ import {
   Lightbulb,
   FileCheck2,
   Rocket,
-  Cpu
+  Cpu,
+  FileEdit
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Facebook, Instagram, LinkedIn } from '../../components/Icons';
@@ -66,6 +67,7 @@ import ApprovalsTab from './components/ApprovalsTab';
 import LaunchpadTab from './components/LaunchpadTab';
 import SkillLibraryTab from './components/SkillLibraryTab';
 import PostsContentTab from './components/PostsContentTab';
+import DraftsTab from './components/DraftsTab';
 
 function AccountPillAvatar({
   url,
@@ -130,10 +132,10 @@ function ContentStudioContent() {
 
   // Content Creation & Marketing Management v3.0 Workspace State
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'media' | 'approvals' | 'launchpad' | 'skills'
+    'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'drafts' | 'media' | 'approvals' | 'launchpad' | 'skills'
   >('overview');
 
-  const handleTabChange = (tabId: 'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'media' | 'approvals' | 'launchpad' | 'skills') => {
+  const handleTabChange = (tabId: 'overview' | 'strategy' | 'pillars' | 'campaigns' | 'ideas' | 'composer' | 'drafts' | 'media' | 'approvals' | 'launchpad' | 'skills') => {
     setActiveTab(tabId);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -151,7 +153,7 @@ function ContentStudioContent() {
   useEffect(() => {
     if (
       tabParam &&
-      ['overview', 'strategy', 'pillars', 'campaigns', 'ideas', 'composer', 'media', 'approvals', 'launchpad', 'skills'].includes(
+      ['overview', 'strategy', 'pillars', 'campaigns', 'ideas', 'composer', 'drafts', 'media', 'approvals', 'launchpad', 'skills'].includes(
         tabParam
       )
     ) {
@@ -190,6 +192,7 @@ function ContentStudioContent() {
     { id: 'campaigns', label: 'Campaigns', icon: Calendar },
     { id: 'ideas', label: 'Ideas & Requests', icon: Lightbulb },
     { id: 'composer', label: 'Posts & Content', icon: PenTool },
+    { id: 'drafts', label: 'Drafts', icon: FileEdit },
     { id: 'media', label: 'Media Library', icon: ImageIcon },
     { id: 'approvals', label: 'Approvals Queue', icon: FileCheck2 },
     { id: 'launchpad', label: 'Brand Launchpad', icon: Rocket },
@@ -320,12 +323,37 @@ function ContentStudioContent() {
         }
       } catch {}
     }
-    return 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&h=1080&fit=crop';
+    return '';
   });
   const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>('POST');
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
+  const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
+
+  const handleEditDraft = (draft: any) => {
+    setActiveDraftId(draft.id);
+    if (draft.title) setTitle(draft.title);
+    if (draft.caption) setCaption(draft.caption);
+    if (draft.rawIdea) setRawIdea(draft.rawIdea);
+    if (draft.format) setFormat(draft.format);
+    let tags: string[] = [];
+    if (Array.isArray(draft.hashtags)) tags = draft.hashtags;
+    else if (typeof draft.hashtags === 'string') {
+      try { tags = JSON.parse(draft.hashtags); } catch { tags = draft.hashtags.split(/\s+/).filter(Boolean); }
+    }
+    if (tags.length > 0) setHashtags(tags);
+    let img = '';
+    if (Array.isArray(draft.mediaUrls) && draft.mediaUrls[0]) img = draft.mediaUrls[0];
+    else if (typeof draft.mediaUrls === 'string') {
+      try { const p = JSON.parse(draft.mediaUrls); if (Array.isArray(p) && p[0]) img = p[0]; else img = draft.mediaUrls; } catch { img = draft.mediaUrls; }
+    }
+    setMediaUrl(img || '');
+    handleTabChange('composer');
+    setStatusMessage({ type: 'success', text: `Loaded draft "${draft.title || 'Untitled'}" into composer.` });
+  };
 
   // Composer Draft Auto-Persistence (Bug 4)
   useEffect(() => {
@@ -1021,10 +1049,27 @@ function ContentStudioContent() {
     }
   };
 
-  const handleSavePost = async (immediatePublish = false) => {
+  const handleSavePost = async (immediatePublish = false, bypassGate = false) => {
     if (!caption.trim()) {
       setStatusMessage({ type: 'error', text: 'Please write or generate a post caption first.' });
       return;
+    }
+
+    // Safety Gate 1: Check media for live Meta publish (Bug 5)
+    if (immediatePublish) {
+      if (mediaUrl && (mediaUrl.endsWith('.svg') || (!mediaUrl.startsWith('http') && !mediaUrl.startsWith('https')))) {
+        setStatusMessage({
+          type: 'error',
+          text: '⚠️ Meta Instagram & Facebook require a public JPG/PNG image or MP4 video URL. SVG or local assets cannot be published to Meta. Please attach a valid creative asset from Media Library or AI image generator before publishing.'
+        });
+        return;
+      }
+
+      // Safety Gate 2: Human-in-the-loop Governance confirmation if unapproved
+      if (!bypassGate && !isPublishGateConfirmed) {
+        setShowUnapprovedPublishModal(true);
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -1037,33 +1082,58 @@ function ContentStudioContent() {
       const tagsToAppend = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
       const finalCaption = tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim();
 
-      const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
-      const res = await apiRequest('/content', {
-        method: 'POST',
-        body: JSON.stringify({
-          brandId: activeBrandId,
-          title: title || caption.slice(0, 30) + '...',
-          rawIdea,
-          caption: finalCaption,
-          hashtags,
-          mediaUrls: mediaUrl ? [mediaUrl] : [],
-          targetPlatforms,
-          format: format === 'PORTRAIT' ? 'POST' : format,
-          scheduledFor: immediatePublish ? undefined : scheduledIso,
-          socialAccountIds: selectedAccountIds,
-          firstComment: enableFirstComment && firstComment.trim() ? firstComment.trim() : undefined,
-          viralityScore: viralityAnalysis?.score || undefined,
-          isEvergreen,
-          recycleIntervalDays
-        })
-      });
+      let targetContentId: string;
+
+      if (activeDraftId && !immediatePublish) {
+        // Update existing draft directly so we don't spawn duplicate records (Bug 3)
+        await apiRequest(`/content/${activeDraftId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: title || caption.slice(0, 30) + '...',
+            caption: finalCaption,
+            hashtags,
+            mediaUrls: mediaUrl ? [mediaUrl] : [],
+            format: format === 'PORTRAIT' ? 'POST' : format,
+            status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
+            clientApprovalStatus: scheduledFor ? 'PENDING' : 'DRAFT'
+          })
+        });
+        targetContentId = activeDraftId;
+      } else {
+        const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
+        const res = await apiRequest('/content', {
+          method: 'POST',
+          body: JSON.stringify({
+            brandId: activeBrandId,
+            title: title || caption.slice(0, 30) + '...',
+            rawIdea,
+            caption: finalCaption,
+            hashtags,
+            mediaUrls: mediaUrl ? [mediaUrl] : [],
+            targetPlatforms,
+            format: format === 'PORTRAIT' ? 'POST' : format,
+            status: scheduledFor ? 'SCHEDULED' : 'DRAFT',
+            clientApprovalStatus: scheduledFor ? 'PENDING' : 'DRAFT',
+            scheduledFor: immediatePublish ? undefined : scheduledIso,
+            socialAccountIds: selectedAccountIds,
+            firstComment: enableFirstComment && firstComment.trim() ? firstComment.trim() : undefined,
+            viralityScore: viralityAnalysis?.score || undefined,
+            isEvergreen,
+            recycleIntervalDays
+          })
+        });
+        targetContentId = res.content.id;
+        if (!immediatePublish && !scheduledFor) {
+          setActiveDraftId(targetContentId);
+        }
+      }
 
       if (immediatePublish && selectedAccountIds.length > 0) {
         // Send multi-channel publish request to publish across all selected accounts (Facebook & Instagram)
         const pubRes = await apiRequest('/publications/publish-now', {
           method: 'POST',
           body: JSON.stringify({
-            contentId: res.content.id,
+            contentId: targetContentId,
             socialAccountId: selectedAccountIds[0],
             socialAccountIds: selectedAccountIds
           })
@@ -1080,7 +1150,7 @@ function ContentStudioContent() {
               const remRes = await apiRequest('/publications/publish-now', {
                 method: 'POST',
                 body: JSON.stringify({
-                  contentId: res.content.id,
+                  contentId: targetContentId,
                   socialAccountId: remId
                 })
               });
@@ -1122,21 +1192,29 @@ function ContentStudioContent() {
           origin: { y: 0.5 },
           colors: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b']
         });
+        setActiveDraftId(null);
+        setIsPublishGateConfirmed(false);
         if (typeof window !== 'undefined') {
           try {
             localStorage.removeItem('omnisocial_composer_draft');
           } catch {}
         }
       } else if (scheduledFor) {
-        setStatusMessage({ type: 'success', text: `Post successfully scheduled for ${new Date(scheduledFor).toLocaleString()}!` });
+        const channelCount = selectedAccountIds.length || 2;
+        setStatusMessage({
+          type: 'success',
+          text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${new Date(scheduledFor).toLocaleString()}! Drops are live in your Content Calendar.`
+        });
         confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
+        setActiveDraftId(null);
+        setIsPublishGateConfirmed(false);
         if (typeof window !== 'undefined') {
           try {
             localStorage.removeItem('omnisocial_composer_draft');
           } catch {}
         }
       } else {
-        setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workspace.' });
+        setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
@@ -1648,6 +1726,66 @@ function ContentStudioContent() {
             setStatusMessage={setStatusMessage}
             onNavigateTab={(tabId) => handleTabChange(tabId as any)}
           />
+        )}
+
+        {/* TAB 11: ISOLATED DRAFTS TAB */}
+        {activeTab === 'drafts' && (
+          <DraftsTab
+            brandId={activeBrandId}
+            onEditDraft={handleEditDraft}
+            onNavigateTab={(t) => handleTabChange(t as any)}
+            onRefreshOverview={fetchOverview}
+          />
+        )}
+
+        {/* UNAPPROVED PUBLISH GOVERNANCE MODAL */}
+        {showUnapprovedPublishModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-amber-200 animate-in fade-in zoom-in-95">
+              <div className="flex items-center space-x-3 text-amber-600">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Governance Gate Notice</h3>
+                  <p className="text-xs text-slate-500">Unapproved Content Safety Protocol</p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 leading-relaxed space-y-2">
+                <p className="font-semibold">
+                  This post has not yet received client or internal stakeholder sign-off in the Approvals queue.
+                </p>
+                <p className="text-amber-800 text-[11px]">
+                  Publishing unapproved content directly to live social channels bypasses client audit controls.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUnapprovedPublishModal(false);
+                    handleSavePost(false);
+                  }}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                >
+                  Submit for Client Approval First
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUnapprovedPublishModal(false);
+                    setIsPublishGateConfirmed(true);
+                    handleSavePost(true, true);
+                  }}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
+                >
+                  Bypass Gate &amp; Publish Now
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* FEATURE 1A: 1-CLICK URL/BLOG REPURPOSING MODAL */}

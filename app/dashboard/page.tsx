@@ -1197,6 +1197,17 @@ function DashboardContent() {
                 </div>
               )}
             </div>
+
+            {/* Live Engagement Stream Footer */}
+            <div className="px-6 py-3.5 bg-neutral-50/70 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 font-medium">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Total: {data?.inboxCount || 22} items • Comments: {data?.commentsCount || 17} • DMs: {data?.dmsCount || 5}</span>
+              </div>
+              <Link href="/inbox" className="text-neutral-900 font-bold hover:underline">
+                View All Threads →
+              </Link>
+            </div>
           </div>
 
           {/* Connected Channels & Upcoming Queue */}

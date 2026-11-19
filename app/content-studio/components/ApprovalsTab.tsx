@@ -218,10 +218,14 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                         ))}
                       </div>
                     )}
-                    {post.scheduledFor && (
+                    {post.scheduledFor ? (
                       <span className="text-[11px] text-slate-500 flex items-center space-x-1">
                         <Clock className="w-3 h-3 text-slate-400" />
                         <span>Scheduled: {new Date(post.scheduledFor).toLocaleString()}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                        <span>⚡ Unscheduled Draft • Dispatched on approval</span>
                       </span>
                     )}
                   </div>
@@ -253,6 +257,20 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                     <XCircle className="w-4 h-4 text-rose-600" />
                     <span>Rejected</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await apiRequest(`/content-studio/approvals/${post.id}`, { method: 'DELETE' });
+                        fetchApprovals();
+                      } catch (err) {
+                        console.error('Delete rejected approval error:', err);
+                      }
+                    }}
+                    className="py-1.5 px-3 text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded-lg transition cursor-pointer"
+                  >
+                    Delete / Dismiss
+                  </button>
                 </div>
               ) : (
                 <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">

@@ -203,6 +203,77 @@ export default function PostsContentTab({
   // Native file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Platform-specific copies so switching platform preserves custom edits for each
+  const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>({
+    LINKEDIN: `Thinking about a career move in 2026?
+
+It's not just about a new job. It's about higher impact, a better role, and long-term growth.
+
+Here are 3 practical steps to plan your next career move:
+✅ Assess your current career value
+✅ Build the right skills and body of work
+✅ Create a focused and visible value story ...`,
+    INSTAGRAM: `Thinking about a career move in 2026? ✨
+
+It's not just about a new job. It's about higher impact, a better role, and long-term growth. 🚀
+
+Here are 3 practical steps to plan your next career move:
+✅ Assess your current career value
+✅ Build the right skills and body of work
+✅ Create a focused and visible value story ...
+
+#CareerGrowth #CareerMove #ProfessionalDevelopment`,
+    FACEBOOK: `Thinking about a career move in 2026?
+
+It's not just about a new job. It's about higher impact, a better role, and long-term growth.
+
+Here are 3 practical steps to plan your next career move:
+✅ Assess your current career value
+✅ Build the right skills and body of work
+✅ Create a focused and visible value story ...
+
+What is your biggest career milestone this year? Let us know in the comments below!`,
+    TWITTER: `Thinking about a career move in 2026? 🚀
+
+It's not just about a new job—it's about higher impact, a better role, and compounding growth.
+
+3 steps to execute today:
+✅ Assess your career value
+✅ Build observable proof of work
+✅ Position for high-trust authority`
+  });
+
+  const handleSwitchPlatform = (plat: 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER') => {
+    setPlatformCaptions(prev => ({
+      ...prev,
+      [activePlatform]: caption
+    }));
+    setActivePlatform(plat);
+    const nextCopy = platformCaptions[plat];
+    if (nextCopy) {
+      setCaption(nextCopy);
+    }
+  };
+
+  const handleCaptionChange = (val: string) => {
+    setCaption(val);
+    setPlatformCaptions(prev => ({
+      ...prev,
+      [activePlatform]: val
+    }));
+  };
+
+  // Local ISO datetime string helper (prevents UTC timezone shift bug)
+  const toLocalDatetimeString = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // 4 Crafted Post Variants (Pre-populated so it matches the screenshot immediately)
   const defaultVariants = [
     {
@@ -369,8 +440,8 @@ Take the first step today.`,
     setHashtags(hashtags.filter(t => t !== tagToRemove));
   };
 
-  // File Upload handler
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File Upload handler with persistent backend storage upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const tempUrl = URL.createObjectURL(file);
@@ -380,6 +451,27 @@ Take the first step today.`,
       } else {
         setFormat('POST');
       }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnisocialbackend.onrender.com';
+        const res = await fetch(`${apiUrl}/content/upload`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) {
+            setMediaUrl(data.url);
+          }
+        }
+      } catch (err) {
+        console.warn('Background upload failed, keeping preview:', err);
+      }
+
       if (setStatusMessage) {
         setStatusMessage({ type: 'success', text: `Asset "${file.name}" uploaded successfully.` });
       }
@@ -421,52 +513,6 @@ Take the first step today.`,
 
   return (
     <div className="space-y-6 pb-12 select-none animate-in fade-in duration-200">
-      {/* 1. TOP HEADER & BREADCRUMB */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
-          <button
-            type="button"
-            onClick={() => onNavigateTab?.('overview')}
-            className="hover:text-slate-900 transition cursor-pointer"
-          >
-            Studio
-          </button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <button
-            type="button"
-            onClick={() => onNavigateTab?.('composer')}
-            className="hover:text-slate-900 transition cursor-pointer"
-          >
-            Posts &amp; Content
-          </button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-900 font-bold">Create post</span>
-        </div>
-
-        {/* Top Right Utilities */}
-        <div className="flex items-center space-x-3 self-end sm:self-auto">
-          <button
-            type="button"
-            title="Help & Documentation"
-            className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            title="Notifications"
-            className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition relative"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 rounded-full bg-amber-500 absolute top-1.5 right-1.5 ring-2 ring-white" />
-          </button>
-          <div className="w-8 h-8 rounded-full bg-[#EA580C] text-white flex items-center justify-center font-bold text-xs ring-2 ring-orange-200 shadow-2xs">
-            ST
-          </div>
-        </div>
-      </div>
-
       {/* 2. MAIN TITLE, ACTIONS & STEPPER BAR */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
         {/* Title */}
@@ -483,10 +529,10 @@ Take the first step today.`,
             onClick={() => setActiveStep(1)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
-              activeStep >= 1 ? 'bg-[#EA580C] text-white shadow-xs' : 'border border-slate-300 text-slate-400'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
+              activeStep >= 1 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
             }`}>
-              {activeStep > 1 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '1'}
+              {activeStep > 1 ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
             </div>
             <span className={`font-semibold transition ${activeStep === 1 ? 'text-slate-900 font-bold' : 'text-slate-700 group-hover:text-slate-900'}`}>
               Brief &amp; Settings
@@ -494,7 +540,7 @@ Take the first step today.`,
           </button>
 
           {/* Stepper Connector Line */}
-          <div className={`h-[2px] w-12 sm:w-20 transition-colors ${activeStep >= 2 ? 'bg-[#EA580C]' : 'bg-slate-200'}`} />
+          <div className={`h-[1.5px] w-12 sm:w-20 transition-colors ${activeStep >= 2 ? 'bg-[#EA580C]' : 'bg-slate-200'}`} />
 
           {/* Step 2: Generated Posts */}
           <button
@@ -502,10 +548,10 @@ Take the first step today.`,
             onClick={() => setActiveStep(2)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
-              activeStep >= 2 ? 'bg-[#EA580C] text-white shadow-xs' : 'border border-slate-300 text-slate-400'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${
+              activeStep >= 2 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
             }`}>
-              {activeStep > 2 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '2'}
+              {activeStep > 2 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
             </div>
             <span className={`font-semibold transition ${activeStep === 2 ? 'text-slate-900 font-bold' : 'text-slate-700 group-hover:text-slate-900'}`}>
               Generated Posts
@@ -513,7 +559,7 @@ Take the first step today.`,
           </button>
 
           {/* Stepper Connector Line */}
-          <div className={`h-[2px] w-12 sm:w-20 transition-colors ${activeStep >= 3 ? 'bg-[#EA580C]' : 'bg-slate-200'}`} />
+          <div className={`h-[1.5px] w-12 sm:w-20 transition-colors ${activeStep >= 3 ? 'bg-[#EA580C]' : 'bg-slate-200'}`} />
 
           {/* Step 3: Review & Publish */}
           <button
@@ -521,8 +567,8 @@ Take the first step today.`,
             onClick={() => setActiveStep(3)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
-              activeStep === 3 ? 'bg-[#EA580C] text-white shadow-xs' : 'border border-slate-300 text-slate-400'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${
+              activeStep === 3 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
             }`}>
               3
             </div>
@@ -538,7 +584,7 @@ Take the first step today.`,
             type="button"
             onClick={onSaveDraft}
             disabled={submitting}
-            className="px-4 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
             Save as Draft
           </button>
@@ -548,7 +594,7 @@ Take the first step today.`,
               type="button"
               onClick={() => setShowScheduleMenu(!showScheduleMenu)}
               disabled={submitting}
-              className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-sm flex items-center space-x-2 transition disabled:opacity-50 cursor-pointer"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#EA580C] hover:bg-[#c2410c] rounded-xl shadow-2xs flex items-center space-x-2 transition disabled:opacity-50 cursor-pointer"
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>{scheduledFor ? 'Scheduled' : 'Schedule / Publish'}</span>
@@ -587,11 +633,10 @@ Take the first step today.`,
                   type="button"
                   onClick={() => {
                     setShowScheduleMenu(false);
-                    // Set next optimal time (tomorrow 10:00 AM)
                     const d = new Date();
                     d.setDate(d.getDate() + 1);
                     d.setHours(10, 0, 0, 0);
-                    setScheduledFor(d.toISOString().slice(0, 16));
+                    setScheduledFor(toLocalDatetimeString(d));
                     if (setStatusMessage) {
                       setStatusMessage({ type: 'success', text: 'Set publication to tomorrow 10:00 AM peak window.' });
                     }
@@ -611,6 +656,17 @@ Take the first step today.`,
                 >
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   <span>Custom Date &amp; Time Picker...</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowScheduleMenu(false);
+                    onNavigateTab?.('drafts');
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 flex items-center space-x-2 transition cursor-pointer border-t border-slate-100 mt-1 pt-2"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>📂 View Saved Drafts</span>
                 </button>
               </div>
             )}
@@ -709,7 +765,7 @@ Take the first step today.`,
                       const d = new Date();
                       d.setDate(d.getDate() + 1);
                       d.setHours(10, 0, 0, 0);
-                      setScheduledFor(d.toISOString().slice(0, 16));
+                      setScheduledFor(toLocalDatetimeString(d));
                     }}
                     className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
                   >
@@ -721,7 +777,7 @@ Take the first step today.`,
                       const d = new Date();
                       d.setDate(d.getDate() + 1);
                       d.setHours(15, 30, 0, 0);
-                      setScheduledFor(d.toISOString().slice(0, 16));
+                      setScheduledFor(toLocalDatetimeString(d));
                     }}
                     className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
                   >
@@ -733,7 +789,7 @@ Take the first step today.`,
                       const d = new Date();
                       d.setDate(d.getDate() + 2);
                       d.setHours(10, 0, 0, 0);
-                      setScheduledFor(d.toISOString().slice(0, 16));
+                      setScheduledFor(toLocalDatetimeString(d));
                     }}
                     className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
                   >
@@ -877,10 +933,10 @@ Take the first step today.`,
             {/* LinkedIn Pill */}
             <button
               type="button"
-              onClick={() => setActivePlatform('LINKEDIN')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
+              onClick={() => handleSwitchPlatform('LINKEDIN')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
                 activePlatform === 'LINKEDIN'
-                  ? 'border border-amber-400 bg-amber-50/80 text-slate-900 shadow-2xs'
+                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
               }`}
             >
@@ -891,10 +947,10 @@ Take the first step today.`,
             {/* Instagram Pill */}
             <button
               type="button"
-              onClick={() => setActivePlatform('INSTAGRAM')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
+              onClick={() => handleSwitchPlatform('INSTAGRAM')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
                 activePlatform === 'INSTAGRAM'
-                  ? 'border border-amber-400 bg-amber-50/80 text-slate-900 shadow-2xs'
+                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
               }`}
             >
@@ -905,10 +961,10 @@ Take the first step today.`,
             {/* Facebook Pill */}
             <button
               type="button"
-              onClick={() => setActivePlatform('FACEBOOK')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
+              onClick={() => handleSwitchPlatform('FACEBOOK')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
                 activePlatform === 'FACEBOOK'
-                  ? 'border border-amber-400 bg-amber-50/80 text-slate-900 shadow-2xs'
+                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
               }`}
             >
@@ -919,10 +975,10 @@ Take the first step today.`,
             {/* X Pill */}
             <button
               type="button"
-              onClick={() => setActivePlatform('TWITTER')}
-              className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
+              onClick={() => handleSwitchPlatform('TWITTER')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
                 activePlatform === 'TWITTER'
-                  ? 'border border-amber-400 bg-amber-50/80 text-slate-900 shadow-2xs'
+                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
               }`}
             >
@@ -1058,23 +1114,16 @@ Take the first step today.`,
                   </div>
                 </div>
 
-                  {/* Clean Textarea with Character Counter */}
-                  <div className="relative border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition">
+                  {/* Clean Textarea with Character Counter matching exact reference */}
+                  <div className="relative border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-[#EA580C] transition">
                     <textarea
                       rows={7}
                       value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
+                      onChange={(e) => handleCaptionChange(e.target.value)}
                       placeholder="Write or refine your post content..."
                       className="w-full p-3.5 text-xs text-slate-800 leading-relaxed rounded-xl focus:outline-hidden resize-none bg-transparent"
                     />
-                    <div className="px-3 pb-2 flex items-center justify-between border-t border-slate-100 pt-2">
-                      <div className="flex items-center space-x-1.5">
-                        <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        <span className="text-[10px] font-bold text-slate-600">AI Virality Index:</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${liveVirality.color}`}>
-                          {liveVirality.score}/100 • Grade {liveVirality.grade} ({liveVirality.badge})
-                        </span>
-                      </div>
+                    <div className="px-3 pb-2 flex items-center justify-end">
                       <span className="text-[11px] font-mono text-slate-400">
                         {caption.length} / {currentSpec.maxChars.toLocaleString()}
                       </span>
@@ -1386,7 +1435,7 @@ Take the first step today.`,
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleFileChange}
-                    className="hidden"
+                    style={{ display: 'none' }}
                   />
                 </div>
               </div>
@@ -1693,7 +1742,7 @@ Take the first step today.`,
                 {/* Instagram Version Badge */}
                 <button
                   type="button"
-                  onClick={() => setActivePlatform('INSTAGRAM')}
+                  onClick={() => handleSwitchPlatform('INSTAGRAM')}
                   className="px-2.5 py-1 rounded-lg border border-slate-200 hover:border-slate-300 bg-white flex items-center space-x-1.5 transition cursor-pointer"
                 >
                   <Instagram className="w-3.5 h-3.5 text-pink-600" />
@@ -1705,7 +1754,7 @@ Take the first step today.`,
                 {/* Facebook Version Badge */}
                 <button
                   type="button"
-                  onClick={() => setActivePlatform('FACEBOOK')}
+                  onClick={() => handleSwitchPlatform('FACEBOOK')}
                   className="px-2.5 py-1 rounded-lg border border-slate-200 hover:border-slate-300 bg-white flex items-center space-x-1.5 transition cursor-pointer"
                 >
                   <Facebook className="w-3.5 h-3.5 text-blue-600" />
@@ -1717,7 +1766,7 @@ Take the first step today.`,
                 {/* X Version Badge */}
                 <button
                   type="button"
-                  onClick={() => setActivePlatform('TWITTER')}
+                  onClick={() => handleSwitchPlatform('TWITTER')}
                   className="px-2.5 py-1 rounded-lg border border-slate-200 hover:border-slate-300 bg-white flex items-center space-x-1.5 transition cursor-pointer"
                 >
                   <span className="font-mono font-bold text-[11px] text-slate-900">𝕏</span>

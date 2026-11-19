@@ -29,7 +29,9 @@ import {
   Sparkles,
   Settings,
   Users,
-  Search
+  Search,
+  HelpCircle,
+  ChevronRight
 } from 'lucide-react';
 
 export interface NavbarProps {
@@ -240,6 +242,145 @@ function NavbarContent({
 
   // User initials (defaults to ST or user's first 2 characters)
   const userInitials = user?.name ? user.name.slice(0, 2).toUpperCase() : 'ST';
+
+  // EXACT MATCH TO REFERENCE DESIGN WHEN IN "POSTS & CONTENT"
+  if (pathname === '/content-studio' && currentTab === 'composer') {
+    return (
+      <header className="sticky top-0 z-30 w-full bg-white border-b border-slate-200 h-14 px-4 sm:px-6 flex items-center justify-between select-none">
+        {/* Left: Mobile Menu Toggle & Exact Breadcrumb */}
+        <div className="flex items-center space-x-3">
+          {onOpenMobileMenu && (
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+              aria-label="Open sidebar"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-slate-500 font-medium">
+            <Link href="/content-studio" className="hover:text-slate-900 transition">
+              Studio
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <Link href="/content-studio?tab=composer" className="hover:text-slate-900 transition">
+              Posts &amp; Content
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-900 font-bold">Create post</span>
+          </nav>
+        </div>
+
+        {/* Right: Help, Notification Bell, User Avatar (ST) */}
+        <div className="flex items-center space-x-3">
+          <button
+            type="button"
+            title="Help & Documentation"
+            className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
+
+          <div className="relative notif-menu-container">
+            <button
+              type="button"
+              title="Notifications"
+              onClick={() => {
+                setShowNotifMenu(!showNotifMenu);
+                setShowUserMenu(false);
+              }}
+              className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition relative cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="w-2 h-2 rounded-full bg-[#EA580C] absolute top-1.5 right-1.5 ring-2 ring-white" />
+            </button>
+
+            {showNotifMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3.5 py-1 text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                  Notifications &amp; Activity
+                </div>
+                <div className="py-1 text-xs">
+                  <Link
+                    href="/inbox"
+                    onClick={() => setShowNotifMenu(false)}
+                    className="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50 transition"
+                  >
+                    <span className="text-slate-700 font-medium">Comments &amp; Engagement</span>
+                    {unreadCommentsCount > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#EA580C]">
+                        {unreadCommentsCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    href="/inbox?type=DIRECT_MESSAGE"
+                    onClick={() => setShowNotifMenu(false)}
+                    className="px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-50 transition"
+                  >
+                    <span className="text-slate-700 font-medium">Direct Messages</span>
+                    {unreadDmsCount > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#EA580C]">
+                        {unreadDmsCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative user-menu-container">
+            <button
+              type="button"
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifMenu(false);
+              }}
+              className="w-8 h-8 rounded-full bg-[#EA580C] text-white flex items-center justify-center font-bold text-xs ring-2 ring-orange-200 shadow-2xs cursor-pointer"
+            >
+              {userInitials}
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900">{user?.name || 'UpRole Admin'}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@omnisocial.ai'}</p>
+                </div>
+                <div className="py-1">
+                  <Link
+                    href="/settings"
+                    onClick={() => setShowUserMenu(false)}
+                    className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Settings &amp; Preferences
+                  </Link>
+                  <Link
+                    href="/accounts"
+                    onClick={() => setShowUserMenu(false)}
+                    className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Connected Channels
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center space-x-2"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/70 h-14 px-4 sm:px-6 flex items-center justify-between">
