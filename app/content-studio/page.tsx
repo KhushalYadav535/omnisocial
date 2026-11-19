@@ -264,18 +264,28 @@ function ContentStudioContent() {
     checkTabsScroll();
   }, [activeTab, checkTabsScroll]);
 
+  // Helper to load session draft across internal route navigation (e.g. Content Studio <-> Calendar)
+  const getSessionDraft = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = sessionStorage.getItem('omnisocial_composer_session_draft') || localStorage.getItem('omnisocial_composer_draft');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  };
+
   // Studio Form State (Fresh-start blank by default; populated via Edit Draft, Idea Bank, or Orchestrator)
-  const [title, setTitle] = useState('');
-  const [rawIdea, setRawIdea] = useState('');
-  const [caption, setCaption] = useState<string>('');
-  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [title, setTitle] = useState(() => getSessionDraft()?.title || '');
+  const [rawIdea, setRawIdea] = useState(() => getSessionDraft()?.rawIdea || '');
+  const [caption, setCaption] = useState<string>(() => getSessionDraft()?.caption || '');
+  const [hashtags, setHashtags] = useState<string[]>(() => getSessionDraft()?.hashtags || []);
   const [newTagInput, setNewTagInput] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('');
-  const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>('POST');
+  const [mediaUrl, setMediaUrl] = useState(() => getSessionDraft()?.mediaUrl || '');
+  const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>(() => getSessionDraft()?.format || 'POST');
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
-  const [scheduledFor, setScheduledFor] = useState('');
+  const [scheduledFor, setScheduledFor] = useState(() => getSessionDraft()?.scheduledFor || '');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
-  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(() => getSessionDraft()?.activeDraftId || null);
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
 
@@ -361,29 +371,33 @@ function cleanMediaUrl(raw: any): string {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showUnapprovedPublishModal]);
 
-  // Composer Draft Auto-Persistence (Bug 4)
+  // Composer Draft Auto-Persistence across tabs and internal routes (Bug 4)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (caption || rawIdea || mediaUrl) {
         try {
-          localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+          const draftPayload = JSON.stringify({
             activeDraftId,
             caption,
             rawIdea,
             hashtags,
             mediaUrl,
             format,
-            title
-          }));
+            title,
+            scheduledFor
+          });
+          sessionStorage.setItem('omnisocial_composer_session_draft', draftPayload);
+          localStorage.setItem('omnisocial_composer_draft', draftPayload);
         } catch {}
       } else {
         try {
+          sessionStorage.removeItem('omnisocial_composer_session_draft');
           localStorage.removeItem('omnisocial_composer_draft');
           localStorage.removeItem('omnisocial_platform_captions');
         } catch {}
       }
     }
-  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title]);
+  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title, scheduledFor]);
 
   const handleResetComposer = () => {
     setTitle('');
@@ -395,6 +409,7 @@ function cleanMediaUrl(raw: any): string {
     setActiveDraftId(null);
     if (typeof window !== 'undefined') {
       try {
+        sessionStorage.removeItem('omnisocial_composer_session_draft');
         localStorage.removeItem('omnisocial_composer_draft');
         localStorage.removeItem('omnisocial_platform_captions');
       } catch {}
@@ -1300,21 +1315,25 @@ function cleanMediaUrl(raw: any): string {
           type: 'success',
           text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${new Date(scheduledFor || Date.now()).toLocaleString()}! Drops are live in your Content Calendar.`
         });
-        confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
+        try {
+          confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
+        } catch {}
         setActiveDraftId(null);
         setIsPublishGateConfirmed(false);
         fetchOverview();
         if (typeof window !== 'undefined') {
           try {
+            sessionStorage.removeItem('omnisocial_composer_session_draft');
             localStorage.removeItem('omnisocial_composer_draft');
           } catch {}
         }
+        return { success: true, mode: 'SCHEDULED' };
       } else {
         setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
         fetchOverview();
         if (typeof window !== 'undefined') {
           try {
-            localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+            const draftPayload = JSON.stringify({
               activeDraftId: targetContentId,
               caption,
               rawIdea,
@@ -1323,12 +1342,16 @@ function cleanMediaUrl(raw: any): string {
               format,
               title,
               scheduledFor
-            }));
+            });
+            sessionStorage.setItem('omnisocial_composer_session_draft', draftPayload);
+            localStorage.setItem('omnisocial_composer_draft', draftPayload);
           } catch {}
         }
+        return { success: true, mode: 'DRAFT', targetContentId };
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'Operation failed' });
+      throw err;
     } finally {
       setSubmitting(false);
     }
@@ -1835,9 +1858,15 @@ function cleanMediaUrl(raw: any): string {
             setScheduledFor={setScheduledFor}
             submitting={submitting}
             isGenerating={generating}
-            onSaveDraft={() => handleSavePost(false, false, 'DRAFT', true)}
-            onScheduleDrop={() => handleSavePost(false, false, 'APPROVED', false, true)}
-            onPublishNow={() => handleSavePost(true)}
+            onSaveDraft={async () => {
+              return await handleSavePost(false, false, 'DRAFT', true);
+            }}
+            onScheduleDrop={async () => {
+              return await handleSavePost(false, false, 'APPROVED', false, true);
+            }}
+            onPublishNow={async () => {
+              return await handleSavePost(true);
+            }}
             onGenerateAi={handleGenerateAi}
             onGenerateAiImage={handleGenerateAiImage}
             onGenerateAiVideo={handleGenerateAiVideo}

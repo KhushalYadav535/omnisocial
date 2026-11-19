@@ -185,6 +185,40 @@ export default function PostsContentTab({
     if (onResetComposer) onResetComposer();
   };
 
+  const handleSaveDraftClick = async () => {
+    try {
+      if (onSaveDraft) {
+        await onSaveDraft();
+      }
+      if (setStatusMessage) {
+        setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
+      }
+    } catch (err: any) {
+      if (setStatusMessage) {
+        setStatusMessage({ type: 'error', text: err?.message || 'Failed to save draft.' });
+      }
+    }
+  };
+
+  const handleScheduleDropClick = async () => {
+    try {
+      if (onScheduleDrop) {
+        await onScheduleDrop();
+      }
+      const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString() : 'scheduled peak window';
+      if (setStatusMessage) {
+        setStatusMessage({
+          type: 'success',
+          text: `🎉 Successfully scheduled drop for ${targetDate}! Drops are live in your Content Calendar.`
+        });
+      }
+    } catch (err: any) {
+      if (setStatusMessage) {
+        setStatusMessage({ type: 'error', text: err?.message || 'Failed to schedule drop.' });
+      }
+    }
+  };
+
   // Hashtag input state
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
@@ -253,7 +287,7 @@ export default function PostsContentTab({
   const [assetUrlInput, setAssetUrlInput] = useState('');
 
   const curatedStockAssets = [
-    { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80' },
+    { title: 'Handcrafted Ceramic Art', url: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=1200&q=80' },
     { title: 'Provide 3 effortless ways to style your linen scarf', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=80' },
     { title: 'Modern Minimalist Architecture', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80' },
     { title: 'Artisan Studio Pottery', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=80' },
@@ -666,7 +700,7 @@ Take the first step today.`,
 
           <button
             type="button"
-            onClick={onSaveDraft}
+            onClick={handleSaveDraftClick}
             disabled={submitting}
             className="px-4 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
           >
@@ -676,7 +710,7 @@ Take the first step today.`,
           {scheduledFor && onScheduleDrop && (
             <button
               type="button"
-              onClick={onScheduleDrop}
+              onClick={handleScheduleDropClick}
               disabled={submitting}
               className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
             >
@@ -705,7 +739,7 @@ Take the first step today.`,
                     type="button"
                     onClick={() => {
                       setShowScheduleMenu(false);
-                      onScheduleDrop();
+                      handleScheduleDropClick();
                     }}
                     className="w-full text-left px-3 py-2 rounded-xl font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 flex items-center space-x-2 transition cursor-pointer"
                   >
@@ -768,6 +802,48 @@ Take the first step today.`,
           </div>
         </div>
       </div>
+
+      {/* In-Composer Action Confirmation Banner (Always visible in composer on Save/Schedule success) */}
+      {statusMessage && (
+        <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 transition-all ${
+          statusMessage.type === 'success'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+            : statusMessage.type === 'error'
+              ? 'bg-rose-50 border border-rose-200 text-rose-900'
+              : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+        }`}>
+          <div className="flex items-center space-x-2.5 min-w-0">
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="truncate sm:whitespace-normal font-medium">{statusMessage.text}</span>
+          </div>
+          <div className="flex items-center space-x-2 shrink-0">
+            {statusMessage.text.includes('Content Calendar') && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
+                className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+              >
+                <span>View Calendar</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+            {setStatusMessage && (
+              <button
+                type="button"
+                onClick={() => setStatusMessage(null)}
+                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* AI Generating Indicator */}
       {isGenerating && (
@@ -1038,7 +1114,7 @@ Take the first step today.`,
             )}
             <button
               type="button"
-              onClick={onSaveDraft}
+              onClick={handleSaveDraftClick}
               disabled={submitting}
               className="px-5 py-2.5 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer"
             >
@@ -1048,9 +1124,9 @@ Take the first step today.`,
               type="button"
               onClick={() => {
                 if (scheduledFor && onScheduleDrop) {
-                  onScheduleDrop();
+                  handleScheduleDropClick();
                 } else if (scheduledFor) {
-                  onSaveDraft();
+                  handleSaveDraftClick();
                 } else {
                   onPublishNow();
                 }
