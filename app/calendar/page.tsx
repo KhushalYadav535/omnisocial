@@ -1470,7 +1470,7 @@ export default function CalendarPage() {
       });
       if (res.success && res.post) {
         setGeneratedInstantPost(res.post);
-        setNotice({ type: 'success', text: `✨ 1-Click ${instantPostType} generated successfully with external tool prompts!` });
+        setNotice({ type: 'success', text: `✨ 1-Click ${instantPostType.replace(/_/g, ' ')} post generated successfully!` });
       } else {
         throw new Error(res.message || 'Failed to generate instant post');
       }
@@ -3254,7 +3254,7 @@ export default function CalendarPage() {
         {selectedEvent && (() => {
           const currentBrand = brands.find(b => b.id === (selectedEvent.brandId || activeBrandId)) || brands[0];
           const brandName = currentBrand?.name || 'Aura Living';
-          const brandSlug = currentBrand?.slug || brandName.toLowerCase().replace(/\s+/g, '_');
+          const brandSlug = selectedEvent.accountName || currentBrand?.slug || brandName.toLowerCase().replace(/\s+/g, '_');
           const parsedTitle = parseCalendarCardTitle(editTitle || selectedEvent.title);
           const mediaUrl = sanitizeMediaUrl(selectedEvent.mediaUrls?.[0]);
 
@@ -3480,7 +3480,9 @@ export default function CalendarPage() {
                                 <Bookmark className="w-4 h-4 text-neutral-700 hover:text-neutral-900 cursor-pointer" />
                               </div>
 
-                              <p className="text-[11px] font-black text-neutral-900">4,920 likes</p>
+                              <p className="text-[11px] font-black text-neutral-900">
+                                {selectedEvent.status === 'PUBLISHED' ? '24 likes' : 'Scheduled preview • 0 likes yet'}
+                              </p>
 
                               {/* Caption Text with Highlighted Hashtags */}
                               <div className="text-xs text-neutral-800 leading-relaxed space-y-1">
@@ -4191,6 +4193,41 @@ export default function CalendarPage() {
                           onChange={(e) => setInstantScheduledDate(e.target.value)}
                           className="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                         />
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              d.setDate(d.getDate() + 1);
+                              setInstantScheduledDate(d.toISOString().split('T')[0]);
+                            }}
+                            className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition cursor-pointer"
+                          >
+                            Tomorrow
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              d.setDate(d.getDate() + 2);
+                              setInstantScheduledDate(d.toISOString().split('T')[0]);
+                            }}
+                            className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition cursor-pointer"
+                          >
+                            +2 Days
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              d.setDate(d.getDate() + 7);
+                              setInstantScheduledDate(d.toISOString().split('T')[0]);
+                            }}
+                            className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition cursor-pointer"
+                          >
+                            +1 Week
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-700">Target Social Platform:</label>

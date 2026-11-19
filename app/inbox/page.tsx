@@ -93,7 +93,7 @@ function InboxContent() {
           if (found) setActiveBrandName(found.name);
           else setActiveBrandName('Active Brand');
         })
-        .catch(() => {});
+        .catch(() => { });
     } else {
       setActiveBrandName('All Brands');
     }
@@ -207,9 +207,12 @@ function InboxContent() {
       });
       if (res.suggestions) {
         setSuggestions(res.suggestions);
-        if (!replyText && res.suggestions.length > 0) {
-          setReplyText(res.suggestions[0].text);
-        }
+        setReplyText(prev => {
+          if (!prev || !prev.trim()) {
+            return res.suggestions[0]?.text || '';
+          }
+          return prev;
+        });
       }
     } catch (err: any) {
       console.error('AI suggestions error:', err);
@@ -363,7 +366,7 @@ function InboxContent() {
     }
 
     const threadList = Array.from(threadMap.values());
-    threadList.sort((a, b) => 
+    threadList.sort((a, b) =>
       new Date(b.latestMessage.platformCreatedAt).getTime() - new Date(a.latestMessage.platformCreatedAt).getTime()
     );
     return threadList;
@@ -382,8 +385,8 @@ function InboxContent() {
       status?: string;
     }> = [];
 
-    const messagesToRender = (threadMessages && threadMessages.length > 0) 
-      ? threadMessages 
+    const messagesToRender = (threadMessages && threadMessages.length > 0)
+      ? threadMessages
       : (selectedInteraction ? [selectedInteraction] : []);
 
     for (const msg of messagesToRender) {
@@ -424,7 +427,7 @@ function InboxContent() {
     <AppLayout activeBrandId={activeBrandId} onBrandChange={setActiveBrandId}>
       {/* Outer Shell with responsive height and bottom space for Windows Explorer status bar */}
       <div className="w-full flex flex-col space-y-4 pb-20">
-        
+
         {/* COMPACT UNIFIED CADRA COMMAND BAR */}
         <header className="bg-white px-5 py-3 rounded-[24px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
           {/* Left: View Mode Segmented Control + Live Meta Pulse */}
@@ -436,18 +439,20 @@ function InboxContent() {
                   setTypeFilter('COMMENT');
                   setPage(1);
                 }}
-                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
-                  typeFilter === 'COMMENT'
-                    ? 'bg-[#111215] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${typeFilter === 'COMMENT'
+                  ? 'bg-[#111215] text-white shadow-xs'
+                  : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Comments</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  typeFilter === 'COMMENT' ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-800'
+                }`}>
+                  {commentsTotal}
+                </span>
                 {unreadCommentsTotal > 0 && (
-                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-orange-500 text-white">
-                    {unreadCommentsTotal}
-                  </span>
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title={`${unreadCommentsTotal} unread`} />
                 )}
               </button>
 
@@ -457,18 +462,20 @@ function InboxContent() {
                   setTypeFilter('DIRECT_MESSAGE');
                   setPage(1);
                 }}
-                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${
-                  typeFilter === 'DIRECT_MESSAGE'
-                    ? 'bg-[#111215] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
+                className={`px-4 py-1.5 rounded-full font-semibold text-xs flex items-center space-x-2 transition-all cursor-pointer ${typeFilter === 'DIRECT_MESSAGE'
+                  ? 'bg-[#111215] text-white shadow-xs'
+                  : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
               >
                 <Inbox className="w-3.5 h-3.5" />
                 <span>Direct Messages</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  typeFilter === 'DIRECT_MESSAGE' ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-800'
+                }`}>
+                  {dmsTotal}
+                </span>
                 {unreadDmsTotal > 0 && (
-                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-orange-500 text-white">
-                    {unreadDmsTotal}
-                  </span>
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title={`${unreadDmsTotal} unread`} />
                 )}
               </button>
             </div>
@@ -543,7 +550,7 @@ function InboxContent() {
 
         {/* 2-PANE WORKSPACE: LEFT CONVERSATION LIST & RIGHT DOCKED STUDIO */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          
+
           {/* ============================================================== */}
           {/* PANE 1: CONVERSATION THREAD DIRECTORY (CADRA 4-5 COLS)           */}
           {/* ============================================================== */}
@@ -604,11 +611,10 @@ function InboxContent() {
                       key={thread.threadId}
                       type="button"
                       onClick={() => loadInteractionDetail(thread.latestMessage.id)}
-                      className={`w-full text-left p-3.5 transition-all flex items-start space-x-3 cursor-pointer relative ${
-                        isSelected
-                          ? 'bg-indigo-50/80 border-l-4 border-indigo-600 shadow-2xs'
-                          : 'hover:bg-slate-50/80'
-                      }`}
+                      className={`w-full text-left p-3.5 transition-all flex items-start space-x-3 cursor-pointer relative ${isSelected
+                        ? 'bg-indigo-50/80 border-l-4 border-indigo-600 shadow-2xs'
+                        : 'hover:bg-slate-50/80'
+                        }`}
                     >
                       {/* Avatar with Platform Micro-Badge */}
                       <div className="relative shrink-0 mt-0.5">
@@ -651,11 +657,10 @@ function InboxContent() {
 
                         {/* Ergonomic Status Micro-Pills */}
                         <div className="mt-2 flex items-center space-x-1.5 flex-wrap gap-y-1">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${
-                            thread.platform === 'INSTAGRAM'
-                              ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200'
-                              : 'bg-blue-50 text-blue-700 border border-blue-200'
-                          }`}>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md uppercase tracking-wider ${thread.platform === 'INSTAGRAM'
+                            ? 'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                            }`}>
                             {thread.platform.slice(0, 2)} • {isDm ? 'DM' : 'Post'}
                           </span>
 
@@ -668,24 +673,22 @@ function InboxContent() {
                           )}
 
                           {thread.latestMessage.classification && (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${
-                              thread.latestMessage.classification.sentiment === 'POSITIVE'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : thread.latestMessage.classification.sentiment === 'NEGATIVE'
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md ${thread.latestMessage.classification.sentiment === 'POSITIVE'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : thread.latestMessage.classification.sentiment === 'NEGATIVE'
                                 ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                 : 'bg-slate-100 text-slate-600 border border-slate-200'
-                            }`}>
+                              }`}>
                               {thread.latestMessage.classification.sentiment}
                             </span>
                           )}
 
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ml-auto flex items-center space-x-1 ${
-                            thread.replyStatus === 'SENT'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : thread.replyStatus === 'DRAFT_READY'
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ml-auto flex items-center space-x-1 ${thread.replyStatus === 'SENT'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : thread.replyStatus === 'DRAFT_READY'
                               ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
-                          }`}>
+                            }`}>
                             {thread.replyStatus === 'NEEDS_RESPONSE' && (
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                             )}
@@ -740,7 +743,7 @@ function InboxContent() {
           <section className="lg:col-span-7 xl:col-span-8 bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden">
             {selectedInteraction ? (
               <div className="flex flex-col">
-                
+
                 {/* 1. THREAD HEADER WITH CUSTOMER INFO & TELEMETRY BADGES */}
                 <div className="px-5 py-3.5 border-b border-black/[0.05] bg-white shrink-0">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -791,13 +794,12 @@ function InboxContent() {
                     <div className="flex items-center space-x-2 shrink-0">
                       {selectedInteraction.classification && (
                         <div className="flex items-center space-x-1.5">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                            selectedInteraction.classification.sentiment === 'POSITIVE'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : selectedInteraction.classification.sentiment === 'NEGATIVE'
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${selectedInteraction.classification.sentiment === 'POSITIVE'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : selectedInteraction.classification.sentiment === 'NEGATIVE'
                               ? 'bg-rose-50 text-rose-700 border-rose-200'
                               : 'bg-slate-100 text-slate-700 border-slate-200'
-                          }`}>
+                            }`}>
                             {selectedInteraction.classification.sentiment} ({Math.round(selectedInteraction.classification.sentimentScore * 100)}%)
                           </span>
                           <span className="hidden md:inline-flex text-[10px] font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
@@ -823,7 +825,7 @@ function InboxContent() {
 
                 {/* 2. CHRONOLOGICAL CONVERSATIONAL CHAT STREAM */}
                 <div className="p-4 sm:p-5 space-y-4 bg-[#F8F9FA]/80 max-h-[520px] overflow-y-auto">
-                  
+
                   {/* Clean Thread Divider */}
                   <div className="flex items-center justify-center my-1">
                     <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-400 bg-white px-3 py-1 rounded-full border border-black/[0.04] shadow-2xs">
@@ -908,85 +910,84 @@ function InboxContent() {
 
                 {/* 3. DOCKED BOTTOM COMPOSER & COMPACT AI STUDIO */}
                 <div id="inbox-reply-composer" className="border-t border-black/[0.06] bg-white p-4 sm:p-5 space-y-3 shadow-xs">
-                    
-                    {/* Top Row: AI Reply Studio Controls & Tone Pills */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center space-x-2">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                          AI Reply Studio
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
-                          (Tuned to Brand Voice)
-                        </span>
-                      </div>
 
-                      {/* Tone Modifier Pills */}
-                      <div className="flex items-center space-x-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleApplyTone('friendly')}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
-                        >
-                          ✨ Friendly
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyTone('professional')}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
-                        >
-                          👔 Professional
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleApplyTone('concise')}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
-                        >
-                          ⚡ Concise
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => fetchAiSuggestions(selectedInteraction.id)}
-                          disabled={generatingAi}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center space-x-1 cursor-pointer"
-                          title="Generate fresh AI suggestions"
-                        >
-                          <RefreshCw className={`w-3 h-3 ${generatingAi ? 'animate-spin' : ''}`} />
-                          <span>Regen</span>
-                        </button>
-                      </div>
+                  {/* Top Row: AI Reply Studio Controls & Tone Pills */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                        AI Reply Studio
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
+                        (Tuned to Brand Voice)
+                      </span>
                     </div>
 
-                    {/* AI Suggestions Quick Chips */}
-                    {suggestions.length > 0 && (
-                      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                        <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-                          AI Options:
-                        </span>
-                        {suggestions.map((sug, idx) => {
-                          const isSelected = replyText === sug.text;
-                          return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setReplyText(sug.text)}
-                              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
-                                isSelected 
-                                  ? 'bg-[#111215] text-white border-neutral-900 shadow-xs' 
-                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/[0.08]'
-                              }`}
-                              title={sug.text}
-                            >
-                              <span>{sug.title}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {/* Tone Modifier Pills */}
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleApplyTone('friendly')}
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
+                      >
+                        ✨ Friendly
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyTone('professional')}
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
+                      >
+                        👔 Professional
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyTone('concise')}
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 hover:bg-neutral-200 text-slate-700 transition-all cursor-pointer"
+                      >
+                        ⚡ Concise
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fetchAiSuggestions(selectedInteraction.id)}
+                        disabled={generatingAi}
+                        className="px-2.5 py-1 rounded-full text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center space-x-1 cursor-pointer"
+                        title="Generate fresh AI suggestions"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${generatingAi ? 'animate-spin' : ''}`} />
+                        <span>Regen</span>
+                      </button>
+                    </div>
+                  </div>
 
-                    {/* Meta 24-Hour Messaging Policy Warning for DMs (if needed) */}
-                    {selectedInteraction.type === 'DIRECT_MESSAGE' && 
-                     (Date.now() - new Date(selectedInteraction.platformCreatedAt).getTime() > 24 * 60 * 60 * 1000) && (
+                  {/* AI Suggestions Quick Chips */}
+                  {suggestions.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+                        AI Options:
+                      </span>
+                      {suggestions.map((sug, idx) => {
+                        const isSelected = replyText === sug.text;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setReplyText(sug.text)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all border shrink-0 cursor-pointer ${isSelected
+                              ? 'bg-[#111215] text-white border-neutral-900 shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-black/[0.08]'
+                              }`}
+                            title={sug.text}
+                          >
+                            <span>{sug.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Meta 24-Hour Messaging Policy Warning for DMs (if needed) */}
+                  {selectedInteraction.type === 'DIRECT_MESSAGE' &&
+                    (Date.now() - new Date(selectedInteraction.platformCreatedAt).getTime() > 24 * 60 * 60 * 1000) && (
                       <div className="p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                         <div className="text-[11px] leading-relaxed">
@@ -995,67 +996,67 @@ function InboxContent() {
                       </div>
                     )}
 
-                    {/* AI Error Alert if Any */}
-                    {aiError && (
-                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="text-[11px]">{aiError}</span>
-                      </div>
-                    )}
+                  {/* AI Error Alert if Any */}
+                  {aiError && (
+                    <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center space-x-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span className="text-[11px]">{aiError}</span>
+                    </div>
+                  )}
 
-                    {/* Compact Ergonomic Composer Textarea */}
-                    <div className="relative rounded-[20px] border border-black/[0.08] bg-white p-3 focus-within:ring-2 focus-within:ring-black/10 focus-within:border-black transition-all shadow-2xs">
-                      <textarea
-                        rows={2}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={`Draft reply to ${selectedInteraction.authorName} or click an AI Option above... (Ctrl + Enter to send)`}
-                        className="w-full text-xs sm:text-[13px] font-medium bg-transparent focus:outline-hidden text-slate-900 placeholder:text-slate-400 leading-relaxed resize-none"
-                      />
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
-                        <span>Characters: {replyText.length}</span>
-                        <span className="hidden sm:inline">Press <kbd className="px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold">Ctrl + Enter</kbd> to transmit</span>
-                      </div>
+                  {/* Compact Ergonomic Composer Textarea */}
+                  <div className="relative rounded-[20px] border border-black/[0.08] bg-white p-3 focus-within:ring-2 focus-within:ring-black/10 focus-within:border-black transition-all shadow-2xs">
+                    <textarea
+                      rows={2}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={`Draft reply to ${selectedInteraction.authorName} or click an AI Option above... (Ctrl + Enter to send)`}
+                      className="w-full text-xs sm:text-[13px] font-medium bg-transparent focus:outline-hidden text-slate-900 placeholder:text-slate-400 leading-relaxed resize-none"
+                    />
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+                      <span>Characters: {replyText.length}</span>
+                      <span className="hidden sm:inline">Press <kbd className="px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold">Ctrl + Enter</kbd> to transmit</span>
+                    </div>
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="flex items-center justify-between pt-0.5">
+                    <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-mono">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                        SAFE-01 Guardrail Active
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="hidden sm:inline">Channel: {selectedInteraction.platform}</span>
                     </div>
 
-                    {/* Action Bar */}
-                    <div className="flex items-center justify-between pt-0.5">
-                      <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-mono">
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                          SAFE-01 Guardrail Active
-                        </span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="hidden sm:inline">Channel: {selectedInteraction.platform}</span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        {replyText.trim() && (
-                          <button
-                            type="button"
-                            onClick={() => setReplyText('')}
-                            className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        )}
-
+                    <div className="flex items-center space-x-2">
+                      {replyText.trim() && (
                         <button
                           type="button"
-                          onClick={handleApproveAndSend}
-                          disabled={sendingReply || !replyText.trim()}
-                          className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#111215] hover:bg-neutral-800 shadow-sm active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          onClick={() => setReplyText('')}
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
                         >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>{sendingReply ? 'Transmitting...' : 'Approve & Send to Meta'}</span>
-                          <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded text-white font-mono ml-1">
-                            ↵
-                          </span>
+                          Clear
                         </button>
-                      </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleApproveAndSend}
+                        disabled={sendingReply || !replyText.trim()}
+                        className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#111215] hover:bg-neutral-800 shadow-sm active:scale-95 transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{sendingReply ? 'Transmitting...' : 'Approve & Send to Meta'}</span>
+                        <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded text-white font-mono ml-1">
+                          ↵
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-12 text-center space-y-3 text-slate-400 min-h-[420px]">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">

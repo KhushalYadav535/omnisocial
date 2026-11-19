@@ -259,18 +259,37 @@ Take the first step today.`,
     }
   ];
 
-  // Initialize caption and hashtags if empty
+  // Initialize caption and hashtags if empty and no draft exists
   useEffect(() => {
-    if (!caption || caption.trim() === '') {
-      setCaption(defaultVariants[0].copy);
+    let hasDraft = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.caption && p.caption.trim()) hasDraft = true;
+        }
+      } catch {}
     }
-    if (!hashtags || hashtags.length === 0) {
-      setHashtags(defaultVariants[0].hashtags);
-    }
-    if (!mediaUrl || mediaUrl.trim() === '' || mediaUrl.includes('unsplash.com/photo-1515886657613-9f3515b0c78f')) {
-      setMediaUrl('/images/career-move-2026.svg');
+    if (!hasDraft) {
+      if (!caption || caption.trim() === '') {
+        setCaption(defaultVariants[0].copy);
+      }
+      if (!hashtags || hashtags.length === 0) {
+        setHashtags(defaultVariants[0].hashtags);
+      }
+      if (!mediaUrl || mediaUrl.trim() === '') {
+        setMediaUrl('/images/career-move-2026.svg');
+      }
+    } else {
+      if (!mediaUrl || mediaUrl.trim() === '') {
+        setMediaUrl('/images/career-move-2026.svg');
+      }
     }
   }, []);
+
+  // Filter hashtags that are not already written in caption (Bug 10/11)
+  const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
 
   // Sync variant paging
   const handleSelectVariant = (idx: number) => {
@@ -676,12 +695,61 @@ Take the first step today.`,
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Publication Schedule
               </label>
-              <input
-                type="datetime-local"
-                value={scheduledFor}
-                onChange={(e) => setScheduledFor(e.target.value)}
-                className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
-              />
+              <div className="space-y-1.5">
+                <input
+                  type="datetime-local"
+                  value={scheduledFor}
+                  onChange={(e) => setScheduledFor(e.target.value)}
+                  className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      d.setHours(10, 0, 0, 0);
+                      setScheduledFor(d.toISOString().slice(0, 16));
+                    }}
+                    className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
+                  >
+                    Tomorrow 10 AM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      d.setHours(15, 30, 0, 0);
+                      setScheduledFor(d.toISOString().slice(0, 16));
+                    }}
+                    className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
+                  >
+                    Tomorrow 3:30 PM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 2);
+                      d.setHours(10, 0, 0, 0);
+                      setScheduledFor(d.toISOString().slice(0, 16));
+                    }}
+                    className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
+                  >
+                    +2 Days
+                  </button>
+                  {scheduledFor && (
+                    <button
+                      type="button"
+                      onClick={() => setScheduledFor('')}
+                      className="px-2 py-0.5 text-[10px] font-semibold text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -988,6 +1056,7 @@ Take the first step today.`,
                       )}
                     </div>
                   </div>
+                </div>
 
                   {/* Clean Textarea with Character Counter */}
                   <div className="relative border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 transition">
@@ -1002,7 +1071,7 @@ Take the first step today.`,
                       <div className="flex items-center space-x-1.5">
                         <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
                         <span className="text-[10px] font-bold text-slate-600">AI Virality Index:</span>
-                        <span className={`px-2 py-0.2 rounded-full text-[10px] font-extrabold border ${liveVirality.color}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${liveVirality.color}`}>
                           {liveVirality.score}/100 • Grade {liveVirality.grade} ({liveVirality.badge})
                         </span>
                       </div>
@@ -1322,7 +1391,6 @@ Take the first step today.`,
                 </div>
               </div>
             </div>
-          </div>
 
           {/* RIGHT COLUMN: STICKY LIVE VISUAL PREVIEW (approx 4.8 of 12 cols) */}
           <div className="lg:col-span-5 space-y-3 sticky top-20">
@@ -1395,9 +1463,9 @@ Take the first step today.`,
                     {/* Post Copy */}
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line space-y-1">
                       <p>{caption}</p>
-                      {hashtags.length > 0 && (
+                      {extraTags.length > 0 && (
                         <p className="text-[#0A66C2] font-semibold text-[11px] pt-1">
-                          {hashtags.join(' ')}
+                          {extraTags.join(' ')}
                         </p>
                       )}
                     </div>
@@ -1494,8 +1562,8 @@ Take the first step today.`,
                         <span className="font-bold mr-1.5">{selectedBrand.name?.toLowerCase().replace(/\s+/g, '_') || 'uprole_official'}</span>
                         {caption}
                       </p>
-                      {hashtags.length > 0 && (
-                        <p className="text-blue-600 text-[11px]">{hashtags.join(' ')}</p>
+                      {extraTags.length > 0 && (
+                        <p className="text-blue-600 text-[11px]">{extraTags.join(' ')}</p>
                       )}
                     </div>
                   </div>
@@ -1519,8 +1587,8 @@ Take the first step today.`,
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
                       <p>{caption}</p>
-                      {hashtags.length > 0 && (
-                        <p className="text-blue-600 font-semibold text-[11px] pt-1">{hashtags.join(' ')}</p>
+                      {extraTags.length > 0 && (
+                        <p className="text-blue-600 font-semibold text-[11px] pt-1">{extraTags.join(' ')}</p>
                       )}
                     </div>
 
@@ -1577,8 +1645,8 @@ Take the first step today.`,
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
                       <p>{caption}</p>
-                      {hashtags.length > 0 && (
-                        <p className="text-blue-500 font-semibold text-[11px] pt-1">{hashtags.join(' ')}</p>
+                      {extraTags.length > 0 && (
+                        <p className="text-blue-500 font-semibold text-[11px] pt-1">{extraTags.join(' ')}</p>
                       )}
                     </div>
 

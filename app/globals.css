@@ -99,3 +99,201 @@ code, kbd, samp, pre {
   background-size: 200% auto;
   animation: shimmer 4s linear infinite;
 }
+
+/* ============================================================
+   OMNISOCIAL — PREMIUM LANDING PAGE DESIGN SYSTEM
+   ============================================================ */
+
+:root {
+  --ink: #0b0d14;
+  --ink-soft: #1b1d29;
+  --accent-indigo: #5b5bf6;
+  --accent-violet: #8b5cf6;
+  --accent-cyan: #22d3ee;
+  --accent-rose: #fb7185;
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.75);
+}
+
+/* --- Aurora hero background --- */
+.hero-aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 12% 8%, rgba(99, 102, 241, 0.16), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 88% 12%, rgba(34, 211, 238, 0.13), transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(139, 92, 246, 0.12), transparent 72%),
+    linear-gradient(180deg, #fcfcfe 0%, #fafaff 55%, #f7f7fd 100%);
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-one {
+  top: 4%;
+  left: 8%;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.42), rgba(99, 102, 241, 0.06) 60%, transparent 72%);
+  animation: aurora-drift-one 18s ease-in-out infinite alternate;
+}
+
+.orb-two {
+  top: 10%;
+  right: 6%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 60% 40%, rgba(34, 211, 238, 0.34), rgba(14, 165, 233, 0.05) 60%, transparent 72%);
+  animation: aurora-drift-two 22s ease-in-out infinite alternate;
+}
+
+.orb-three {
+  bottom: 4%;
+  left: 38%;
+  width: 520px;
+  height: 340px;
+  background: radial-gradient(ellipse at 50% 60%, rgba(139, 92, 246, 0.30), rgba(244, 63, 94, 0.06) 55%, transparent 72%);
+  animation: aurora-drift-three 26s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift-one {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(60px, 45px, 0) scale(1.12); }
+}
+@keyframes aurora-drift-two {
+  0% { transform: translate3d(0, 0, 0) scale(1.05); }
+  100% { transform: translate3d(-70px, 30px, 0) scale(0.95); }
+}
+@keyframes aurora-drift-three {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(40px, -35px, 0) scale(1.1); }
+}
+
+/* --- Fine dotted grid overlay --- */
+.hero-dots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 20%, transparent 80%);
+}
+
+/* --- Gradient text --- */
+.text-gradient {
+  background: linear-gradient(110deg, #4f46e5 0%, #6366f1 32%, #8b5cf6 58%, #d946ef 82%, #4f46e5 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 9s ease-in-out infinite alternate;
+}
+
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+/* --- Premium glass surfaces --- */
+.glass-panel {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 10px 40px -12px rgba(79, 70, 229, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass-chip {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 34px -12px rgba(15, 23, 42, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* --- Primary gradient button with shine sweep --- */
+.btn-gradient {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(120deg, #4f46e5 0%, #6366f1 45%, #8b5cf6 100%);
+  box-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, 0.35) 48%, transparent 62%);
+  transform: translateX(-130%);
+  transition: transform 0.7s cubic-bezier(0.21, 0.47, 0.32, 0.98);
+}
+.btn-gradient:hover::after {
+  transform: translateX(130%);
+}
+.btn-gradient:hover {
+  box-shadow: 0 14px 34px -8px rgba(99, 102, 241, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* --- Animated live status dot --- */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #10b981;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  animation: pulse-ring 2.2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* --- Floating card motion --- */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float-y { animation: float-y 6s ease-in-out infinite; }
+.animate-float-y-slow { animation: float-y 8s ease-in-out infinite 1.2s; }
+
+/* --- Generic section eyebrow --- */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6366f1;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-orb, .text-gradient, .animate-float-y, .animate-float-y-slow,
+  .live-dot::after, .animate-shimmer {
+    animation: none !important;
+  }
+  html { scroll-behavior: auto; }
+}

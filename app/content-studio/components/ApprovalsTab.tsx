@@ -118,7 +118,7 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
               Governance & Compliance
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              {approvals.length} {approvals.length === 1 ? 'Post' : 'Posts'} in Queue
+              {isLoading ? '...' : `${approvals.length} ${approvals.length === 1 ? 'Post' : 'Posts'} in Queue`}
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Content Approval Queue</h2>
@@ -177,16 +177,33 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
               className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition flex flex-col md:flex-row gap-5 items-start justify-between"
             >
               <div className="flex items-start space-x-4 flex-1">
-                {post.mediaUrls && post.mediaUrls[0] && (
-                  <img
-                    src={post.mediaUrls[0]}
-                    alt="Preview"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&h=240&fit=crop';
-                    }}
-                    className="w-24 h-24 rounded-xl object-cover border border-slate-200 shrink-0"
-                  />
-                )}
+                {(() => {
+                  let imgUrl = '';
+                  if (Array.isArray(post.mediaUrls) && post.mediaUrls[0]) {
+                    imgUrl = post.mediaUrls[0];
+                  } else if (typeof post.mediaUrls === 'string') {
+                    try {
+                      const parsed = JSON.parse(post.mediaUrls);
+                      if (Array.isArray(parsed) && parsed[0]) imgUrl = parsed[0];
+                      else if (typeof parsed === 'string') imgUrl = parsed;
+                    } catch {
+                      if (post.mediaUrls.startsWith('http')) imgUrl = post.mediaUrls;
+                    }
+                  } else if (post.mediaUrl) {
+                    imgUrl = post.mediaUrl;
+                  }
+                  if (!imgUrl) return null;
+                  return (
+                    <img
+                      src={imgUrl}
+                      alt="Preview"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=240&h=240&fit=crop';
+                      }}
+                      className="w-24 h-24 rounded-xl object-cover border border-slate-200 shrink-0"
+                    />
+                  );
+                })()}
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-700 rounded-md">
@@ -222,41 +239,57 @@ export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTa
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">
-                <button
-                  type="button"
-                  onClick={() => handleReviewAction(post.id, 'APPROVED')}
-                  disabled={isSubmittingReview}
-                  className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm flex items-center justify-center space-x-1.5 transition cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Approve Post</span>
-                </button>
+              {/* Action Buttons or Badges (Bug 7) */}
+              {statusFilter === 'APPROVED' || post.clientApprovalStatus === 'APPROVED' ? (
+                <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">
+                  <div className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Approved</span>
+                  </div>
+                </div>
+              ) : statusFilter === 'REJECTED' || post.clientApprovalStatus === 'REJECTED' ? (
+                <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">
+                  <div className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold shadow-2xs">
+                    <XCircle className="w-4 h-4 text-rose-600" />
+                    <span>Rejected</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex md:flex-col items-center gap-2 shrink-0 w-full md:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleReviewAction(post.id, 'APPROVED')}
+                    disabled={isSubmittingReview}
+                    className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Approve Post</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPost(post);
-                    setFeedbackNote('');
-                  }}
-                  disabled={isSubmittingReview}
-                  className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg shadow-2xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Request Changes</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPost(post);
+                      setFeedbackNote('');
+                    }}
+                    disabled={isSubmittingReview}
+                    className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg shadow-2xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Request Changes</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleReviewAction(post.id, 'REJECTED')}
-                  disabled={isSubmittingReview}
-                  className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg shadow-2xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Reject</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => handleReviewAction(post.id, 'REJECTED')}
+                    disabled={isSubmittingReview}
+                    className="flex-1 md:w-36 py-2 px-3 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg shadow-2xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Reject</span>
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -260,17 +260,90 @@ function ContentStudioContent() {
     checkTabsScroll();
   }, [activeTab, checkTabsScroll]);
 
-  // Studio Form State
-  const [title, setTitle] = useState('');
-  const [rawIdea, setRawIdea] = useState('Introduce our upcoming eco-friendly resort capsule collection with lightweight breathable linen.');
-  const [caption, setCaption] = useState('');
-  const [hashtags, setHashtags] = useState<string[]>(['#Resort2026', '#SustainableFashion', '#LinenStyle']);
+  // Studio Form State (with localStorage draft restoration)
+  const [title, setTitle] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.title) return p.title;
+        }
+      } catch {}
+    }
+    return '';
+  });
+  const [rawIdea, setRawIdea] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.rawIdea) return p.rawIdea;
+        }
+      } catch {}
+    }
+    return 'Introduce our upcoming eco-friendly resort capsule collection with lightweight breathable linen.';
+  });
+  const [caption, setCaption] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.caption) return p.caption;
+        }
+      } catch {}
+    }
+    return '';
+  });
+  const [hashtags, setHashtags] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.hashtags && Array.isArray(p.hashtags) && p.hashtags.length > 0) return p.hashtags;
+        }
+      } catch {}
+    }
+    return ['#Resort2026', '#SustainableFashion', '#LinenStyle'];
+  });
   const [newTagInput, setNewTagInput] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&h=1080&fit=crop');
+  const [mediaUrl, setMediaUrl] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const d = localStorage.getItem('omnisocial_composer_draft');
+        if (d) {
+          const p = JSON.parse(d);
+          if (p.mediaUrl) return p.mediaUrl;
+        }
+      } catch {}
+    }
+    return 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&h=1080&fit=crop';
+  });
   const [format, setFormat] = useState<'POST' | 'PORTRAIT' | 'REEL' | 'CAROUSEL'>('POST');
   const [targetPlatforms, setTargetPlatforms] = useState<string[]>(['FACEBOOK', 'INSTAGRAM', 'LINKEDIN']);
   const [scheduledFor, setScheduledFor] = useState('');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+
+  // Composer Draft Auto-Persistence (Bug 4)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (caption || rawIdea || mediaUrl) {
+        try {
+          localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+            caption,
+            rawIdea,
+            hashtags,
+            mediaUrl,
+            format,
+            title
+          }));
+        } catch {}
+      }
+    }
+  }, [caption, rawIdea, hashtags, mediaUrl, format, title]);
 
   const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
     if (data.title) setTitle(data.title);
@@ -960,6 +1033,10 @@ function ContentStudioContent() {
     setPublishedPosts([]);
 
     try {
+      // Append non-duplicate hashtag chips to caption (Bug 11)
+      const tagsToAppend = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
+      const finalCaption = tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim();
+
       const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
       const res = await apiRequest('/content', {
         method: 'POST',
@@ -967,7 +1044,7 @@ function ContentStudioContent() {
           brandId: activeBrandId,
           title: title || caption.slice(0, 30) + '...',
           rawIdea,
-          caption,
+          caption: finalCaption,
           hashtags,
           mediaUrls: mediaUrl ? [mediaUrl] : [],
           targetPlatforms,
@@ -1045,11 +1122,33 @@ function ContentStudioContent() {
           origin: { y: 0.5 },
           colors: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b']
         });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('omnisocial_composer_draft');
+          } catch {}
+        }
       } else if (scheduledFor) {
         setStatusMessage({ type: 'success', text: `Post successfully scheduled for ${new Date(scheduledFor).toLocaleString()}!` });
         confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('omnisocial_composer_draft');
+          } catch {}
+        }
       } else {
         setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workspace.' });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
+              caption,
+              rawIdea,
+              hashtags,
+              mediaUrl,
+              format,
+              title
+            }));
+          } catch {}
+        }
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'Operation failed' });
