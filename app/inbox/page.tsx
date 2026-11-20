@@ -89,6 +89,7 @@ function InboxContent() {
   const [showReplyComposerOnSent, setShowReplyComposerOnSent] = useState(false);
   const threadCache = useRef<Record<string, any>>({});
   const selectedThreadKeyRef = useRef<string | null>(null);
+  const hasInitialSelectedRef = useRef(false);
 
   // Pre-cache both Comments and DMs tabs on load so switching is instant with zero empty state
   useEffect(() => {
@@ -203,18 +204,12 @@ function InboxContent() {
         dmsTotal: res.dmsCount
       };
 
-      // Auto-select first item ONLY on foreground initial fetch if no active selection exists
-      // Background auto-sync must NEVER touch active selection, re-render reply box, or reset thread
-      if (!isBackground) {
+      // Auto-select first item ONLY on first initial load when no thread has ever been selected
+      // Auto-sync or subsequent fetches must NEVER jump selection, re-render reply box, or reset thread
+      if (!isBackground && !hasInitialSelectedRef.current && !selectedInteractionRef.current && !selectedThreadKeyRef.current) {
         if (items.length > 0) {
-          const currentSel = selectedInteractionRef.current;
-          const hasActiveSelection = currentSel && (
-            items.some((i: any) => i.id === currentSel.id) ||
-            (selectedThreadKeyRef.current && items.some((i: any) => (i.parentPlatformId || i.authorId || i.id) === selectedThreadKeyRef.current))
-          );
-          if (!hasActiveSelection) {
-            loadInteractionDetail(items[0].id);
-          }
+          hasInitialSelectedRef.current = true;
+          loadInteractionDetail(items[0].id);
         } else {
           setSelectedInteraction(null);
           setThreadMessages([]);
@@ -229,7 +224,9 @@ function InboxContent() {
 
   // Instant 1-click selection handler
   const handleSelectThread = (thread: any) => {
+    hasInitialSelectedRef.current = true;
     selectedThreadKeyRef.current = thread.threadId;
+    selectedInteractionRef.current = thread.latestMessage;
     setSelectedInteraction(thread.latestMessage);
     setThreadMessages(thread.messages && thread.messages.length > 0 ? thread.messages : [thread.latestMessage]);
     setShowReplyComposerOnSent(false);

@@ -1168,11 +1168,36 @@ function cleanMediaUrl(raw: any): string {
     setPublishedUrl(null);
     setPublishedPosts([]);
 
+    const isScheduledDraft = isDraftOnly && !!scheduledFor;
+    const formattedScheduleDate = scheduledFor ? (() => {
+      try {
+        const d = new Date(scheduledFor);
+        return isNaN(d.getTime()) ? scheduledFor : d.toLocaleDateString([], {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        }) + ' at ' + d.toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+      } catch {
+        return scheduledFor;
+      }
+    })() : 'scheduled peak window';
+
     const inProgressNotice = isDraftOnly
-      ? { type: 'info' as const, text: 'Saving post draft to workbench...' }
-      : (isExplicitSchedule || scheduledFor
-        ? { type: 'info' as const, text: 'Scheduling drop(s) to Content Calendar...' }
-        : { type: 'info' as const, text: 'Publishing post to connected social channels...' });
+      ? {
+          type: 'info' as const,
+          text: isScheduledDraft
+            ? 'Saving scheduled post draft to workbench...'
+            : 'Saving post draft to workbench...'
+        }
+      : (approvalStatusOverride === 'PENDING'
+        ? { type: 'info' as const, text: 'Submitting post draft to Approvals Queue for Client Review...' }
+        : (isExplicitSchedule || scheduledFor
+          ? { type: 'info' as const, text: `Scheduling drop(s) for ${formattedScheduleDate} to Content Calendar...` }
+          : { type: 'info' as const, text: 'Publishing post to connected social channels...' }));
     setStatusMessage(inProgressNotice);
 
     try {
