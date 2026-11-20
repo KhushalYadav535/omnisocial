@@ -216,7 +216,7 @@ export default function TeamPage() {
         <div className="bg-white rounded-[28px] border border-black/[0.06] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
           <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
             <h3 className="text-sm font-bold text-neutral-900">Active Organization Members</h3>
-            <span className="text-xs text-neutral-500 font-medium">{team.length} member(s)</span>
+            <span className="text-xs text-neutral-500 font-medium">{loading ? 'Loading...' : `${team.length} member(s)`}</span>
           </div>
 
           <div className="overflow-x-auto">

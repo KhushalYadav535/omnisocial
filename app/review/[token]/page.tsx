@@ -21,6 +21,29 @@ import {
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../../../lib/api';
 
+function formatClientNote(raw: any): string | null {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.note || parsed.feedback || parsed.clientNote) {
+          return String(parsed.note || parsed.feedback || parsed.clientNote);
+        }
+        return null; // Pure metadata JSON (e.g. platformCaptions, scheduledFor), suppress display
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+  if (typeof raw === 'object') {
+    return raw.note || raw.feedback || raw.clientNote || null;
+  }
+  return null;
+}
+
 function ClientReviewContent() {
   const params = useParams();
   const token = params?.token as string;
@@ -290,15 +313,19 @@ function ClientReviewContent() {
                   </div>
 
                   {/* Feedback Notes Display (If exists) */}
-                  {post.clientFeedback && (
-                    <div className="mx-4 mb-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-                      <span className="font-bold text-slate-800 flex items-center space-x-1 mb-1">
-                        <MessageSquare className="w-3 h-3 text-indigo-600" />
-                        <span>Client Note:</span>
-                      </span>
-                      <p className="text-slate-600 text-[11px]">{post.clientFeedback}</p>
-                    </div>
-                  )}
+                  {(() => {
+                    const cleanNote = formatClientNote(post.clientFeedback);
+                    if (!cleanNote) return null;
+                    return (
+                      <div className="mx-4 mb-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                        <span className="font-bold text-slate-800 flex items-center space-x-1 mb-1">
+                          <MessageSquare className="w-3 h-3 text-indigo-600" />
+                          <span>Client Note:</span>
+                        </span>
+                        <p className="text-slate-600 text-[11px]">{cleanNote}</p>
+                      </div>
+                    );
+                  })()}
 
                   {/* Feedback Input Drawer (When requesting changes) */}
                   {activeFeedbackPostId === post.id && (
@@ -342,7 +369,7 @@ function ClientReviewContent() {
                       type="button"
                       onClick={() => {
                         setActiveFeedbackPostId(post.id);
-                        setFeedbackText(post.clientFeedback || '');
+                        setFeedbackText(formatClientNote(post.clientFeedback) || '');
                       }}
                       className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-white text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer"
                     >

@@ -1540,6 +1540,16 @@ function cleanMediaUrl(raw: any): string {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
+                {(statusMessage.text?.includes('Approvals') || statusMessage.text?.includes('Approval')) && (
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('approvals')}
+                    className="font-bold flex items-center space-x-1 shrink-0 text-indigo-900 hover:text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-300 text-xs shadow-2xs cursor-pointer"
+                  >
+                    <span>View Approvals</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 {publishedPosts.length > 0 ? (
                   publishedPosts.map((post, idx) => (
                     <a
@@ -1730,6 +1740,9 @@ function cleanMediaUrl(raw: any): string {
             onScheduleDrop={async () => {
               return await handleSavePost(false, false, 'APPROVED', false, true);
             }}
+            onSubmitForApproval={async () => {
+              return await handleSavePost(false, false, 'PENDING');
+            }}
             onPublishNow={async () => {
               return await handleSavePost(true);
             }}
@@ -1814,10 +1827,10 @@ function cleanMediaUrl(raw: any): string {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setShowUnapprovedPublishModal(false);
                     setIsPublishGateConfirmed(true);
-                    handleSavePost(true, true);
+                    await handleSavePost(true, true);
                   }}
                   className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
                 >

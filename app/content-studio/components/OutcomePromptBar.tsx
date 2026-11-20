@@ -22,6 +22,18 @@ export default function OutcomePromptBar({
   const [executionResult, setExecutionResult] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Restore previous orchestration result from session storage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem('omnisocial_orchestrator_result');
+        if (cached) {
+          setExecutionResult(JSON.parse(cached));
+        }
+      } catch {}
+    }
+  }, []);
+
   useEffect(() => {
     if (errorMsg) {
       const t = setTimeout(() => setErrorMsg(null), 6000);
@@ -60,17 +72,12 @@ export default function OutcomePromptBar({
       });
 
       setExecutionResult(res);
-      if (onRefreshData) onRefreshData();
-
-      // If the intent clearly maps to a tab, recommend switching
-      if (res?.plan?.primarySkill) {
-        const skill = res.plan.primarySkill;
-        if (skill.includes('strategy')) setTimeout(() => onNavigateTab('strategy'), 1200);
-        else if (skill.includes('pillar')) setTimeout(() => onNavigateTab('pillars'), 1200);
-        else if (skill.includes('campaign')) setTimeout(() => onNavigateTab('campaigns'), 1200);
-        else if (skill.includes('idea')) setTimeout(() => onNavigateTab('ideas'), 1200);
-        else if (skill.includes('launchpad')) setTimeout(() => onNavigateTab('launchpad'), 1200);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('omnisocial_orchestrator_result', JSON.stringify(res));
+        } catch {}
       }
+      if (onRefreshData) onRefreshData();
     } catch (err: any) {
       console.error('Orchestration error:', err);
       setErrorMsg(err.message || 'Failed to orchestrate outcome request.');
@@ -169,9 +176,24 @@ export default function OutcomePromptBar({
                 Skill: {executionResult.skillId || executionResult.plan?.primarySkill || 'multi_skill'}
               </span>
             </div>
-            <span className="text-[11px] text-neutral-400 font-mono">
-              ID: {executionResult.executionId?.slice(0, 8)}...
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-[11px] text-neutral-400 font-mono">
+                ID: {executionResult.executionId?.slice(0, 8)}...
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setExecutionResult(null);
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('omnisocial_orchestrator_result');
+                  }
+                }}
+                className="text-[11px] text-neutral-400 hover:text-neutral-700 px-1.5 py-0.5 rounded-md hover:bg-black/5 transition cursor-pointer"
+                title="Dismiss output"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           {/* Steps Feedback */}

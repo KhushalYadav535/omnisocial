@@ -467,7 +467,7 @@ export default function AnalyticsPage() {
             <div className="pt-2">
               <div className="flex items-end justify-between h-36 pt-6 border-b border-slate-100">
                 {(data?.dailyTrends || []).map((t: any, idx: number) => {
-                  const dayName = new Date(t.date).toLocaleDateString('en-US', { weekday: 'short' });
+                  const dayName = new Date(t.date?.includes('T') ? t.date : `${t.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' });
                   return (
                     <div key={idx} className="flex flex-col items-center space-y-1.5 flex-1 px-1">
                       <div className="w-full flex items-end justify-center space-x-1 h-24">

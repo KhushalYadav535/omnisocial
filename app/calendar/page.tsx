@@ -3529,7 +3529,7 @@ export default function CalendarPage() {
                               </div>
 
                               <p className="text-[9px] text-neutral-400 font-mono pt-1">
-                                Scheduled for {new Date(selectedEvent.scheduledFor).toLocaleString()}
+                                {selectedEvent.status === 'PUBLISHED' ? 'Published' : 'Scheduled for'} {new Date(selectedEvent.publishedAt || selectedEvent.scheduledFor).toLocaleString()}
                               </p>
                             </div>
                           </div>

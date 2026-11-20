@@ -66,7 +66,7 @@ export default function SettingsPage() {
   const [responseGuidelines, setResponseGuidelines] = useState('Always greet politely, address the user\'s specific question, thank them for their interest, and direct order/account queries to DM or support email.');
   const [bannedKeywords, setBannedKeywords] = useState('');
   const [keyTerminology, setKeyTerminology] = useState('');
-  
+
   // Structured FAQs for Comments & DMs
   const [faqs, setFaqs] = useState<Array<{ q: string; a: string }>>([
     { q: 'What is your pricing?', a: 'Our plans start at $29/month with a 14-day free trial. You can explore all tiers on our pricing page.' },
@@ -406,9 +406,8 @@ export default function SettingsPage() {
 
         {/* NOTIFICATIONS */}
         {notice && (
-          <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${
-            notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-          }`}>
+          <div className={`p-4 rounded-xl text-xs flex items-center space-x-2 border shadow-2xs ${notice.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <span className="font-semibold">{notice.text}</span>
           </div>
@@ -419,20 +418,18 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('channels')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${
-              activeTab === 'channels' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${activeTab === 'channels' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <Share2 className={`w-3.5 h-3.5 ${activeTab === 'channels' ? 'text-indigo-400' : 'text-slate-500'}`} />
-            <span>Connected Channels ({accounts.length})</span>
+            <span>Connected Channels ({isLoadingAccounts ? '...' : accounts.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('brand')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${
-              activeTab === 'brand' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${activeTab === 'brand' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <BookOpen className={`w-3.5 h-3.5 ${activeTab === 'brand' ? 'text-amber-400' : 'text-slate-500'}`} />
             <span>Brand Knowledge & Response Base</span>
@@ -441,9 +438,8 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('general')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${
-              activeTab === 'general' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${activeTab === 'general' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <Key className={`w-3.5 h-3.5 ${activeTab === 'general' ? 'text-purple-400' : 'text-slate-500'}`} />
             <span>General & BYOK Keys</span>
@@ -452,9 +448,8 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('team')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${
-              activeTab === 'team' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition cursor-pointer shrink-0 ${activeTab === 'team' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
           >
             <Users className={`w-3.5 h-3.5 ${activeTab === 'team' ? 'text-emerald-400' : 'text-slate-500'}`} />
             <span>Team & Permissions</span>

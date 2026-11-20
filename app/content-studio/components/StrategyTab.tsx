@@ -272,16 +272,16 @@ export default function StrategyTab({ brandId, brand, onRefreshOverview, onNavig
       isCompleted: Boolean(channelRoadmap && channelRoadmap.length > 0)
     },
     {
-      step: 7,
-      title: 'Marketing Roadmap',
-      description: 'Quarterly priorities and initiatives.',
-      icon: Calendar,
+      step: 8,
+      title: 'Review & Approval',
+      description: 'Final review and executive strategy sign-off.',
+      icon: ShieldCheck,
       color: {
         bg: 'bg-[#EFF6FF]',
         border: 'border-[#BFDBFE]/70',
         text: 'text-[#0284C7]'
       },
-      isCompleted: Boolean(strategy?.roadmap && strategy.roadmap !== '[]')
+      isCompleted: Boolean(strategy?.status === 'APPROVED' || strategy?.approvedAt)
     }
   ];
 

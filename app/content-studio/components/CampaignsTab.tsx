@@ -224,7 +224,9 @@ export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerDat
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-base text-slate-900 line-clamp-1">{camp.name}</h3>
+                  <h3 className="font-bold text-base text-slate-900 line-clamp-1">
+                    {(camp.name || 'Campaign').replace(/_/g, ' ')}
+                  </h3>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                     {camp.description || 'Campaign sprint deliverables and key messaging.'}
                   </p>
@@ -283,10 +285,17 @@ export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerDat
                   {(onNavigateTab || onLoadComposerData) && (
                     <button
                       onClick={() => {
+                        const cleanCampName = (camp.name || 'Campaign').replace(/_/g, ' ').trim();
+                        const cleanAudience = camp.targetAudience
+                          ? (camp.targetAudience.toLowerCase().startsWith('target')
+                              ? camp.targetAudience
+                              : `Targeting ${camp.targetAudience}`)
+                          : 'Brand growth';
+
                         if (onLoadComposerData) {
                           onLoadComposerData({
-                            title: `[${camp.name}] Campaign Drop`,
-                            caption: `🚀 ${camp.name}: ${camp.coreMessage || camp.description || 'Campaign update'}\n\nKey Focus: ${camp.targetAudience ? `Targeting ${camp.targetAudience}` : 'Brand growth'}\n\n#${(camp.name || 'Campaign').replace(/[^a-zA-Z0-9]/g, '')} #CampaignLaunch`,
+                            title: `[${cleanCampName}] Campaign Drop`,
+                            caption: `🚀 ${cleanCampName}: ${camp.coreMessage || camp.description || 'Campaign update'}\n\nKey Focus: ${cleanAudience}\n\n#${cleanCampName.replace(/[^a-zA-Z0-9]/g, '')} #CampaignLaunch`,
                             format: 'POST'
                           });
                         } else if (onNavigateTab) {

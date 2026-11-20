@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Sparkles,
   Calendar,
@@ -44,7 +44,8 @@ import {
   Layers,
   FileText,
   RotateCcw,
-  Zap
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { Facebook, Instagram, LinkedIn } from '../../../components/Icons';
 
@@ -81,6 +82,7 @@ export interface PostsContentTabProps {
   setStatusMessage?: (msg: any) => void;
   onNavigateTab?: (tabId: string) => void;
   onResetComposer?: () => void;
+  onSubmitForApproval?: () => Promise<any> | void;
 }
 
 export default function PostsContentTab({
@@ -107,6 +109,7 @@ export default function PostsContentTab({
   onSaveDraft,
   onScheduleDrop,
   onPublishNow,
+  onSubmitForApproval,
   onGenerateAi,
   onGenerateAiImage,
   onGenerateAiVideo,
@@ -278,6 +281,38 @@ export default function PostsContentTab({
       }
     } catch (err: any) {
       const errNotice = { type: 'error' as const, text: err?.message || 'Failed to schedule drop.' };
+      setComposerNotice(errNotice);
+      if (setStatusMessage) {
+        setStatusMessage(errNotice);
+      }
+    }
+  };
+
+  const handleSubmitApprovalClick = async () => {
+    try {
+      const inProgNotice = {
+        type: 'info' as const,
+        text: 'Submitting post draft to Approvals Queue for Client Review...'
+      };
+      setComposerNotice(inProgNotice);
+      if (setStatusMessage) {
+        setStatusMessage(inProgNotice);
+      }
+
+      if (onSubmitForApproval) {
+        await onSubmitForApproval();
+      }
+
+      const notice = {
+        type: 'success' as const,
+        text: 'Post draft successfully submitted to Approvals Queue for Client Review!'
+      };
+      setComposerNotice(notice);
+      if (setStatusMessage) {
+        setStatusMessage(notice);
+      }
+    } catch (err: any) {
+      const errNotice = { type: 'error' as const, text: err?.message || 'Failed to submit for approval.' };
       setComposerNotice(errNotice);
       if (setStatusMessage) {
         setStatusMessage(errNotice);
@@ -466,61 +501,35 @@ export default function PostsContentTab({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // 4 Crafted Post Variants (Pre-populated so it matches the screenshot immediately)
-  const defaultVariants = [
-    {
-      copy: `Thinking about a career move in 2026?
+  // 4 Crafted Post Variants dynamically aligned to the active post concept
+  const defaultVariants = useMemo(() => {
+    const topic = caption || rawIdea || 'Enterprise AI Solutions & Automated Workflows';
+    const firstLine = topic.split('\n')[0].replace(/^#+\s*/, '').trim() || 'Transform your digital presence';
+    const tags = hashtags && hashtags.length > 0 ? hashtags : ['#Leadership', '#Innovation', '#Strategy'];
 
-It's not just about a new job. It's about higher impact, a better role, and long-term growth.
-
-Here are 3 practical steps to plan your next career move:
-✅ Assess your current career value
-✅ Build the right skills and body of work
-✅ Create a focused and visible value story ...`,
-      hashtags: ['#CareerGrowth', '#CareerMove', '#ProfessionalDevelopment'],
-      cta: 'Learn More'
-    },
-    {
-      copy: `Career progression in 2026 is no longer linear—it is strategic leverage.
-
-Most professionals wait for the right role to appear. Top performers build high market gravity so premium opportunities seek them out.
-
-3 strategic pillars to execute right now:
-1. Double down on domain depth + AI automation leverage
-2. Build observable public proof of work
-3. Cultivate high-trust sponsor relationships across the industry
-
-Which pillar are you strengthening first?`,
-      hashtags: ['#Leadership', '#CareerStrategy', '#FutureOfWork'],
-      cta: 'Share Your Thoughts'
-    },
-    {
-      copy: `By late 2026, over 70% of senior organizational roles will require cross-functional systems thinking and high execution velocity.
-
-If you are planning your next executive transition:
-• Audit your market value every quarter, not every 3 years
-• Move from answering tickets to owning business outcomes
-• Package your wins into clear, quantifiable case studies
-
-Your trajectory is defined by the scale of problems you solve.`,
-      hashtags: ['#CareerAdvice', '#ExecutiveGrowth', '#TechLeadership'],
-      cta: 'Read Full Guide'
-    },
-    {
-      copy: `The most common career regret top leaders share in hindsight?
-
-Waiting until they felt "100% ready" before stepping into high-impact rooms.
-
-Preparation isn't about eliminating fear—it's about building repeatable momentum:
-✨ Your hard skills are directly transferable
-✨ Your unique domain perspective is an unfair advantage
-✨ Your next milestone begins with one intentional conversation
-
-Take the first step today.`,
-      hashtags: ['#Motivation', '#PersonalGrowth', '#CareerDevelopment'],
-      cta: 'Join the Discussion'
-    }
-  ];
+    return [
+      {
+        copy: caption || `${firstLine}\n\nIt's not just about incremental improvements. It's about higher impact, strategic clarity, and sustainable long-term scale.\n\nHere are 3 practical steps to take action today:\n✅ Focus on high-leverage bottlenecks\n✅ Establish observable, verified proof of work\n✅ Build repeatable momentum with cross-functional alignment.\n\nWhat is your team's highest priority right now?`,
+        hashtags: tags,
+        cta: 'Learn More'
+      },
+      {
+        copy: `Strategic leverage in ${new Date().getFullYear()} is no longer linear—it is compound velocity.\n\n${firstLine}\n\n3 core execution pillars:\n1. Double down on domain depth + AI automation leverage\n2. Package customer wins into quantifiable proof\n3. Protect high-velocity shipping culture across the organization\n\nWhich pillar are you executing first?`,
+        hashtags: tags,
+        cta: 'Share Your Thoughts'
+      },
+      {
+        copy: `By late ${new Date().getFullYear()}, the benchmark for high-performing teams will be speed of execution and clarity of vision.\n\nKey takeaways from our work on ${firstLine.toLowerCase()}:\n• Audit your highest-friction workflows every month\n• Move from answering inquiries to owning complete business outcomes\n• Quantify every milestone with observable data\n\nYour momentum is defined by the quality of decisions you make today.`,
+        hashtags: tags,
+        cta: 'Read Full Guide'
+      },
+      {
+        copy: `The most common mistake high-growth organizations make in hindsight?\n\nWaiting until they feel "100% ready" before stepping into new market opportunities.\n\n${firstLine}\n\nExecution mindset for this week:\n✨ Your core competencies are directly transferable\n✨ Your perspective is an unfair competitive edge\n✨ The next milestone begins with one intentional move\n\nTake the first step today.`,
+        hashtags: tags,
+        cta: 'Join the Discussion'
+      }
+    ];
+  }, [caption, rawIdea, hashtags]);
 
   // Filter hashtags that are not already written in caption (Bug 10/11)
   const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
@@ -909,6 +918,16 @@ Take the first step today.`,
                 <ArrowRight className="w-3 h-3" />
               </button>
             )}
+            {((composerNotice || statusMessage)?.text?.includes('Approvals') || (composerNotice || statusMessage)?.text?.includes('Approval')) && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab ? onNavigateTab('approvals') : (window.location.href = '/content-studio?tab=approvals')}
+                className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+              >
+                <span>View Approvals</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -1253,6 +1272,17 @@ Take the first step today.`,
             >
               Save Draft Only
             </button>
+            {onSubmitForApproval && (
+              <button
+                type="button"
+                onClick={handleSubmitApprovalClick}
+                disabled={submitting}
+                className="px-5 py-2.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Submit for Client Approval</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
