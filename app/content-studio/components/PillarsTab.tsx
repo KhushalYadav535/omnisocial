@@ -25,7 +25,7 @@ interface PillarsTabProps {
 
 export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabProps) {
   const [pillars, setPillars] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -172,7 +172,7 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
               Level 2: Content Planning
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              {pillars.length} Active Pillars
+              {isLoading ? 'Loading pillars...' : `${pillars.length} Active Pillars`}
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Content Pillars & Distribution Mixer</h2>
@@ -221,7 +221,7 @@ export default function PillarsTab({ brandId, onRefreshOverview }: PillarsTabPro
           </div>
           <div className="flex items-center space-x-3">
             <span className={`font-mono text-xs font-bold ${totalPercentage === 100 ? 'text-emerald-600' : totalPercentage > 100 ? 'text-rose-600' : 'text-amber-600'}`}>
-              Total: {totalPercentage}% {totalPercentage === 100 ? '✓ Balanced' : totalPercentage > 100 ? '⚠️ Exceeds 100%' : '(Target: 100%)'}
+              Total: {isLoading ? '…' : `${totalPercentage}% ${totalPercentage === 100 ? '✓ Balanced' : totalPercentage > 100 ? '⚠️ Exceeds 100%' : '(Target: 100%)'}`}
             </span>
             {totalPercentage !== 100 && pillars.length > 0 && (
               <button

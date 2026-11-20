@@ -28,7 +28,7 @@ interface CampaignsTabProps {
 
 export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerData, onRefreshOverview }: CampaignsTabProps) {
   const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -158,7 +158,7 @@ export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerDat
               Level 2: Campaigns
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              {campaigns.length} Total Campaigns
+              {isLoading ? 'Loading campaigns...' : `${campaigns.length} Total Campaigns`}
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Campaign Sprints & Roadmaps</h2>
@@ -228,14 +228,14 @@ export default function CampaignsTab({ brandId, onNavigateTab, onLoadComposerDat
                     {(camp.name || 'Campaign').replace(/_/g, ' ')}
                   </h3>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                    {camp.description || 'Campaign sprint deliverables and key messaging.'}
+                    {camp.description ? camp.description.replace(/_/g, ' ') : 'Campaign sprint deliverables and key messaging.'}
                   </p>
                 </div>
 
                 {camp.coreMessage && (
                   <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-xs">
                     <span className="font-bold text-slate-700 block mb-0.5">Core Message:</span>
-                    <span className="text-slate-600 italic">"{camp.coreMessage}"</span>
+                    <span className="text-slate-600 italic">"{camp.coreMessage.replace(/_/g, ' ')}"</span>
                   </div>
                 )}
 

@@ -1086,7 +1086,7 @@ function cleanMediaUrl(raw: any): string {
       // Safety Gate 2: Human-in-the-loop Governance confirmation if unapproved
       if (!bypassGate && !isPublishGateConfirmed) {
         setShowUnapprovedPublishModal(true);
-        return;
+        return { gated: true };
       }
     }
 
@@ -1094,7 +1094,7 @@ function cleanMediaUrl(raw: any): string {
     if (isExplicitSchedule && !isDraftOnly && approvalStatusOverride !== 'PENDING') {
       if (!bypassGate && !isPublishGateConfirmed) {
         setShowUnapprovedPublishModal(true);
-        return;
+        return { gated: true };
       }
     }
 
@@ -1202,11 +1202,48 @@ function cleanMediaUrl(raw: any): string {
         }
       }
 
-      if (approvalStatusOverride === 'PENDING' && !isExplicitSchedule) {
-        setStatusMessage({ type: 'success', text: 'Post draft successfully submitted to Approvals Queue for Client Review!' });
+      if (approvalStatusOverride === 'PENDING') {
+        const targetDate = scheduledFor ? (() => {
+          try {
+            const d = new Date(scheduledFor);
+            return isNaN(d.getTime()) ? scheduledFor : d.toLocaleDateString([], {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
+            }) + ' at ' + d.toLocaleTimeString([], {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+          } catch {
+            return scheduledFor;
+          }
+        })() : '';
+
+        const successMsg = {
+          type: 'success' as const,
+          text: targetDate
+            ? `Post draft successfully submitted to Approvals Queue with planned schedule (${targetDate}) for Client Review!`
+            : 'Post draft successfully submitted to Approvals Queue for Client Review!'
+        };
+        setStatusMessage(successMsg);
         setActiveDraftId(null);
+        setIsPublishGateConfirmed(false);
+        setTitle('');
+        setCaption('');
+        setRawIdea('');
+        setHashtags([]);
+        setMediaUrl('');
+        setScheduledFor('');
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem('omnisocial_composer_session_draft');
+            localStorage.removeItem('omnisocial_composer_draft');
+            localStorage.removeItem('omnisocial_platform_captions');
+          } catch {}
+        }
         fetchOverview();
-        return;
+        return { success: true, mode: 'PENDING', notice: successMsg };
       }
 
       if (immediatePublish && selectedAccountIds.length > 0) {

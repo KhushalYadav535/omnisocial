@@ -2490,11 +2490,11 @@ export default function CalendarPage() {
               <span>Platform:</span>
             </span>
             {[
-              { id: 'ALL', label: 'All Channels', count: events.length },
-              { id: 'INSTAGRAM', label: 'Instagram', count: events.filter(e => e.platform?.toUpperCase() === 'INSTAGRAM').length },
-              { id: 'LINKEDIN', label: 'LinkedIn', count: events.filter(e => e.platform?.toUpperCase() === 'LINKEDIN').length },
-              { id: 'FACEBOOK', label: 'Facebook', count: events.filter(e => e.platform?.toUpperCase() === 'FACEBOOK').length },
-              { id: 'TWITTER', label: 'Twitter / X', count: events.filter(e => e.platform?.toUpperCase() === 'TWITTER').length }
+              { id: 'ALL', label: 'All Channels', count: loading ? '…' : events.length },
+              { id: 'INSTAGRAM', label: 'Instagram', count: loading ? '…' : events.filter(e => e.platform?.toUpperCase() === 'INSTAGRAM').length },
+              { id: 'LINKEDIN', label: 'LinkedIn', count: loading ? '…' : events.filter(e => e.platform?.toUpperCase() === 'LINKEDIN').length },
+              { id: 'FACEBOOK', label: 'Facebook', count: loading ? '…' : events.filter(e => e.platform?.toUpperCase() === 'FACEBOOK').length },
+              { id: 'TWITTER', label: 'Twitter / X', count: loading ? '…' : events.filter(e => e.platform?.toUpperCase() === 'TWITTER').length }
             ].map(p => (
               <button
                 key={p.id}
@@ -3205,7 +3205,7 @@ export default function CalendarPage() {
                   <span>Live Pipeline</span>
                 </h3>
                 <span className="text-[10px] font-bold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full font-mono">
-                  {filteredEvents.filter(e => e.status === 'QUEUED' && new Date(e.scheduledFor).getTime() >= Date.now()).length} Queued
+                  {loading ? '…' : `${filteredEvents.filter(e => e.status === 'QUEUED' && new Date(e.scheduledFor).getTime() >= Date.now()).length} Queued`}
                 </span>
               </div>
 
@@ -3827,17 +3827,28 @@ export default function CalendarPage() {
                                 </p>
                               </div>
                             </div>
-                            {selectedEvent.postUrl && (
-                              <a
-                                href={selectedEvent.postUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs font-bold text-emerald-900 underline flex items-center space-x-1 shrink-0 ml-2"
-                              >
-                                <span>View Live</span>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
+                            {(() => {
+                              const liveUrl = selectedEvent.postUrl || selectedEvent.platformPostUrl || (selectedEvent.platformPostId ? (
+                                selectedEvent.platform?.toUpperCase() === 'LINKEDIN' ? `https://www.linkedin.com/feed/update/${selectedEvent.platformPostId}` :
+                                selectedEvent.platform?.toUpperCase() === 'INSTAGRAM' ? `https://www.instagram.com/p/${selectedEvent.platformPostId}` :
+                                `https://www.facebook.com/${selectedEvent.platformPostId}`
+                              ) : null) || (
+                                selectedEvent.platform?.toUpperCase() === 'LINKEDIN' ? 'https://www.linkedin.com/company/apexdigital' :
+                                selectedEvent.platform?.toUpperCase() === 'INSTAGRAM' ? 'https://www.instagram.com/apexdigital' :
+                                'https://www.facebook.com/apexdigital'
+                              );
+                              return (
+                                <a
+                                  href={liveUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs font-bold text-emerald-900 underline flex items-center space-x-1 shrink-0 ml-2 hover:text-emerald-700"
+                                >
+                                  <span>View Live</span>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}

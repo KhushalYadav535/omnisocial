@@ -36,12 +36,12 @@ export default function IdeasRequestsTab({
 
   // Ideas state
   const [ideas, setIdeas] = useState<any[]>([]);
-  const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
+  const [isLoadingIdeas, setIsLoadingIdeas] = useState(true);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
 
   // Requests state
   const [requests, setRequests] = useState<any[]>([]);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -229,13 +229,13 @@ export default function IdeasRequestsTab({
                 onClick={() => setSubView('ideas')}
                 className={`px-3 py-1 rounded-md transition ${subView === 'ideas' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}`}
               >
-                Idea Bank ({ideas.length})
+                Idea Bank ({isLoadingIdeas ? '…' : ideas.length})
               </button>
               <button
                 onClick={() => setSubView('requests')}
                 className={`px-3 py-1 rounded-md transition ${subView === 'requests' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-900'}`}
               >
-                Content Requests ({requests.length})
+                Content Requests ({isLoadingRequests ? '…' : requests.length})
               </button>
             </div>
           </div>

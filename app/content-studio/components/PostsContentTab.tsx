@@ -85,33 +85,62 @@ export interface PostsContentTabProps {
   onSubmitForApproval?: () => Promise<any> | void;
 }
 
+export interface PostVariantItem {
+  copy: string;
+  hashtags: string[];
+  cta: string;
+  angleLabel: string;
+  style: 'Storytelling' | 'Framework / Listicle' | 'Insight / Advice' | 'Question / Discussion';
+}
+
+function extractDynamicTags(text: string): string[] {
+  const words = (text || '')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 4 && !/^(this|that|with|from|have|what|your|here|about|just|more|into|some|them|they|when|where|will|make|take|been|over|were|their|there|which|always)/i.test(w))
+    .map(w => '#' + w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const unique = Array.from(new Set(words)).slice(0, 4);
+  return unique.length >= 2 ? unique : ['#Trending', '#Community', '#Spotlight'];
+}
+
 function generateVariantsForConcept(
   concept: string,
   activeCopy: string,
   tags: string[]
-): Array<{ copy: string; hashtags: string[]; cta: string }> {
-  const cleanTopic = (concept || 'Enterprise Growth & AI Solutions').split('\n')[0].replace(/^#+\s*/, '').trim() || 'Transform your digital presence';
-  const baseTags = tags && tags.length > 0 ? tags : ['#Innovation', '#Strategy', '#Leadership'];
+): PostVariantItem[] {
+  const rawClean = (concept || 'Quality Craftsmanship & Community Excellence').replace(/^#+\s*/, '').trim();
+  const lines = rawClean.split('\n').map(l => l.trim()).filter(Boolean);
+  const cleanTopic = lines[0] || 'Quality Craftsmanship & Community Excellence';
+  const details = lines.slice(1).join('\n');
+  const dynamicTags = tags && tags.length > 0 ? tags : extractDynamicTags(rawClean);
 
   return [
     {
-      copy: activeCopy || `${cleanTopic}\n\nIt's not just about incremental improvements. It's about higher impact, strategic clarity, and sustainable long-term scale.\n\nHere are 3 practical steps to take action today:\n✅ Focus on high-leverage bottlenecks\n✅ Establish observable, verified proof of work\n✅ Build repeatable momentum with cross-functional alignment.\n\nWhat is your team's highest priority right now?`,
-      hashtags: baseTags,
+      angleLabel: 'Direct Hook & Story',
+      style: 'Storytelling',
+      copy: activeCopy || `${cleanTopic}\n\n${details ? details + '\n\n' : ''}Here is why this matters to our community:\n✨ Fresh, intentional quality in every single batch\n✨ Sourced responsibly with genuine care and dedication\n✨ An experience designed to connect and delight\n\nHave you tried this yet? Drop a comment below!`,
+      hashtags: dynamicTags,
       cta: 'Learn More'
     },
     {
-      copy: `Here is a high-impact execution framework for ${cleanTopic.toLowerCase()}:\n\n1. Double down on core domain depth and automated leverage\n2. Package customer milestones into quantifiable proof\n3. Protect high-velocity shipping culture across every team\n\nWhich of these 3 areas is your primary focus this week?`,
-      hashtags: baseTags,
+      angleLabel: 'Actionable Breakdown',
+      style: 'Framework / Listicle',
+      copy: `A quick breakdown of ${cleanTopic.toLowerCase()}:\n\n1. 🌟 The Foundation: Focus on what creates genuine delight and authentic substance\n2. 💡 The Method: Build repeatable habits and never cut corners on craft\n3. ❤️ The Difference: You can immediately feel the dedication in the final result\n\nWhich of these points matters most to you?`,
+      hashtags: dynamicTags,
       cta: 'Share Your Thoughts'
     },
     {
-      copy: `The benchmark for high-performing teams isn't just activity—it's clarity of vision and speed of execution.\n\nKey takeaways from our work on ${cleanTopic.toLowerCase()}:\n• Audit your highest-friction workflows regularly\n• Move from answering inquiries to owning complete business outcomes\n• Quantify every milestone with observable data\n\nSustainable momentum compounds when strategy and daily execution stay aligned.`,
-      hashtags: baseTags,
-      cta: 'Read Full Guide'
+      angleLabel: 'Behind-The-Scenes Craft',
+      style: 'Insight / Advice',
+      copy: `Behind the scenes of ${cleanTopic.toLowerCase()}:\n\nGreat results don't happen by accident. It starts with showing up early, respecting the process, and putting genuine heart into every detail.\n\n• The secret ingredient is showing up with consistency every single day\n• Small details add up to create an unforgettable experience\n• Seeing the smile and trust from our community makes all the hard work worthwhile\n\nThank you for being on this journey with us!`,
+      hashtags: dynamicTags,
+      cta: 'Read Full Story'
     },
     {
-      copy: `Most teams overcomplicate ${cleanTopic.toLowerCase()} by waiting until conditions feel "100% perfect".\n\nExecution mindset for this month:\n✨ Your core competencies are directly transferable\n✨ Your unique perspective is an unfair competitive edge\n✨ The next milestone begins with one intentional move\n\nWhat has been your experience with this? Share your perspective below.`,
-      hashtags: baseTags,
+      angleLabel: 'Community Discussion',
+      style: 'Question / Discussion',
+      copy: `Quick question for our community:\n\nWhen you think about ${cleanTopic.toLowerCase()}, what is the one thing that instantly wins your trust?\n\nFor us, it has always been unwavering consistency, authentic care, and listening to our people.\n\nTell us your favorite pick or share your thoughts below! 👇`,
+      hashtags: dynamicTags,
       cta: 'Join the Discussion'
     }
   ];
@@ -298,8 +327,13 @@ export default function PostsContentTab({
         setStatusMessage(inProgNotice);
       }
 
-      const fallbackText = `🎉 Successfully scheduled drop(s) for ${formattedDate}! Promoted from Draft to Content Calendar.`;
       const res: any = onScheduleDrop ? await onScheduleDrop() : null;
+      if (res?.gated) {
+        // Human-in-the-loop Governance Gate is active! Modal is open, so clear in-progress banner and keep scheduledFor intact
+        setComposerNotice(null);
+        return;
+      }
+      const fallbackText = `🎉 Successfully scheduled drop(s) for ${formattedDate}! Promoted from Draft to Content Calendar.`;
       const noticeText = res?.notice?.text || fallbackText;
       setScheduledFor('');
       setActiveStep(1);
@@ -508,7 +542,7 @@ export default function PostsContentTab({
   const hasValidMedia = !!mediaUrl && mediaUrl !== '[]' && mediaUrl !== '{}' && (mediaUrl.startsWith('http') || mediaUrl.startsWith('data:') || mediaUrl.startsWith('/'));
 
   // 4 Post Variants stored in dedicated state (prevents previous-navigation desync)
-  const [variantsBank, setVariantsBank] = useState<Array<{ copy: string; hashtags: string[]; cta: string }>>(() => {
+  const [variantsBank, setVariantsBank] = useState<PostVariantItem[]>(() => {
     return generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
   });
   const lastBriefKeyRef = useRef<string>(rawIdea || (caption ? caption.slice(0, 40) : ''));
@@ -517,7 +551,14 @@ export default function PostsContentTab({
     const briefKey = rawIdea || (caption ? caption.slice(0, 40) : '');
     if (briefKey && briefKey !== lastBriefKeyRef.current) {
       lastBriefKeyRef.current = briefKey;
-      setVariantsBank(generateVariantsForConcept(briefKey, caption, hashtags));
+      const newBank = generateVariantsForConcept(briefKey, caption, hashtags);
+      setVariantsBank(newBank);
+      if (newBank[variantIndex]?.hashtags && (!hashtags || hashtags.length === 0)) {
+        setHashtags(newBank[variantIndex].hashtags);
+      }
+      if (newBank[variantIndex]?.style) {
+        setStyle(newBank[variantIndex].style as any);
+      }
     }
   }, [rawIdea]);
 
@@ -565,6 +606,9 @@ export default function PostsContentTab({
     }
     if (updated[nextIdx].cta) {
       setSelectedCta(updated[nextIdx].cta);
+    }
+    if (updated[nextIdx].style) {
+      setStyle(updated[nextIdx].style as any);
     }
   };
 
@@ -1438,6 +1482,9 @@ export default function PostsContentTab({
                 <div className="flex items-center space-x-2 text-xs text-slate-600">
                   <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border text-emerald-700 bg-emerald-50 border-emerald-200">
                     ★ Virality: {liveVirality.score}/100 • Grade {liveVirality.grade}
+                  </span>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+                    Angle: {variantsBank[variantIndex]?.angleLabel || 'Direct Hook & Story'}
                   </span>
                   <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200/80 rounded-lg px-1 py-0.5">
                     <button

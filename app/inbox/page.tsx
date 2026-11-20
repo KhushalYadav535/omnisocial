@@ -634,7 +634,7 @@ function InboxContent() {
                   {typeFilter === 'COMMENT' ? 'Post Discussion Threads' : 'Conversation Threads'}
                 </span>
                 <span className="text-[11px] font-semibold text-neutral-600 bg-neutral-200/70 px-2.5 py-0.2 rounded-full">
-                  {conversationThreads.length}
+                  {loading ? '…' : conversationThreads.length}
                 </span>
               </div>
               <span className="text-[10px] text-neutral-400 font-mono">
