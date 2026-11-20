@@ -1090,6 +1090,14 @@ function cleanMediaUrl(raw: any): string {
       }
     }
 
+    // Safety Gate 2B: Human-in-the-loop Governance for scheduled drops
+    if (isExplicitSchedule && !isDraftOnly && approvalStatusOverride !== 'PENDING') {
+      if (!bypassGate && !isPublishGateConfirmed) {
+        setShowUnapprovedPublishModal(true);
+        return;
+      }
+    }
+
     setSubmitting(true);
     setPublishedUrl(null);
     setPublishedPosts([]);
@@ -1810,7 +1818,9 @@ function cleanMediaUrl(raw: any): string {
                   This post has not yet received client or internal stakeholder sign-off in the Approvals queue.
                 </p>
                 <p className="text-amber-800 text-[11px]">
-                  Publishing unapproved content directly to live social channels bypasses client audit controls.
+                  {scheduledFor
+                    ? 'Scheduling or deploying unapproved content bypasses client audit controls.'
+                    : 'Publishing unapproved content directly to live social channels bypasses client audit controls.'}
                 </p>
               </div>
 
@@ -1830,11 +1840,15 @@ function cleanMediaUrl(raw: any): string {
                   onClick={async () => {
                     setShowUnapprovedPublishModal(false);
                     setIsPublishGateConfirmed(true);
-                    await handleSavePost(true, true);
+                    if (scheduledFor) {
+                      await handleSavePost(false, true, 'APPROVED', false, true);
+                    } else {
+                      await handleSavePost(true, true);
+                    }
                   }}
                   className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
                 >
-                  Bypass Gate &amp; Publish Now
+                  {scheduledFor ? 'Bypass Gate & Schedule Drop' : 'Bypass Gate & Publish Now'}
                 </button>
               </div>
             </div>

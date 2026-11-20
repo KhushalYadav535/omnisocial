@@ -34,6 +34,36 @@ export default function OutcomePromptBar({
     }
   }, []);
 
+  // Universal target workspace resolver for execution results
+  const getDestinationTab = () => {
+    if (!executionResult) return 'overview';
+    const skill = (executionResult.skillId || executionResult.plan?.primarySkill || '').toLowerCase();
+    if (skill.includes('strategy')) return 'strategy';
+    if (skill.includes('pillar')) return 'pillars';
+    if (skill.includes('campaign')) return 'campaigns';
+    if (skill.includes('idea')) return 'ideas';
+    if (skill.includes('carousel') || skill.includes('post') || skill.includes('copy')) return 'composer';
+    if (skill.includes('launchpad')) return 'launchpad';
+    if (executionResult.output?.positioning) return 'strategy';
+    if (Array.isArray(executionResult.output?.pillars)) return 'pillars';
+    if (Array.isArray(executionResult.output?.ideas)) return 'ideas';
+    if (executionResult.output?.caption) return 'composer';
+    return 'overview';
+  };
+
+  const getWorkspaceLabel = () => {
+    const tab = getDestinationTab();
+    switch (tab) {
+      case 'strategy': return 'Strategy Workspace';
+      case 'pillars': return 'Pillars Workspace';
+      case 'campaigns': return 'Campaigns Workspace';
+      case 'ideas': return 'Ideas Workspace';
+      case 'composer': return 'Post Composer';
+      case 'launchpad': return 'Launchpad Wizard';
+      default: return 'Workspace';
+    }
+  };
+
   useEffect(() => {
     if (errorMsg) {
       const t = setTimeout(() => setErrorMsg(null), 6000);
@@ -177,9 +207,28 @@ export default function OutcomePromptBar({
               </span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-[11px] text-neutral-400 font-mono">
+              <span className="text-[11px] text-neutral-400 font-mono hidden sm:inline">
                 ID: {executionResult.executionId?.slice(0, 8)}...
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const dest = getDestinationTab();
+                  if (dest === 'composer' && onLoadIntoComposer && (executionResult.output?.caption || executionResult.output?.hook)) {
+                    onLoadIntoComposer({
+                      caption: executionResult.output.caption || executionResult.output.hook,
+                      title: executionResult.output.title || 'AI Generated Post',
+                      hashtags: executionResult.output.hashtags || []
+                    });
+                  } else {
+                    onNavigateTab(dest);
+                  }
+                }}
+                className="px-2.5 py-1 text-[11px] font-bold text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg transition flex items-center space-x-1 shadow-2xs cursor-pointer"
+              >
+                <span>Open in {getWorkspaceLabel()}</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -295,7 +344,7 @@ export default function OutcomePromptBar({
                       onClick={() => onNavigateTab('ideas')}
                       className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center space-x-1 cursor-pointer"
                     >
-                      <span>Open Content Library</span>
+                      <span>Open in Ideas Workspace</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>

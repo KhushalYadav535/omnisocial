@@ -2437,7 +2437,7 @@ export default function CalendarPage() {
                 </span>
               </div>
               <span className="font-mono text-xs font-bold text-neutral-600">
-                {filteredEvents.length} Total Calendar Drops ({filteredEvents.filter((e: any) => e.status === 'QUEUED').length} Queued • {filteredEvents.filter((e: any) => e.status === 'PUBLISHED').length} Published{filteredEvents.filter((e: any) => e.status === 'MISSED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'MISSED').length} Missed` : ''}{filteredEvents.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})
+                {loading ? 'Loading Calendar Drops...' : `${filteredEvents.length} Total Calendar Drops (${filteredEvents.filter((e: any) => e.status === 'QUEUED').length} Queued • ${filteredEvents.filter((e: any) => e.status === 'PUBLISHED').length} Published${filteredEvents.filter((e: any) => e.status === 'MISSED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'MISSED').length} Missed` : ''}${filteredEvents.filter((e: any) => e.status === 'FAILED').length > 0 ? ` • ${filteredEvents.filter((e: any) => e.status === 'FAILED').length} Failed` : ''})`}
               </span>
             </div>
           </div>
@@ -3811,6 +3811,36 @@ export default function CalendarPage() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Publication Status Banner (If Published) */}
+                      {(selectedEvent.status === 'PUBLISHED' || selectedEvent.status === 'PUBLISHING') && (
+                        <div className="pt-2 border-t border-neutral-100">
+                          <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl flex items-center justify-between">
+                            <div className="flex items-center space-x-2.5 text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <div>
+                                <span className="font-bold text-emerald-950 block">
+                                  Published: {new Date(selectedEvent.publishedAt || selectedEvent.scheduledFor || selectedEvent.createdAt).toLocaleString()}
+                                </span>
+                                <p className="text-[11px] text-emerald-800">
+                                  Live drop successfully delivered to connected social channels.
+                                </p>
+                              </div>
+                            </div>
+                            {selectedEvent.postUrl && (
+                              <a
+                                href={selectedEvent.postUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-bold text-emerald-900 underline flex items-center space-x-1 shrink-0 ml-2"
+                              >
+                                <span>View Live</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Reschedule Picker & AI Smart Slots */}
                       {selectedEvent.status !== 'PUBLISHED' && selectedEvent.status !== 'PUBLISHING' && (

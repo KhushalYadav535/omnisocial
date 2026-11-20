@@ -26,7 +26,7 @@ interface ApprovalsTabProps {
 
 export default function ApprovalsTab({ brandId, onRefreshOverview }: ApprovalsTabProps) {
   const [approvals, setApprovals] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 

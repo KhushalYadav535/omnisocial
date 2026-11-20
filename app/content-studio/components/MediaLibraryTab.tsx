@@ -49,7 +49,7 @@ export default function MediaLibraryTab({
   onRefreshOverview
 }: MediaLibraryTabProps) {
   const [mediaList, setMediaList] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedFormat, setSelectedFormat] = useState<string>('ALL');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -167,7 +167,7 @@ export default function MediaLibraryTab({
               Media Asset Hub
             </span>
             <span className="text-xs font-semibold text-slate-500">
-              {mediaList.length} Assets
+              {isLoading ? '...' : `${mediaList.length} Assets`}
             </span>
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 mt-1">Brand Media Library</h2>
@@ -229,7 +229,7 @@ export default function MediaLibraryTab({
               >
                 <div className="relative aspect-video bg-slate-100 overflow-hidden">
                   {mediaFormat === 'VIDEO' ? (
-                    <video src={mediaSrc} className="w-full h-full object-cover" controls />
+                    <video src={mediaSrc} poster={fallbackImg} preload="metadata" className="w-full h-full object-cover" controls />
                   ) : (
                     <img
                       src={mediaSrc}

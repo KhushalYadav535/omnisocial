@@ -35,7 +35,7 @@ export default function DraftsTab({
   onRefreshOverview
 }: DraftsTabProps) {
   const [drafts, setDrafts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 

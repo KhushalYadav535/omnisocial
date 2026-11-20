@@ -521,7 +521,7 @@ function InboxContent() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   typeFilter === 'COMMENT' ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-800'
                 }`}>
-                  {commentsTotal}
+                  {loading && !commentsTotal ? '…' : commentsTotal}
                 </span>
                 {unreadCommentsTotal > 0 && (
                   <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title={`${unreadCommentsTotal} unread`} />
@@ -544,7 +544,7 @@ function InboxContent() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   typeFilter === 'DIRECT_MESSAGE' ? 'bg-white/20 text-white' : 'bg-neutral-200 text-neutral-800'
                 }`}>
-                  {dmsTotal}
+                  {loading && !dmsTotal ? '…' : dmsTotal}
                 </span>
                 {unreadDmsTotal > 0 && (
                   <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title={`${unreadDmsTotal} unread`} />
@@ -1151,12 +1151,12 @@ function InboxContent() {
           <div className="flex items-center space-x-3 shrink-0">
             <div className="flex items-center space-x-1.5 font-bold text-neutral-900">
               <span className="w-2 h-2 rounded-full bg-indigo-600" />
-              <span>Total: {commentsTotal + dmsTotal} items</span>
+              <span>Total: {loading && !(commentsTotal + dmsTotal) ? '…' : commentsTotal + dmsTotal} items</span>
             </div>
             <span className="text-neutral-300">•</span>
             <div className="flex items-center space-x-1">
               <span className="font-semibold text-neutral-800">Comments:</span>
-              <span className="font-bold">{commentsTotal}</span>
+              <span className="font-bold">{loading && !commentsTotal ? '…' : commentsTotal}</span>
               {unreadCommentsTotal > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px] ml-0.5">
                   {unreadCommentsTotal} new
@@ -1166,7 +1166,7 @@ function InboxContent() {
             <span className="text-neutral-300">•</span>
             <div className="flex items-center space-x-1">
               <span className="font-semibold text-neutral-800">DMs:</span>
-              <span className="font-bold">{dmsTotal}</span>
+              <span className="font-bold">{loading && !dmsTotal ? '…' : dmsTotal}</span>
               {unreadDmsTotal > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px] ml-0.5">
                   {unreadDmsTotal} new

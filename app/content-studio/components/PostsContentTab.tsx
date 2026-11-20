@@ -85,6 +85,38 @@ export interface PostsContentTabProps {
   onSubmitForApproval?: () => Promise<any> | void;
 }
 
+function generateVariantsForConcept(
+  concept: string,
+  activeCopy: string,
+  tags: string[]
+): Array<{ copy: string; hashtags: string[]; cta: string }> {
+  const cleanTopic = (concept || 'Enterprise Growth & AI Solutions').split('\n')[0].replace(/^#+\s*/, '').trim() || 'Transform your digital presence';
+  const baseTags = tags && tags.length > 0 ? tags : ['#Innovation', '#Strategy', '#Leadership'];
+
+  return [
+    {
+      copy: activeCopy || `${cleanTopic}\n\nIt's not just about incremental improvements. It's about higher impact, strategic clarity, and sustainable long-term scale.\n\nHere are 3 practical steps to take action today:\n✅ Focus on high-leverage bottlenecks\n✅ Establish observable, verified proof of work\n✅ Build repeatable momentum with cross-functional alignment.\n\nWhat is your team's highest priority right now?`,
+      hashtags: baseTags,
+      cta: 'Learn More'
+    },
+    {
+      copy: `Here is a high-impact execution framework for ${cleanTopic.toLowerCase()}:\n\n1. Double down on core domain depth and automated leverage\n2. Package customer milestones into quantifiable proof\n3. Protect high-velocity shipping culture across every team\n\nWhich of these 3 areas is your primary focus this week?`,
+      hashtags: baseTags,
+      cta: 'Share Your Thoughts'
+    },
+    {
+      copy: `The benchmark for high-performing teams isn't just activity—it's clarity of vision and speed of execution.\n\nKey takeaways from our work on ${cleanTopic.toLowerCase()}:\n• Audit your highest-friction workflows regularly\n• Move from answering inquiries to owning complete business outcomes\n• Quantify every milestone with observable data\n\nSustainable momentum compounds when strategy and daily execution stay aligned.`,
+      hashtags: baseTags,
+      cta: 'Read Full Guide'
+    },
+    {
+      copy: `Most teams overcomplicate ${cleanTopic.toLowerCase()} by waiting until conditions feel "100% perfect".\n\nExecution mindset for this month:\n✨ Your core competencies are directly transferable\n✨ Your unique perspective is an unfair competitive edge\n✨ The next milestone begins with one intentional move\n\nWhat has been your experience with this? Share your perspective below.`,
+      hashtags: baseTags,
+      cta: 'Join the Discussion'
+    }
+  ];
+}
+
 export default function PostsContentTab({
   activeBrandId,
   setActiveBrandId,
@@ -330,52 +362,51 @@ export default function PostsContentTab({
     const trimmed = (text || '').trim();
     if (!trimmed || trimmed.length < 25) {
       return {
-        score: 22,
+        score: 28,
         grade: 'D',
         badge: 'Low Dwell Time',
         color: 'text-rose-600 bg-rose-50 border-rose-200',
         verdict: 'Caption is too short to generate feed dwell-time or algorithmic reach.'
       };
     }
-    if (trimmed.length < 80) {
+    if (trimmed.length < 60) {
       return {
-        score: 54,
+        score: 60,
         grade: 'C',
-        badge: 'Needs Hook & Spacing',
+        badge: 'Needs Spacing',
         color: 'text-amber-600 bg-amber-50 border-amber-200',
-        verdict: 'Good start. Add paragraph spacing, bullet points and a concluding question.'
+        verdict: 'Good start. Add line breaks, bullet points and a concluding question.'
       };
     }
-    if (trimmed.length < 180) {
-      return {
-        score: 76,
-        grade: 'B',
-        badge: 'Good Engagement',
-        color: 'text-blue-600 bg-blue-50 border-blue-200',
-        verdict: 'Solid post structure with clear value proposition and readability.'
-      };
-    }
-    const hasBullets = text.includes('•') || text.includes('✅') || text.includes('- ') || text.includes('1.');
-    const hasQuestion = text.includes('?');
+    const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
+    const firstLine = lines[0] || '';
+    const hasBullets = trimmed.includes('•') || trimmed.includes('✅') || trimmed.includes('- ') || trimmed.includes('1.') || /[\u{1F300}-\u{1F9FF}✨📌👉💬⚡]/u.test(trimmed);
+    const hasQuestion = trimmed.includes('?');
+    const hasCTA = /(comment|thoughts|share|below|save|link|swipe|what do you think|repost)/i.test(trimmed);
     const hasTags = tags && tags.length > 0;
-    let base = 88;
+    const hasSpacing = lines.length >= 2;
+
+    let base = 84;
     if (hasBullets) base += 3;
-    if (hasQuestion) base += 2;
-    if (hasTags) base += 1;
-    const finalScore = Math.min(base, 94);
+    if (hasQuestion || hasCTA) base += 3;
+    if (hasTags) base += 2;
+    if (hasSpacing) base += 2;
+    if (firstLine.length < 100) base += 2;
+    const finalScore = Math.min(Math.max(base, 80), 95);
+    const calcGrade = finalScore >= 90 ? 'A+' : finalScore >= 80 ? 'A' : 'B';
     return {
       score: finalScore,
-      grade: finalScore >= 90 ? 'A+' : 'A',
-      badge: 'High Virality',
+      grade: calcGrade,
+      badge: finalScore >= 90 ? 'High Virality' : 'Algorithm Ready',
       color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-      verdict: 'Scroll-stopping opening hook, clear whitespace formatting, and proven CTA velocity.'
+      verdict: 'Scroll-stopping opening hook, clear whitespace formatting, and verified algorithmic reach.'
     };
   };
 
   const liveVirality = viralityScore?.score ? {
     score: viralityScore.score,
-    grade: viralityScore.grade || (viralityScore.score >= 90 ? 'A+' : viralityScore.score >= 75 ? 'A' : viralityScore.score >= 50 ? 'C' : 'D'),
-    badge: viralityScore.score >= 80 ? 'High Virality' : viralityScore.score >= 60 ? 'Standard' : 'Low Dwell Time',
+    grade: viralityScore.grade || (viralityScore.score >= 90 ? 'A+' : viralityScore.score >= 80 ? 'A' : viralityScore.score >= 68 ? 'B' : 'C'),
+    badge: viralityScore.score >= 88 ? 'High Virality' : viralityScore.score >= 75 ? 'Algorithm Ready' : 'Needs Optimization',
     color: viralityScore.score >= 80 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-amber-600 bg-amber-50 border-amber-200',
     verdict: viralityScore.verdict || 'Algorithmic engagement benchmark.'
   } : computeLiveVirality(caption, hashtags);
@@ -401,7 +432,7 @@ export default function PostsContentTab({
       try {
         const saved = localStorage.getItem('omnisocial_platform_captions');
         if (saved) return JSON.parse(saved);
-      } catch {}
+      } catch { }
     }
     return {
       LINKEDIN: caption || '',
@@ -431,7 +462,7 @@ export default function PostsContentTab({
             setPlatformCaptions(parsed);
           }
         }
-      } catch {}
+      } catch { }
     }
   }, [caption]);
 
@@ -444,7 +475,7 @@ export default function PostsContentTab({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch {}
+      } catch { }
     }
     setActivePlatform(plat);
     const nextCopy = updated[plat];
@@ -470,14 +501,29 @@ export default function PostsContentTab({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch {}
+      } catch { }
     }
   };
 
   const hasValidMedia = !!mediaUrl && mediaUrl !== '[]' && mediaUrl !== '{}' && (mediaUrl.startsWith('http') || mediaUrl.startsWith('data:') || mediaUrl.startsWith('/'));
 
+  // 4 Post Variants stored in dedicated state (prevents previous-navigation desync)
+  const [variantsBank, setVariantsBank] = useState<Array<{ copy: string; hashtags: string[]; cta: string }>>(() => {
+    return generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
+  });
+  const lastBriefKeyRef = useRef<string>(rawIdea || (caption ? caption.slice(0, 40) : ''));
+
+  useEffect(() => {
+    const briefKey = rawIdea || (caption ? caption.slice(0, 40) : '');
+    if (briefKey && briefKey !== lastBriefKeyRef.current) {
+      lastBriefKeyRef.current = briefKey;
+      setVariantsBank(generateVariantsForConcept(briefKey, caption, hashtags));
+    }
+  }, [rawIdea]);
+
   const handleCaptionChange = (val: string) => {
     setCaption(val);
+    setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, copy: val } : v));
     const updated = {
       ...platformCaptions,
       [activePlatform]: val
@@ -486,7 +532,7 @@ export default function PostsContentTab({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -501,46 +547,25 @@ export default function PostsContentTab({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // 4 Crafted Post Variants dynamically aligned to the active post concept
-  const defaultVariants = useMemo(() => {
-    const topic = caption || rawIdea || 'Enterprise AI Solutions & Automated Workflows';
-    const firstLine = topic.split('\n')[0].replace(/^#+\s*/, '').trim() || 'Transform your digital presence';
-    const tags = hashtags && hashtags.length > 0 ? hashtags : ['#Leadership', '#Innovation', '#Strategy'];
-
-    return [
-      {
-        copy: caption || `${firstLine}\n\nIt's not just about incremental improvements. It's about higher impact, strategic clarity, and sustainable long-term scale.\n\nHere are 3 practical steps to take action today:\n✅ Focus on high-leverage bottlenecks\n✅ Establish observable, verified proof of work\n✅ Build repeatable momentum with cross-functional alignment.\n\nWhat is your team's highest priority right now?`,
-        hashtags: tags,
-        cta: 'Learn More'
-      },
-      {
-        copy: `Strategic leverage in ${new Date().getFullYear()} is no longer linear—it is compound velocity.\n\n${firstLine}\n\n3 core execution pillars:\n1. Double down on domain depth + AI automation leverage\n2. Package customer wins into quantifiable proof\n3. Protect high-velocity shipping culture across the organization\n\nWhich pillar are you executing first?`,
-        hashtags: tags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        copy: `By late ${new Date().getFullYear()}, the benchmark for high-performing teams will be speed of execution and clarity of vision.\n\nKey takeaways from our work on ${firstLine.toLowerCase()}:\n• Audit your highest-friction workflows every month\n• Move from answering inquiries to owning complete business outcomes\n• Quantify every milestone with observable data\n\nYour momentum is defined by the quality of decisions you make today.`,
-        hashtags: tags,
-        cta: 'Read Full Guide'
-      },
-      {
-        copy: `The most common mistake high-growth organizations make in hindsight?\n\nWaiting until they feel "100% ready" before stepping into new market opportunities.\n\n${firstLine}\n\nExecution mindset for this week:\n✨ Your core competencies are directly transferable\n✨ Your perspective is an unfair competitive edge\n✨ The next milestone begins with one intentional move\n\nTake the first step today.`,
-        hashtags: tags,
-        cta: 'Join the Discussion'
-      }
-    ];
-  }, [caption, rawIdea, hashtags]);
-
   // Filter hashtags that are not already written in caption (Bug 10/11)
   const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
 
-  // Sync variant paging
+  // Sync variant paging without state clobbering or label desync
   const handleSelectVariant = (idx: number) => {
-    const nextIdx = (idx + defaultVariants.length) % defaultVariants.length;
+    const bank = variantsBank.length > 0 ? variantsBank : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
+    // Save active caption before switching
+    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption } : v);
+    const total = updated.length;
+    const nextIdx = ((idx % total) + total) % total;
+    setVariantsBank(updated);
     setVariantIndex(nextIdx);
-    setCaption(defaultVariants[nextIdx].copy);
-    setHashtags(defaultVariants[nextIdx].hashtags);
-    setSelectedCta(defaultVariants[nextIdx].cta);
+    setCaption(updated[nextIdx].copy);
+    if (updated[nextIdx].hashtags && updated[nextIdx].hashtags.length > 0) {
+      setHashtags(updated[nextIdx].hashtags);
+    }
+    if (updated[nextIdx].cta) {
+      setSelectedCta(updated[nextIdx].cta);
+    }
   };
 
   // Rewrite post copy using specific angles with backup
@@ -551,19 +576,20 @@ export default function PostsContentTab({
     let revisedCopy = caption;
     if (angle === 'punchier') {
       const lines = caption.split('\n').map(l => l.trim()).filter(Boolean);
-      const firstLine = lines[0] || 'Thinking about a career move in 2026?';
+      const firstLine = lines[0] || 'Accelerate your digital presence';
       const points = lines.slice(1, 4).map(l => l.replace(/^(\d+\.|\*|-|✅|Key:)\s*/i, '').trim()).filter(l => l.length > 5);
-      revisedCopy = `${firstLine.replace(/\?$/, '')} — here is the 2026 short reality:\n\n• ${points[0] || 'Audit current leverage & outcome value'}\n• ${points[1] || 'Compound visible skills and public proof'}\n• ${points[2] || 'Position for authority, not just titles'}\n\nKey: Impact compounds when you act early.`;
+      revisedCopy = `${firstLine.replace(/\?$/, '')} — the concise reality:\n\n• ${points[0] || 'Audit current leverage & outcome value'}\n• ${points[1] || 'Compound visible skills and public proof'}\n• ${points[2] || 'Position for authority, not just volume'}\n\nKey: Impact compounds when you execute with precision.`;
     } else if (angle === 'executive') {
-      revisedCopy = `Strategic Leadership Perspective (2026 Roadmap):\n\n${caption}\n\nCore Takeaway: Enterprise leverage compounds when leaders position value proactively rather than reacting to headcount cycles.`;
+      revisedCopy = `Strategic Leadership Perspective:\n\n${caption}\n\nCore Takeaway: High-impact organizations build durable advantages by prioritizing execution clarity and measurable outcomes.`;
     } else if (angle === 'data') {
-      revisedCopy = `${caption}\n\n📊 High-Signal Industry Benchmarks:\n• 3.4x accelerated advancement velocity with transparent outcome milestones\n• 48% higher retention when strategic objectives align to execution capabilities.`;
+      revisedCopy = `${caption}\n\n📊 Key Performance Benchmarks:\n• 3.2x higher audience retention with clear narrative hooks\n• 45% lift in engagement through actionable bullet frameworks.`;
     } else if (angle === 'hook') {
-      revisedCopy = `92% of ambitious operators get this wrong when planning their 2026 trajectory:\n\n${caption}`;
+      revisedCopy = `Most teams get this critical factor backwards:\n\n${caption}`;
     } else if (angle === 'question') {
-      revisedCopy = `${caption}\n\nWhat is your single most important priority as you structure your 2026 growth roadmap? Share your perspective below.`;
+      revisedCopy = `${caption}\n\nWhat has been your team's experience with this? Share your perspective below.`;
     }
     setCaption(revisedCopy);
+    setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, copy: revisedCopy } : v));
     if (setStatusMessage) {
       setStatusMessage({ type: 'success', text: `✨ Post rewritten with "${angle}" angle!` });
     }
@@ -572,6 +598,7 @@ export default function PostsContentTab({
   const handleRestoreCaption = () => {
     if (previousCaption) {
       setCaption(previousCaption);
+      setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, copy: previousCaption } : v));
       setPreviousCaption(null);
       if (setStatusMessage) {
         setStatusMessage({ type: 'success', text: 'Restored previous caption draft!' });
@@ -582,13 +609,15 @@ export default function PostsContentTab({
   // Suggest CTAs
   const handleSuggestCtas = () => {
     const suggested = [
-      '👉 Repost this to help a colleague plan their 2026 move',
+      '👉 Repost this to share these insights with your network',
       '💬 What step are you taking first? Share your thoughts below',
-      '📌 Bookmark this framework for your Q1 performance review'
+      '📌 Bookmark this framework for your upcoming strategy session'
     ];
     const picked = suggested[Math.floor(Math.random() * suggested.length)];
     if (!caption.includes(picked)) {
-      setCaption(`${caption.trim()}\n\n${picked}`);
+      const updatedCopy = `${caption.trim()}\n\n${picked}`;
+      setCaption(updatedCopy);
+      setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, copy: updatedCopy } : v));
     }
     if (setStatusMessage) {
       setStatusMessage({ type: 'success', text: '✨ High-converting CTA added to your post!' });
@@ -701,9 +730,8 @@ export default function PostsContentTab({
             onClick={() => setActiveStep(1)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${
-              activeStep >= 1 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
-            }`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition ${activeStep >= 1 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
+              }`}>
               {activeStep > 1 ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
             </div>
             <span className={`font-semibold transition ${activeStep === 1 ? 'text-slate-900 font-bold' : 'text-slate-700 group-hover:text-slate-900'}`}>
@@ -720,9 +748,8 @@ export default function PostsContentTab({
             onClick={() => setActiveStep(2)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${
-              activeStep >= 2 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
-            }`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${activeStep >= 2 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
+              }`}>
               {activeStep > 2 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
             </div>
             <span className={`font-semibold transition ${activeStep === 2 ? 'text-slate-900 font-bold' : 'text-slate-700 group-hover:text-slate-900'}`}>
@@ -739,9 +766,8 @@ export default function PostsContentTab({
             onClick={() => setActiveStep(3)}
             className="flex items-center space-x-2 group cursor-pointer"
           >
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${
-              activeStep === 3 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
-            }`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition ${activeStep === 3 ? 'bg-[#EA580C] text-white shadow-2xs' : 'border border-slate-300 text-slate-400'
+              }`}>
               3
             </div>
             <span className={`font-semibold transition ${activeStep === 3 ? 'text-slate-900 font-bold' : 'text-slate-400 group-hover:text-slate-600'}`}>
@@ -880,13 +906,12 @@ export default function PostsContentTab({
 
       {/* In-Composer Action Confirmation Banner (Always visible in composer on Save/Schedule success) */}
       {(composerNotice || statusMessage) && (
-        <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 transition-all ${
-          (composerNotice || statusMessage)?.type === 'success'
-            ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-            : (composerNotice || statusMessage)?.type === 'error'
-              ? 'bg-rose-50 border border-rose-200 text-rose-900'
-              : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
-        }`}>
+        <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 transition-all ${(composerNotice || statusMessage)?.type === 'success'
+          ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+          : (composerNotice || statusMessage)?.type === 'error'
+            ? 'bg-rose-50 border border-rose-200 text-rose-900'
+            : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+          }`}>
           <div className="flex items-center space-x-2.5 min-w-0">
             {(composerNotice || statusMessage)?.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -1128,15 +1153,13 @@ export default function PostsContentTab({
                         setSelectedAccountIds([...selectedAccountIds, acc.id]);
                       }
                     }}
-                    className={`p-3 rounded-xl border text-xs font-semibold cursor-pointer transition flex items-center space-x-2.5 ${
-                      isSelected
-                        ? 'border-amber-400 bg-amber-50/60 text-slate-900 shadow-2xs'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
+                    className={`p-3 rounded-xl border text-xs font-semibold cursor-pointer transition flex items-center space-x-2.5 ${isSelected
+                      ? 'border-amber-400 bg-amber-50/60 text-slate-900 shadow-2xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-bold ${
-                      isSelected ? 'bg-[#EA580C] text-white' : 'border border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-bold ${isSelected ? 'bg-[#EA580C] text-white' : 'border border-slate-300'
+                      }`}>
                       {isSelected ? '✓' : ''}
                     </div>
                     <span className="truncate">{acc.name || acc.platform}</span>
@@ -1199,13 +1222,12 @@ export default function PostsContentTab({
           </div>
 
           {(composerNotice || statusMessage) && (
-            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${
-              (composerNotice || statusMessage)?.type === 'success'
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-                : (composerNotice || statusMessage)?.type === 'error'
-                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
-                  : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
-            }`}>
+            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${(composerNotice || statusMessage)?.type === 'success'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+              : (composerNotice || statusMessage)?.type === 'error'
+                ? 'bg-rose-50 border border-rose-200 text-rose-900'
+                : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+              }`}>
               <div className="flex items-center space-x-2.5 min-w-0">
                 {(composerNotice || statusMessage)?.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -1344,11 +1366,10 @@ export default function PostsContentTab({
             <button
               type="button"
               onClick={() => handleSwitchPlatform('LINKEDIN')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
-                activePlatform === 'LINKEDIN'
-                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'LINKEDIN'
+                ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+                }`}
             >
               <LinkedIn className="w-4 h-4 fill-[#0A66C2]" />
               <span>LinkedIn</span>
@@ -1358,11 +1379,10 @@ export default function PostsContentTab({
             <button
               type="button"
               onClick={() => handleSwitchPlatform('INSTAGRAM')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
-                activePlatform === 'INSTAGRAM'
-                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'INSTAGRAM'
+                ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+                }`}
             >
               <Instagram className="w-4 h-4 text-pink-600" />
               <span>Instagram</span>
@@ -1372,11 +1392,10 @@ export default function PostsContentTab({
             <button
               type="button"
               onClick={() => handleSwitchPlatform('FACEBOOK')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
-                activePlatform === 'FACEBOOK'
-                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'FACEBOOK'
+                ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+                }`}
             >
               <Facebook className="w-4 h-4 text-blue-600" />
               <span>Facebook</span>
@@ -1386,11 +1405,10 @@ export default function PostsContentTab({
             <button
               type="button"
               onClick={() => handleSwitchPlatform('TWITTER')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${
-                activePlatform === 'TWITTER'
-                  ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
-              }`}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'TWITTER'
+                ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs'
+                }`}
             >
               <span className="font-mono font-bold text-slate-900 text-xs">𝕏</span>
               <span>X</span>
@@ -1416,27 +1434,32 @@ export default function PostsContentTab({
                   </span>
                 </div>
 
-                {/* Variant Pager: < 1 / 4 > */}
-                <div className="flex items-center space-x-1.5 text-xs text-slate-600">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectVariant(variantIndex - 1)}
-                    className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition cursor-pointer"
-                    title="Previous variant"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="font-bold text-slate-800 px-1">
-                    {variantIndex + 1} / {defaultVariants.length}
+                {/* AI Virality Index & Variant Pager */}
+                <div className="flex items-center space-x-2 text-xs text-slate-600">
+                  <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border text-emerald-700 bg-emerald-50 border-emerald-200">
+                    ★ Virality: {liveVirality.score}/100 • Grade {liveVirality.grade}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectVariant(variantIndex + 1)}
-                    className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition cursor-pointer"
-                    title="Next variant"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200/80 rounded-lg px-1 py-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVariant(variantIndex - 1)}
+                      className="p-1 rounded-md hover:bg-white text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                      title="Previous variant"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="font-bold text-slate-800 px-1 text-[11px]">
+                      {variantIndex + 1} / {variantsBank.length || 4}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVariant(variantIndex + 1)}
+                      className="p-1 rounded-md hover:bg-white text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                      title="Next variant"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1476,53 +1499,53 @@ export default function PostsContentTab({
                           <ChevronDown className="w-3 h-3 text-slate-400" />
                         </button>
 
-                      {showRewriteMenu && (
-                        <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 z-40 text-xs space-y-0.5 animate-in fade-in">
-                          <button
-                            type="button"
-                            onClick={() => handleApplyRewrite('punchier')}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
-                          >
-                            <span>⚡</span>
-                            <span>Make punchier &amp; shorter</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplyRewrite('executive')}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
-                          >
-                            <span>👔</span>
-                            <span>Executive &amp; thought leadership</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplyRewrite('data')}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
-                          >
-                            <span>📊</span>
-                            <span>Add data &amp; bullet points</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplyRewrite('hook')}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
-                          >
-                            <span>🎣</span>
-                            <span>Hook-first opening</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplyRewrite('question')}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
-                          >
-                            <span>❓</span>
-                            <span>Discussion &amp; question starter</span>
-                          </button>
-                        </div>
-                      )}
+                        {showRewriteMenu && (
+                          <div className="absolute right-0 mt-1 w-52 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 z-40 text-xs space-y-0.5 animate-in fade-in">
+                            <button
+                              type="button"
+                              onClick={() => handleApplyRewrite('punchier')}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
+                            >
+                              <span>⚡</span>
+                              <span>Make punchier &amp; shorter</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleApplyRewrite('executive')}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
+                            >
+                              <span>👔</span>
+                              <span>Executive &amp; thought leadership</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleApplyRewrite('data')}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
+                            >
+                              <span>📊</span>
+                              <span>Add data &amp; bullet points</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleApplyRewrite('hook')}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
+                            >
+                              <span>🎣</span>
+                              <span>Hook-first opening</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleApplyRewrite('question')}
+                              className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-50 font-medium text-slate-800 hover:text-amber-800 flex items-center space-x-2"
+                            >
+                              <span>❓</span>
+                              <span>Discussion &amp; question starter</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
                   {/* Clean Textarea with Character Counter matching exact reference */}
                   <div className="relative border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-[#EA580C] transition">
@@ -1546,9 +1569,8 @@ export default function PostsContentTab({
                           ⚡ Auto-fit to 280 chars
                         </button>
                       ) : <span />}
-                      <span className={`text-[11px] font-mono ${
-                        (caption || '').length > currentSpec.maxChars ? 'text-rose-600 font-bold' : 'text-slate-400'
-                      }`}>
+                      <span className={`text-[11px] font-mono ${(caption || '').length > currentSpec.maxChars ? 'text-rose-600 font-bold' : 'text-slate-400'
+                        }`}>
                         {(caption || '').length} / {currentSpec.maxChars.toLocaleString()}
                       </span>
                     </div>
@@ -1580,9 +1602,8 @@ export default function PostsContentTab({
                                 setTone(t);
                                 setShowToneMenu(false);
                               }}
-                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${
-                                tone === t ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${tone === t ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
                               {t}
                             </button>
@@ -1615,9 +1636,8 @@ export default function PostsContentTab({
                                 setLength(l);
                                 setShowLengthMenu(false);
                               }}
-                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${
-                                length === l ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${length === l ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
                               {l}
                             </button>
@@ -1650,9 +1670,8 @@ export default function PostsContentTab({
                                 setStyle(s);
                                 setShowStyleMenu(false);
                               }}
-                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${
-                                style === s ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition ${style === s ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
                               {s}
                             </button>
@@ -1751,9 +1770,8 @@ export default function PostsContentTab({
                                   setSelectedCta(c);
                                   setShowCtaMenu(false);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition ${
-                                  selectedCta === c ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition ${selectedCta === c ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'
+                                  }`}
                               >
                                 {c}
                               </button>
@@ -1874,8 +1892,8 @@ export default function PostsContentTab({
               </div>
             </div>
 
-          {/* RIGHT COLUMN: STICKY LIVE VISUAL PREVIEW (approx 4.8 of 12 cols) */}
-          <div className="lg:col-span-5 space-y-3 sticky top-20">
+            {/* RIGHT COLUMN: STICKY LIVE VISUAL PREVIEW (approx 4.8 of 12 cols) */}
+            <div className="lg:col-span-5 space-y-3 sticky top-20">
               {/* Preview Header & Device Switcher */}
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm font-bold text-slate-900">Preview</span>
@@ -1885,11 +1903,10 @@ export default function PostsContentTab({
                     type="button"
                     onClick={() => setPreviewDevice('desktop')}
                     title="Desktop Preview"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      previewDevice === 'desktop'
-                        ? 'bg-white text-orange-600 shadow-2xs'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${previewDevice === 'desktop'
+                      ? 'bg-white text-orange-600 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
                   >
                     <Monitor className="w-4 h-4" />
                   </button>
@@ -1897,11 +1914,10 @@ export default function PostsContentTab({
                     type="button"
                     onClick={() => setPreviewDevice('mobile')}
                     title="Mobile Feed Preview"
-                    className={`p-1.5 rounded-md transition cursor-pointer ${
-                      previewDevice === 'mobile'
-                        ? 'bg-white text-orange-600 shadow-2xs'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                    className={`p-1.5 rounded-md transition cursor-pointer ${previewDevice === 'mobile'
+                      ? 'bg-white text-orange-600 shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                      }`}
                   >
                     <Smartphone className="w-4 h-4" />
                   </button>
@@ -2196,13 +2212,12 @@ export default function PostsContentTab({
 
           {/* In-Composer Confirmation Banner for Step 2 */}
           {(composerNotice || statusMessage) && (
-            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${
-              (composerNotice || statusMessage)?.type === 'success'
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-                : (composerNotice || statusMessage)?.type === 'error'
-                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
-                  : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
-            }`}>
+            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${(composerNotice || statusMessage)?.type === 'success'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+              : (composerNotice || statusMessage)?.type === 'error'
+                ? 'bg-rose-50 border border-rose-200 text-rose-900'
+                : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+              }`}>
               <div className="flex items-center space-x-2.5 min-w-0">
                 {(composerNotice || statusMessage)?.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
