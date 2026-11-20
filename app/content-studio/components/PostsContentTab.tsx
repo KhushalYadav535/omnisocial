@@ -180,41 +180,71 @@ export default function PostsContentTab({
     };
   }, [showRewriteMenu]);
 
+  // Local confirmation state ensuring immediate, unmissable feedback
+  const [composerNotice, setComposerNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (statusMessage) {
+      setComposerNotice(statusMessage);
+    }
+  }, [statusMessage]);
+
+  useEffect(() => {
+    if (composerNotice) {
+      const timer = setTimeout(() => setComposerNotice(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [composerNotice]);
+
   const handleResetWrapper = () => {
     setShowAiGeneratedBanner(false);
+    setComposerNotice(null);
     if (onResetComposer) onResetComposer();
   };
 
   const handleSaveDraftClick = async () => {
     try {
-      if (onSaveDraft) {
-        await onSaveDraft();
-      }
+      const isScheduledDraft = !!scheduledFor;
+      const fallbackText = isScheduledDraft
+        ? `Post draft successfully saved with scheduled time. View in Drafts tab.`
+        : 'Post draft successfully saved to workbench. View in Drafts tab.';
+      const res: any = onSaveDraft ? await onSaveDraft() : null;
+      const noticeText = res?.notice?.text || fallbackText;
+      const notice = { type: 'success' as const, text: noticeText };
+      setComposerNotice(notice);
       if (setStatusMessage) {
-        setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
+        setStatusMessage(notice);
       }
     } catch (err: any) {
+      const errNotice = { type: 'error' as const, text: err?.message || 'Failed to save draft.' };
+      setComposerNotice(errNotice);
       if (setStatusMessage) {
-        setStatusMessage({ type: 'error', text: err?.message || 'Failed to save draft.' });
+        setStatusMessage(errNotice);
       }
     }
   };
 
   const handleScheduleDropClick = async () => {
     try {
-      if (onScheduleDrop) {
-        await onScheduleDrop();
-      }
       const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString() : 'scheduled peak window';
+      const fallbackText = `🎉 Successfully scheduled drop for ${targetDate}! Promoted from Draft to Content Calendar.`;
+      const res: any = onScheduleDrop ? await onScheduleDrop() : null;
+      const noticeText = res?.notice?.text || fallbackText;
+      setScheduledFor('');
+      setActiveStep(1);
+      const notice = {
+        type: 'success' as const,
+        text: noticeText
+      };
+      setComposerNotice(notice);
       if (setStatusMessage) {
-        setStatusMessage({
-          type: 'success',
-          text: `🎉 Successfully scheduled drop for ${targetDate}! Drops are live in your Content Calendar.`
-        });
+        setStatusMessage(notice);
       }
     } catch (err: any) {
+      const errNotice = { type: 'error' as const, text: err?.message || 'Failed to schedule drop.' };
+      setComposerNotice(errNotice);
       if (setStatusMessage) {
-        setStatusMessage({ type: 'error', text: err?.message || 'Failed to schedule drop.' });
+        setStatusMessage(errNotice);
       }
     }
   };
@@ -804,24 +834,24 @@ Take the first step today.`,
       </div>
 
       {/* In-Composer Action Confirmation Banner (Always visible in composer on Save/Schedule success) */}
-      {statusMessage && (
+      {(composerNotice || statusMessage) && (
         <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1 transition-all ${
-          statusMessage.type === 'success'
+          (composerNotice || statusMessage)?.type === 'success'
             ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-            : statusMessage.type === 'error'
+            : (composerNotice || statusMessage)?.type === 'error'
               ? 'bg-rose-50 border border-rose-200 text-rose-900'
               : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
         }`}>
           <div className="flex items-center space-x-2.5 min-w-0">
-            {statusMessage.type === 'success' ? (
+            {(composerNotice || statusMessage)?.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
-            <span className="truncate sm:whitespace-normal font-medium">{statusMessage.text}</span>
+            <span className="truncate sm:whitespace-normal font-medium">{(composerNotice || statusMessage)?.text}</span>
           </div>
           <div className="flex items-center space-x-2 shrink-0">
-            {statusMessage.text.includes('Content Calendar') && (
+            {((composerNotice || statusMessage)?.text?.includes('Content Calendar') || (composerNotice || statusMessage)?.text?.includes('Calendar')) && (
               <button
                 type="button"
                 onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
@@ -831,16 +861,17 @@ Take the first step today.`,
                 <ArrowRight className="w-3 h-3" />
               </button>
             )}
-            {setStatusMessage && (
-              <button
-                type="button"
-                onClick={() => setStatusMessage(null)}
-                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
-                aria-label="Dismiss banner"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setComposerNotice(null);
+                if (setStatusMessage) setStatusMessage(null);
+              }}
+              className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}
@@ -1099,6 +1130,36 @@ Take the first step today.`,
               ))}
             </div>
           </div>
+
+          {(composerNotice || statusMessage) && (
+            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${
+              (composerNotice || statusMessage)?.type === 'success'
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+                : (composerNotice || statusMessage)?.type === 'error'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
+                  : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+            }`}>
+              <div className="flex items-center space-x-2.5 min-w-0">
+                {(composerNotice || statusMessage)?.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span className="truncate sm:whitespace-normal font-medium">{(composerNotice || statusMessage)?.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setComposerNotice(null);
+                  if (setStatusMessage) setStatusMessage(null);
+                }}
+                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
             {onResetComposer && (
@@ -2024,6 +2085,37 @@ Take the first step today.`,
             </div>
           </div>
 
+          {/* In-Composer Confirmation Banner for Step 2 */}
+          {(composerNotice || statusMessage) && (
+            <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-xs font-semibold shadow-xs animate-in fade-in transition-all ${
+              (composerNotice || statusMessage)?.type === 'success'
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+                : (composerNotice || statusMessage)?.type === 'error'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-900'
+                  : 'bg-indigo-50 border border-indigo-200 text-indigo-900'
+            }`}>
+              <div className="flex items-center space-x-2.5 min-w-0">
+                {(composerNotice || statusMessage)?.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span className="truncate sm:whitespace-normal font-medium">{(composerNotice || statusMessage)?.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setComposerNotice(null);
+                  if (setStatusMessage) setStatusMessage(null);
+                }}
+                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* 6. BOTTOM ACTION BAR: OTHER PLATFORM VERSIONS + ACTION BUTTONS */}
           <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100">
             {/* Left: Other Platform Versions (3) */}
@@ -2068,8 +2160,29 @@ Take the first step today.`,
               </div>
             </div>
 
-            {/* Right: Edit All Versions & Continue to Review */}
-            <div className="flex items-center space-x-3 self-end sm:self-auto">
+            {/* Right: Edit All Versions, Save Draft, Schedule & Continue to Review */}
+            <div className="flex flex-wrap items-center gap-2.5 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={handleSaveDraftClick}
+                disabled={submitting}
+                className="px-4 py-2 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl shadow-2xs transition disabled:opacity-50 cursor-pointer"
+              >
+                Save as Draft
+              </button>
+
+              {scheduledFor && onScheduleDrop && (
+                <button
+                  type="button"
+                  onClick={handleScheduleDropClick}
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-2xs flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Confirm &amp; Schedule Drop</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setShowEditAllModal(true)}

@@ -1311,25 +1311,48 @@ function cleanMediaUrl(raw: any): string {
         }
       } else if (!isDraftOnly && (isExplicitSchedule || scheduledFor)) {
         const channelCount = selectedAccountIds.length || 2;
-        setStatusMessage({
-          type: 'success',
-          text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${new Date(scheduledFor || Date.now()).toLocaleString()}! Drops are live in your Content Calendar.`
-        });
+        const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString() : 'scheduled peak window';
+        const successMsg = {
+          type: 'success' as const,
+          text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${targetDate}! Promoted from Draft to Content Calendar.`
+        };
+        setStatusMessage(successMsg);
         try {
           confetti({ particleCount: 40, spread: 45, origin: { y: 0.5 } });
         } catch {}
+
+        // Reset composer state completely on successful drop schedule
+        setTitle('');
+        setCaption('');
+        setRawIdea('');
+        setHashtags([]);
+        setMediaUrl('');
+        setScheduledFor('');
         setActiveDraftId(null);
         setIsPublishGateConfirmed(false);
-        fetchOverview();
+
+        // Clear all cached/persisted drafts so composer stays fresh
         if (typeof window !== 'undefined') {
           try {
             sessionStorage.removeItem('omnisocial_composer_session_draft');
             localStorage.removeItem('omnisocial_composer_draft');
+            localStorage.removeItem('omnisocial_platform_captions');
           } catch {}
         }
-        return { success: true, mode: 'SCHEDULED' };
+
+        fetchOverview();
+        return { success: true, mode: 'SCHEDULED', notice: successMsg };
       } else {
-        setStatusMessage({ type: 'success', text: 'Post draft successfully saved to workbench. View in Drafts tab.' });
+        const isScheduledDraft = !!scheduledFor;
+        const successMsg = {
+          type: 'success' as const,
+          text: isScheduledDraft
+            ? `Post draft successfully saved with scheduled time (${new Date(scheduledFor).toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${new Date(scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}). View in Drafts tab.`
+            : (activeDraftId
+              ? 'Post draft successfully updated in workbench. View in Drafts tab.'
+              : 'Post draft successfully saved to workbench. View in Drafts tab.')
+        };
+        setStatusMessage(successMsg);
         fetchOverview();
         if (typeof window !== 'undefined') {
           try {
@@ -1347,7 +1370,7 @@ function cleanMediaUrl(raw: any): string {
             localStorage.setItem('omnisocial_composer_draft', draftPayload);
           } catch {}
         }
-        return { success: true, mode: 'DRAFT', targetContentId };
+        return { success: true, mode: 'DRAFT', targetContentId, notice: successMsg };
       }
     } catch (err: any) {
       setStatusMessage({ type: 'error', text: err.message || 'Operation failed' });
