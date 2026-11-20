@@ -146,6 +146,7 @@ function ContentStudioContent() {
         url.searchParams.set('tab', tabId);
       }
       window.history.replaceState({}, '', url.toString());
+      window.dispatchEvent(new CustomEvent('omnisocial_tab_changed', { detail: tabId }));
       window.dispatchEvent(new Event('popstate'));
     }
   };
@@ -186,83 +187,8 @@ function ContentStudioContent() {
     }
   }, [activeBrandId]);
 
-  const studioTabs = [
-    { id: 'overview', label: 'Overview', icon: LayoutGrid },
-    { id: 'strategy', label: 'Strategy', icon: Target },
-    { id: 'pillars', label: 'Pillars & Mix', icon: LayersIcon },
-    { id: 'campaigns', label: 'Campaigns', icon: Calendar },
-    { id: 'ideas', label: 'Ideas & Requests', icon: Lightbulb },
-    { id: 'composer', label: 'Posts & Content', icon: PenTool },
-    { id: 'drafts', label: 'Drafts', icon: FileEdit },
-    { id: 'media', label: 'Media Library', icon: ImageIcon },
-    { id: 'approvals', label: 'Approvals Queue', icon: FileCheck2 },
-    { id: 'launchpad', label: 'Brand Launchpad', icon: Rocket },
-    { id: 'skills', label: 'Skill Library', icon: Cpu },
-  ];
   const [brands, setBrands] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
-
-  // Sub-navigation Tabs Horizontal Scroll & Drag Support
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
-  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
-
-  const checkTabsScroll = React.useCallback(() => {
-    if (tabsContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = tabsContainerRef.current;
-      setCanScrollTabsLeft(scrollLeft > 6);
-      setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 6);
-    }
-  }, []);
-
-  const handleScrollTabs = (direction: 'left' | 'right') => {
-    if (tabsContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -260 : 260;
-      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      setTimeout(checkTabsScroll, 300);
-    }
-  };
-
-  const handleTabsWheel = (e: React.WheelEvent) => {
-    if (tabsContainerRef.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      tabsContainerRef.current.scrollLeft += e.deltaY;
-      checkTabsScroll();
-    }
-  };
-
-  const [isDraggingTabs, setIsDraggingTabs] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startScrollLeft, setStartScrollLeft] = useState(0);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!tabsContainerRef.current) return;
-    setIsDraggingTabs(true);
-    setStartX(e.pageX - tabsContainerRef.current.offsetLeft);
-    setStartScrollLeft(tabsContainerRef.current.scrollLeft);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingTabs || !tabsContainerRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - tabsContainerRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    tabsContainerRef.current.scrollLeft = startScrollLeft - walk;
-    checkTabsScroll();
-  };
-
-  const handleMouseUpOrLeave = () => {
-    setIsDraggingTabs(false);
-  };
-
-  useEffect(() => {
-    checkTabsScroll();
-    window.addEventListener('resize', checkTabsScroll);
-    return () => window.removeEventListener('resize', checkTabsScroll);
-  }, [checkTabsScroll]);
-
-  useEffect(() => {
-    checkTabsScroll();
-  }, [activeTab, checkTabsScroll]);
 
   // Helper to load session draft across internal route navigation (e.g. Content Studio <-> Calendar)
   const getSessionDraft = () => {
@@ -1485,9 +1411,8 @@ function cleanMediaUrl(raw: any): string {
   return (
     <AppLayout activeBrandId={activeBrandId} onBrandChange={handleBrandChange}>
       <div className="space-y-6 max-w-[1500px] mx-auto pb-16 px-1 sm:px-2">
-        {/* CADRA SUB-HEADER / STUDIO HERO */}
-        {activeTab === 'overview' ? (
-          /* STUDIO HERO HEADER (EXACT REFERENCE DESIGN) */
+        {/* STUDIO HERO (ONLY ON STUDIO HUB / OVERVIEW) */}
+        {activeTab === 'overview' && (
           <div className="relative bg-white rounded-3xl border border-black/[0.06] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden">
             {/* Elegant Organic Flowing Wave in Top Right (Exact match to reference) */}
             <svg
@@ -1575,156 +1500,6 @@ function cleanMediaUrl(raw: any): string {
               </div>
             </div>
           </div>
-        ) : activeTab === 'composer' ? null : (
-          /* WORKSPACE TAB HEADER WHEN INSIDE A SUB-TAB */
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 pt-1">
-            <div>
-              <div className="flex items-center space-x-2 text-xs text-neutral-400 font-medium">
-                <button
-                  onClick={() => handleTabChange('overview')}
-                  className="hover:text-neutral-900 font-semibold text-neutral-600 flex items-center space-x-1 cursor-pointer"
-                >
-                  <span>Studio</span>
-                </button>
-                <span>›</span>
-                <span className="text-neutral-900 font-bold">{studioTabs.find(t => t.id === activeTab)?.label}</span>
-              </div>
-              <div className="flex items-center space-x-3 mt-1">
-                <button
-                  onClick={() => handleTabChange('overview')}
-                  className="text-xs font-bold text-neutral-600 hover:text-neutral-900 bg-white hover:bg-neutral-100 border border-black/[0.08] px-3 py-1.5 rounded-full transition-all flex items-center space-x-1 shadow-2xs cursor-pointer"
-                >
-                  <span>← Back to Studio</span>
-                </button>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F1012] tracking-tight">
-                  {studioTabs.find(t => t.id === activeTab)?.label}
-                </h1>
-              </div>
-            </div>
-
-            {/* ACTION CAPSULES FOR ACTIVE TAB */}
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowRepurposeModal(true)}
-                className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer"
-              >
-                <Globe className="w-3.5 h-3.5 text-neutral-500" />
-                <span>Repurpose URL</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGenerateClientReviewLink}
-                disabled={isGeneratingReviewLink || !activeBrandId}
-                className="px-4 py-2 text-xs font-semibold text-neutral-800 bg-white hover:bg-neutral-50 border border-black/[0.08] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {copiedReviewLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-neutral-500" />}
-                <span>{copiedReviewLink ? 'Link Copied!' : isGeneratingReviewLink ? 'Generating...' : 'Client Review Link'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('composer')}
-                className="px-5 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-full shadow-md flex items-center space-x-2 transition-all cursor-pointer group"
-              >
-                <PenTool className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
-                <span>Open Posts &amp; Content</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* WORKSPACE SUB-NAVIGATION TABS & WORKSPACE PROMPT BAR (SHOWN IN SUB-WORKSPACES) */}
-        {activeTab !== 'overview' && activeTab !== 'composer' && (
-          <>
-            {/* WORKSPACE SUB-NAVIGATION TABS (CADRA SEGMENTED CAPSULE BAR WITH SMOOTH SCROLL) */}
-            <div className="relative flex items-center w-full group/tabbar">
-              {/* Left subtle fade mask */}
-              {canScrollTabsLeft && (
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#F4F5F7] to-transparent pointer-events-none z-10" />
-              )}
-
-              {/* Left Scroll Chevron Arrow */}
-              {canScrollTabsLeft && (
-                <button
-                  type="button"
-                  onClick={() => handleScrollTabs('left')}
-                  className="absolute left-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
-                  aria-label="Scroll tabs left"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              )}
-
-              {/* Scrollable Container with Wheel, Drag & Touch Support */}
-              <div
-                ref={tabsContainerRef}
-                onScroll={checkTabsScroll}
-                onWheel={handleTabsWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUpOrLeave}
-                onMouseLeave={handleMouseUpOrLeave}
-                className={`w-full overflow-x-auto pb-1.5 scroll-smooth scrollbar-thin scrollbar-thumb-neutral-300 hover:scrollbar-thumb-neutral-400 select-none ${isDraggingTabs ? 'cursor-grabbing' : 'cursor-grab'
-                  }`}
-              >
-                <div className="bg-[#E5E7EB] p-1 rounded-full border border-black/[0.04] inline-flex items-center space-x-1 min-w-max shadow-2xs">
-                  {studioTabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={(e) => {
-                          handleTabChange(tab.id as any);
-                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                        }}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${isActive
-                          ? 'bg-white text-neutral-900 shadow-xs'
-                          : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/40'
-                          }`}
-                      >
-                        <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-neutral-900' : 'text-neutral-500'}`} />
-                        <span>{tab.label}</span>
-                        {tab.id === 'approvals' && (overviewData?.stats?.pendingApprovalsCount || 0) > 0 && (
-                          <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">
-                            {overviewData.stats.pendingApprovalsCount}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right subtle fade mask */}
-              {canScrollTabsRight && (
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F4F5F7] to-transparent pointer-events-none z-10" />
-              )}
-
-              {/* Right Scroll Chevron Arrow */}
-              {canScrollTabsRight && (
-                <button
-                  type="button"
-                  onClick={() => handleScrollTabs('right')}
-                  className="absolute right-1 z-20 w-8 h-8 rounded-full bg-white text-neutral-800 shadow-md border border-black/[0.08] flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
-                  aria-label="Scroll tabs right"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* OUTCOME-FIRST PROMPT BAR (INSIDE SUB-TABS) */}
-            <OutcomePromptBar
-              brandId={activeBrandId}
-              onNavigateTab={(tabId) => handleTabChange(tabId as any)}
-              onRefreshData={fetchOverview}
-              onLoadIntoComposer={handleLoadIntoComposer}
-            />
-          </>
         )}
 
         {/* Global Feedback Banner (Displayed across all studio sub-tabs) */}
