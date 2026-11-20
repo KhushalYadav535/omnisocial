@@ -190,8 +190,8 @@ export default function PostsContentTab({
   }, [statusMessage]);
 
   useEffect(() => {
-    if (composerNotice) {
-      const timer = setTimeout(() => setComposerNotice(null), 8000);
+    if (composerNotice && composerNotice.type !== 'info') {
+      const timer = setTimeout(() => setComposerNotice(null), 10000);
       return () => clearTimeout(timer);
     }
   }, [composerNotice]);
@@ -205,6 +205,17 @@ export default function PostsContentTab({
   const handleSaveDraftClick = async () => {
     try {
       const isScheduledDraft = !!scheduledFor;
+      const inProgNotice = {
+        type: 'info' as const,
+        text: isScheduledDraft
+          ? 'Saving scheduled post draft to workbench...'
+          : 'Saving post draft to workbench...'
+      };
+      setComposerNotice(inProgNotice);
+      if (setStatusMessage) {
+        setStatusMessage(inProgNotice);
+      }
+
       const fallbackText = isScheduledDraft
         ? `Post draft successfully saved with scheduled time. View in Drafts tab.`
         : 'Post draft successfully saved to workbench. View in Drafts tab.';
@@ -226,8 +237,33 @@ export default function PostsContentTab({
 
   const handleScheduleDropClick = async () => {
     try {
-      const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString() : 'scheduled peak window';
-      const fallbackText = `🎉 Successfully scheduled drop for ${targetDate}! Promoted from Draft to Content Calendar.`;
+      const formattedDate = scheduledFor ? (() => {
+        try {
+          const d = new Date(scheduledFor);
+          return isNaN(d.getTime()) ? scheduledFor : d.toLocaleDateString([], {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          }) + ' at ' + d.toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+        } catch {
+          return scheduledFor;
+        }
+      })() : 'scheduled peak window';
+
+      const inProgNotice = {
+        type: 'info' as const,
+        text: `Scheduling drop(s) for ${formattedDate} to Content Calendar...`
+      };
+      setComposerNotice(inProgNotice);
+      if (setStatusMessage) {
+        setStatusMessage(inProgNotice);
+      }
+
+      const fallbackText = `🎉 Successfully scheduled drop(s) for ${formattedDate}! Promoted from Draft to Content Calendar.`;
       const res: any = onScheduleDrop ? await onScheduleDrop() : null;
       const noticeText = res?.notice?.text || fallbackText;
       setScheduledFor('');
@@ -845,6 +881,8 @@ Take the first step today.`,
           <div className="flex items-center space-x-2.5 min-w-0">
             {(composerNotice || statusMessage)?.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (composerNotice || statusMessage)?.type === 'info' ? (
+              <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
             ) : (
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
@@ -858,6 +896,16 @@ Take the first step today.`,
                 className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
               >
                 <span>View Calendar</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+            {((composerNotice || statusMessage)?.text?.includes('Drafts tab')) && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab ? onNavigateTab('drafts') : (window.location.href = '/content-studio?tab=drafts')}
+                className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+              >
+                <span>View Drafts</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
             )}
@@ -1142,22 +1190,46 @@ Take the first step today.`,
               <div className="flex items-center space-x-2.5 min-w-0">
                 {(composerNotice || statusMessage)?.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (composerNotice || statusMessage)?.type === 'info' ? (
+                  <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
                 ) : (
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 )}
                 <span className="truncate sm:whitespace-normal font-medium">{(composerNotice || statusMessage)?.text}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setComposerNotice(null);
-                  if (setStatusMessage) setStatusMessage(null);
-                }}
-                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
-                aria-label="Dismiss banner"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center space-x-2 shrink-0">
+                {((composerNotice || statusMessage)?.text?.includes('Content Calendar') || (composerNotice || statusMessage)?.text?.includes('Calendar')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
+                    className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Calendar</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                {((composerNotice || statusMessage)?.text?.includes('Drafts tab')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('drafts') : (window.location.href = '/content-studio?tab=drafts')}
+                    className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Drafts</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComposerNotice(null);
+                    if (setStatusMessage) setStatusMessage(null);
+                  }}
+                  className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                  aria-label="Dismiss banner"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -1215,14 +1287,14 @@ Take the first step today.`,
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="text-xs font-bold text-indigo-950">
-                      Scheduled Drop Confirmed: {new Date(scheduledFor).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      Scheduled Drop Target Set: {new Date(scheduledFor).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-md">
                       {selectedAccountIds.length || 2} Channel{(selectedAccountIds.length || 2) > 1 ? 's' : ''}
                     </span>
                   </div>
                   <p className="text-[11px] text-indigo-700 mt-0.5">
-                    Drop is scheduled for peak window. Click &quot;Confirm &amp; Schedule Drop&quot; to queue.
+                    Drop timing configured for peak window. Click &quot;Confirm &amp; Schedule Drop&quot; to queue to Content Calendar.
                   </p>
                 </div>
               </div>
@@ -1731,7 +1803,14 @@ Take the first step today.`,
                     <button
                       type="button"
                       title="Remove Creative Asset"
-                      onClick={() => setMediaUrl('')}
+                      onClick={() => {
+                        setMediaUrl('');
+                        const removeNotice = { type: 'info' as const, text: 'Removed attached creative asset.' };
+                        setComposerNotice(removeNotice);
+                        if (setStatusMessage) {
+                          setStatusMessage(removeNotice);
+                        }
+                      }}
                       className="p-2 rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -2097,22 +2176,46 @@ Take the first step today.`,
               <div className="flex items-center space-x-2.5 min-w-0">
                 {(composerNotice || statusMessage)?.type === 'success' ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (composerNotice || statusMessage)?.type === 'info' ? (
+                  <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
                 ) : (
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 )}
                 <span className="truncate sm:whitespace-normal font-medium">{(composerNotice || statusMessage)?.text}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setComposerNotice(null);
-                  if (setStatusMessage) setStatusMessage(null);
-                }}
-                className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
-                aria-label="Dismiss banner"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center space-x-2 shrink-0">
+                {((composerNotice || statusMessage)?.text?.includes('Content Calendar') || (composerNotice || statusMessage)?.text?.includes('Calendar')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('calendar') : (window.location.href = '/calendar')}
+                    className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Calendar</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                {((composerNotice || statusMessage)?.text?.includes('Drafts tab')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('drafts') : (window.location.href = '/content-studio?tab=drafts')}
+                    className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Drafts</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComposerNotice(null);
+                    if (setStatusMessage) setStatusMessage(null);
+                  }}
+                  className="p-1 hover:bg-black/5 rounded-md transition cursor-pointer text-slate-500"
+                  aria-label="Dismiss banner"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -2424,8 +2527,10 @@ Take the first step today.`,
                   onClick={() => {
                     setMediaUrl('');
                     setShowAssetPickerModal(false);
+                    const removeNotice = { type: 'info' as const, text: 'Removed attached creative asset.' };
+                    setComposerNotice(removeNotice);
                     if (setStatusMessage) {
-                      setStatusMessage({ type: 'info', text: 'Removed attached creative asset.' });
+                      setStatusMessage(removeNotice);
                     }
                   }}
                   className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer flex items-center space-x-1"

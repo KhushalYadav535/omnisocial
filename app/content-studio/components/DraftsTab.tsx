@@ -12,7 +12,8 @@ import {
   Sparkles,
   Send,
   AlertCircle,
-  Plus
+  Plus,
+  Calendar
 } from 'lucide-react';
 import { apiRequest } from '../../../lib/api';
 
@@ -194,9 +195,17 @@ export default function DraftsTab({
                 <div className="space-y-3">
                   {/* Top Bar: Format + Updated Time */}
                   <div className="flex items-center justify-between text-xs">
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 rounded-md">
-                      {draft.format || 'POST'} DRAFT
-                    </span>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 rounded-md">
+                        {draft.format || 'POST'} DRAFT
+                      </span>
+                      {draft.scheduledFor && (
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md flex items-center space-x-1">
+                          <Calendar className="w-3 h-3 text-indigo-500" />
+                          <span>{new Date(draft.scheduledFor).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-slate-400 flex items-center space-x-1">
                       <Clock className="w-3 h-3 text-slate-300" />
                       <span>{new Date(draft.updatedAt || draft.createdAt).toLocaleDateString()}</span>

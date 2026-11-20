@@ -333,7 +333,13 @@ function cleanMediaUrl(raw: any): string {
     const draftSched = draft.scheduledFor || (draft.publications && draft.publications[0]?.scheduledFor);
     if (draftSched) {
       try {
-        setScheduledFor(new Date(draftSched).toISOString().slice(0, 16));
+        const d = new Date(draftSched);
+        if (!isNaN(d.getTime())) {
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          setScheduledFor(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+        } else {
+          setScheduledFor('');
+        }
       } catch {
         setScheduledFor('');
       }
@@ -512,11 +518,11 @@ function cleanMediaUrl(raw: any): string {
 
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   useEffect(() => {
-    if (statusMessage) {
-      const timer = setTimeout(() => setStatusMessage(null), 8000);
+    if (statusMessage && statusMessage.type !== 'info') {
+      const timer = setTimeout(() => setStatusMessage(null), 10000);
       return () => clearTimeout(timer);
     }
   }, [statusMessage]);
@@ -1159,9 +1165,15 @@ function cleanMediaUrl(raw: any): string {
     }
 
     setSubmitting(true);
-    setStatusMessage(null);
     setPublishedUrl(null);
     setPublishedPosts([]);
+
+    const inProgressNotice = isDraftOnly
+      ? { type: 'info' as const, text: 'Saving post draft to workbench...' }
+      : (isExplicitSchedule || scheduledFor
+        ? { type: 'info' as const, text: 'Scheduling drop(s) to Content Calendar...' }
+        : { type: 'info' as const, text: 'Publishing post to connected social channels...' });
+    setStatusMessage(inProgressNotice);
 
     try {
       // Append non-duplicate hashtag chips to caption (Bug 11)
@@ -1179,7 +1191,7 @@ function cleanMediaUrl(raw: any): string {
       const finalApprovalStatus = isDraftOnly ? 'DRAFT' : (approvalStatusOverride || (isExplicitSchedule || scheduledFor ? 'APPROVED' : 'DRAFT'));
       const finalContentStatus = isDraftOnly ? 'DRAFT' : ((finalApprovalStatus === 'PENDING' || finalApprovalStatus === 'APPROVED' || isExplicitSchedule || scheduledFor) ? 'SCHEDULED' : 'DRAFT');
 
-      const scheduledIso = (!isDraftOnly && (isExplicitSchedule || scheduledFor)) ? new Date(scheduledFor || Date.now()).toISOString() : undefined;
+      const scheduledIso = scheduledFor ? new Date(scheduledFor).toISOString() : undefined;
       let targetContentId: string;
 
       if (activeDraftId && !immediatePublish) {
@@ -1311,7 +1323,7 @@ function cleanMediaUrl(raw: any): string {
         }
       } else if (!isDraftOnly && (isExplicitSchedule || scheduledFor)) {
         const channelCount = selectedAccountIds.length || 2;
-        const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString() : 'scheduled peak window';
+        const targetDate = scheduledFor ? new Date(scheduledFor).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'scheduled peak window';
         const successMsg = {
           type: 'success' as const,
           text: `🎉 Successfully scheduled ${channelCount} drop${channelCount > 1 ? 's' : ''} for ${targetDate}! Promoted from Draft to Content Calendar.`
@@ -1344,10 +1356,11 @@ function cleanMediaUrl(raw: any): string {
         return { success: true, mode: 'SCHEDULED', notice: successMsg };
       } else {
         const isScheduledDraft = !!scheduledFor;
+        const targetDate = isScheduledDraft ? new Date(scheduledFor).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
         const successMsg = {
           type: 'success' as const,
           text: isScheduledDraft
-            ? `Post draft successfully saved with scheduled time (${new Date(scheduledFor).toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${new Date(scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}). View in Drafts tab.`
+            ? `Post draft successfully saved with scheduled time (${targetDate}). View in Drafts tab.`
             : (activeDraftId
               ? 'Post draft successfully updated in workbench. View in Drafts tab.'
               : 'Post draft successfully saved to workbench. View in Drafts tab.')
@@ -1691,14 +1704,44 @@ function cleanMediaUrl(raw: any): string {
 
         {/* Global Feedback Banner (Displayed across all studio sub-tabs) */}
         {statusMessage && (
-          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs transition-all ${statusMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}>
-            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+          <div className={`p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xs transition-all ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : statusMessage.type === 'info'
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}>
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : statusMessage.type === 'info' ? (
+              <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
             <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
               <span className="font-semibold">{statusMessage.text}</span>
-              {publishedPosts.length > 0 ? (
-                <div className="flex items-center gap-2 shrink-0">
-                  {publishedPosts.map((post, idx) => (
+              <div className="flex items-center gap-2 shrink-0">
+                {(statusMessage.text?.includes('Content Calendar') || statusMessage.text?.includes('Calendar')) && (
+                  <a
+                    href="/calendar"
+                    className="font-bold flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-300 text-xs shadow-2xs cursor-pointer"
+                  >
+                    <span>View Calendar</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {statusMessage.text?.includes('Drafts tab') && (
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('drafts')}
+                    className="font-bold flex items-center space-x-1 shrink-0 text-indigo-900 hover:text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-300 text-xs shadow-2xs cursor-pointer"
+                  >
+                    <span>View Drafts</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {publishedPosts.length > 0 ? (
+                  publishedPosts.map((post, idx) => (
                     <a
                       key={idx}
                       href={post.url}
@@ -1709,19 +1752,19 @@ function cleanMediaUrl(raw: any): string {
                       <span>View Live on {post.platform === 'LINKEDIN' ? 'LinkedIn' : post.platform === 'INSTAGRAM' ? 'Instagram' : 'Facebook'}</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                  ))}
-                </div>
-              ) : publishedUrl ? (
-                <a
-                  href={publishedUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700"
-                >
-                  <span>View Live Post</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              ) : null}
+                  ))
+                ) : publishedUrl ? (
+                  <a
+                    href={publishedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold underline flex items-center space-x-1 shrink-0 text-emerald-900 hover:text-emerald-700"
+                  >
+                    <span>View Live Post</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : null}
+              </div>
             </div>
             <button
               type="button"
@@ -2307,14 +2350,39 @@ function cleanMediaUrl(raw: any): string {
             <div className={`rounded-2xl p-4 shadow-2xl flex items-center space-x-3 text-xs font-semibold border backdrop-blur-md transition-all duration-200 ${
               statusMessage.type === 'success'
                 ? 'bg-slate-900/95 text-white border-slate-700 shadow-slate-900/40'
+                : statusMessage.type === 'info'
+                ? 'bg-indigo-950/95 text-indigo-100 border-indigo-700 shadow-indigo-950/40'
                 : 'bg-rose-950/95 text-rose-100 border-rose-800 shadow-rose-950/40'
             }`}>
               {statusMessage.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              ) : statusMessage.type === 'info' ? (
+                <Loader2 className="w-4 h-4 text-indigo-400 shrink-0 animate-spin" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
               )}
               <span className="flex-1 leading-snug">{statusMessage.text}</span>
+              {(statusMessage.text?.includes('Content Calendar') || statusMessage.text?.includes('Calendar')) && (
+                <a
+                  href="/calendar"
+                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition shrink-0 ml-1 shadow-xs inline-flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>View Calendar</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              {statusMessage.text?.includes('Drafts tab') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleTabChange('drafts');
+                    setStatusMessage(null);
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition shrink-0 ml-1 shadow-xs cursor-pointer"
+                >
+                  View Drafts
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setStatusMessage(null)}
