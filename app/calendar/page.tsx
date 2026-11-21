@@ -1438,6 +1438,7 @@ export default function CalendarPage() {
       });
 
       if (res.success) {
+        setNotice({ type: 'success', text: `🚀 Successfully deployed ${res.result?.scheduledCount || 'campaign'} posts into your Content Calendar!` });
         setDeploySuccessModal(res.result);
         setShowArchitectModal(false);
         setGeneratedRoadmap(null);
@@ -1854,7 +1855,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (notice) {
-      const t = setTimeout(() => setNotice(null), 5000);
+      const t = setTimeout(() => setNotice(null), 15000);
       return () => clearTimeout(t);
     }
   }, [notice]);
@@ -2351,16 +2352,18 @@ export default function CalendarPage() {
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-black tracking-tight">
-                    Content Pillar Auditor: {pillarStats.valuePercent}% Value &amp; Proof vs {pillarStats.promoPercent}% Promo
+                    Content Pillar Auditor: {loading ? '…' : `${pillarStats.valuePercent}% Value & Proof vs ${pillarStats.promoPercent}% Promo`}
                   </span>
                   <span className={`text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded-full ${
-                    pillarStats.status === 'FATIGUE'
+                    loading
+                      ? 'bg-neutral-200 text-neutral-600'
+                      : pillarStats.status === 'FATIGUE'
                       ? 'bg-rose-200 text-rose-800'
                       : pillarStats.status === 'MODERATE'
                       ? 'bg-amber-200 text-amber-900'
                       : 'bg-emerald-200 text-emerald-800'
                   }`}>
-                    {pillarStats.statusLabel}
+                    {loading ? '…' : pillarStats.statusLabel}
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-600 mt-0.5 leading-relaxed">
@@ -2421,19 +2424,19 @@ export default function CalendarPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <span className="flex items-center space-x-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>Value ({pillarStats.valueCount})</span>
+                  <span>Value ({loading ? '…' : pillarStats.valueCount})</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                  <span>Proof ({pillarStats.proofCount})</span>
+                  <span>Proof ({loading ? '…' : pillarStats.proofCount})</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span>Culture ({pillarStats.cultureCount})</span>
+                  <span>Culture ({loading ? '…' : pillarStats.cultureCount})</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <span>Promo ({pillarStats.promoCount})</span>
+                  <span>Promo ({loading ? '…' : pillarStats.promoCount})</span>
                 </span>
               </div>
               <span className="font-mono text-xs font-bold text-neutral-600">
@@ -2538,7 +2541,7 @@ export default function CalendarPage() {
         </div>
 
         {notice && (
-          <div className={`fixed top-6 right-6 z-50 p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 max-w-md ${
+          <div className={`fixed top-6 right-6 z-[100] p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 max-w-md ${
             notice.type === 'success' ? 'bg-emerald-50/95 border-emerald-300 text-emerald-900' : 'bg-rose-50/95 border-rose-300 text-rose-900'
           }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
@@ -3099,12 +3102,7 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={post.id || pIdx}
-                              onClick={() => {
-                                setSelectedEvent(post);
-                                setIsEditing(false);
-                                setEditTitle(post.title);
-                                setEditCaption(post.caption);
-                              }}
+                              onClick={() => handleOpenPostInspector(post)}
                               className="group relative aspect-square rounded-xl overflow-hidden bg-neutral-900 border border-black/10 cursor-pointer shadow-xs transition-all hover:shadow-lg hover:scale-[1.01]"
                             >
                               {hasMedia ? (
@@ -3228,12 +3226,7 @@ export default function CalendarPage() {
                   {upcomingPosts.map(post => (
                     <div
                       key={post.id}
-                      onClick={() => {
-                        setSelectedEvent(post);
-                        setIsEditing(false);
-                        setEditTitle(post.title);
-                        setEditCaption(post.caption);
-                      }}
+                      onClick={() => handleOpenPostInspector(post)}
                       className="p-3 rounded-2xl border border-neutral-100 hover:border-indigo-300 bg-neutral-50/60 hover:bg-indigo-50/20 transition-all cursor-pointer space-y-1.5"
                     >
                       <div className="flex items-center justify-between">
@@ -3828,15 +3821,33 @@ export default function CalendarPage() {
                               </div>
                             </div>
                             {(() => {
-                              const liveUrl = selectedEvent.postUrl || selectedEvent.platformPostUrl || (selectedEvent.platformPostId ? (
-                                selectedEvent.platform?.toUpperCase() === 'LINKEDIN' ? `https://www.linkedin.com/feed/update/${selectedEvent.platformPostId}` :
-                                selectedEvent.platform?.toUpperCase() === 'INSTAGRAM' ? `https://www.instagram.com/p/${selectedEvent.platformPostId}` :
-                                `https://www.facebook.com/${selectedEvent.platformPostId}`
-                              ) : null) || (
-                                selectedEvent.platform?.toUpperCase() === 'LINKEDIN' ? 'https://www.linkedin.com/company/apexdigital' :
-                                selectedEvent.platform?.toUpperCase() === 'INSTAGRAM' ? 'https://www.instagram.com/apexdigital' :
-                                'https://www.facebook.com/apexdigital'
-                              );
+                              const activePlat = (previewModalPlatform || selectedEvent.platform || 'INSTAGRAM').toUpperCase();
+                              const rawUrl = selectedEvent.postUrl || selectedEvent.platformPostUrl;
+                              let liveUrl: string | null = null;
+
+                              if (rawUrl && typeof rawUrl === 'string') {
+                                if (activePlat === 'INSTAGRAM' && (rawUrl.includes('instagram.com/p/') || rawUrl.includes('instagram.com/reel/'))) {
+                                  liveUrl = rawUrl;
+                                } else if (activePlat === 'FACEBOOK' && rawUrl.includes('facebook.com') && !rawUrl.endsWith('/apexdigital')) {
+                                  liveUrl = rawUrl;
+                                } else if (activePlat === 'LINKEDIN' && rawUrl.includes('linkedin.com/feed/update/')) {
+                                  liveUrl = rawUrl;
+                                }
+                              }
+
+                              if (!liveUrl && selectedEvent.platformPostId) {
+                                if (activePlat === 'INSTAGRAM') {
+                                  liveUrl = `https://www.instagram.com/p/${selectedEvent.platformPostId}`;
+                                } else if (activePlat === 'FACEBOOK') {
+                                  liveUrl = `https://www.facebook.com/apexdigital/posts/${selectedEvent.platformPostId}`;
+                                } else if (activePlat === 'LINKEDIN') {
+                                  liveUrl = `https://www.linkedin.com/feed/update/${selectedEvent.platformPostId}`;
+                                }
+                              }
+
+                              // Strict governance: fall back to null rather than generic /apexdigital profile URL
+                              if (!liveUrl) return null;
+
                               return (
                                 <a
                                   href={liveUrl}

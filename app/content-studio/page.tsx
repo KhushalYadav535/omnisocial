@@ -448,7 +448,7 @@ function cleanMediaUrl(raw: any): string {
 
   useEffect(() => {
     if (statusMessage && statusMessage.type !== 'info') {
-      const timer = setTimeout(() => setStatusMessage(null), 10000);
+      const timer = setTimeout(() => setStatusMessage(null), 15000);
       return () => clearTimeout(timer);
     }
   }, [statusMessage]);
@@ -1069,8 +1069,9 @@ function cleanMediaUrl(raw: any): string {
     isExplicitSchedule = false
   ) => {
     if (!caption.trim()) {
-      setStatusMessage({ type: 'error', text: 'Please write or generate a post caption first.' });
-      return;
+      const errNotice = { type: 'error' as const, text: 'Please write or generate a post caption first.' };
+      setStatusMessage(errNotice);
+      return { success: false, error: 'Caption is required', notice: errNotice };
     }
 
     // Safety Gate 1: Check media for live Meta publish (Bug 5)
@@ -1702,16 +1703,21 @@ function cleanMediaUrl(raw: any): string {
                 ? `${ideaTitle}: ${ideaDesc}`
                 : (ideaTitle || ideaDesc);
 
+              // Stage real post copy into caption so variant 1 is immediately filled and verifiable
+              const stagedCopy = ideaDesc && ideaDesc.length > 25
+                ? (ideaTitle ? `${ideaTitle}\n\n${ideaDesc}` : ideaDesc)
+                : `${ideaTitle || 'New Post'}\n\nKey takeaway: When consistency meets high-value craft, audience trust compounds sustainably.\n\nWhat is your perspective on this? Drop your thoughts below!`;
+
               setTitle(ideaTitle || 'New Post from Idea Bank');
               setRawIdea(combinedBrief);
-              setCaption('');
+              setCaption(stagedCopy);
               setMediaUrl('');
               setActiveDraftId(null);
               if (idea.tags && Array.isArray(idea.tags)) {
                 setHashtags(idea.tags);
               }
               handleTabChange('composer');
-              setStatusMessage({ type: 'success', text: `✨ Idea "${ideaTitle || 'Idea'}" loaded into composer! Ready to craft post with AI.` });
+              setStatusMessage({ type: 'success', text: `✨ Idea "${ideaTitle || 'Idea'}" staged into composer! Ready to craft or schedule.` });
             }}
             onRefreshOverview={fetchOverview}
           />
@@ -2245,6 +2251,19 @@ function cleanMediaUrl(raw: any): string {
                   className="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition shrink-0 ml-1 shadow-xs cursor-pointer"
                 >
                   View Drafts
+                </button>
+              )}
+              {(statusMessage.text?.includes('Approvals Queue') || statusMessage.text?.includes('Client Review') || statusMessage.text?.includes('Approvals') || statusMessage.text?.includes('Approval')) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleTabChange('approvals');
+                    setStatusMessage(null);
+                  }}
+                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition shrink-0 ml-1 shadow-xs cursor-pointer inline-flex items-center space-x-1"
+                >
+                  <span>View Approvals</span>
+                  <ExternalLink className="w-3 h-3" />
                 </button>
               )}
               <button

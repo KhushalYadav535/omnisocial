@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Plus, 
-  Search, 
-  MessageSquare, 
-  PenTool, 
-  Sparkles, 
-  Layers, 
+import {
+  Plus,
+  Search,
+  MessageSquare,
+  PenTool,
+  Sparkles,
+  Layers,
   Calendar,
   Command,
   HelpCircle,
@@ -62,11 +62,10 @@ export default function FloatingActionDock() {
   return (
     <>
       {/* Floating Vertical Capsule Dock (Cadra Left Dock) */}
-      <aside 
+      <aside
         aria-label="Quick Actions Dock"
-        className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col items-center bg-[#111215] text-white p-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.25)] border border-neutral-800/80 backdrop-blur-xl transition-all duration-300 ${
-          collapsed ? '-translate-x-10 opacity-40 hover:opacity-100 hover:translate-x-0' : 'translate-x-0'
-        }`}
+        className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col items-center bg-[#111215] text-white p-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.25)] border border-neutral-800/80 backdrop-blur-xl transition-all duration-300 ${collapsed ? '-translate-x-10 opacity-40 hover:opacity-100 hover:translate-x-0' : 'translate-x-0'
+          }`}
       >
         <button
           type="button"
@@ -85,11 +84,10 @@ export default function FloatingActionDock() {
 
               const buttonContent = (
                 <div
-                  className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 group cursor-pointer ${
-                    isActive 
-                      ? 'bg-white text-neutral-950 font-bold shadow-md' 
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-800/90'
-                  }`}
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 group cursor-pointer ${isActive
+                    ? 'bg-white text-neutral-950 font-bold shadow-md'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800/90'
+                    }`}
                   onMouseEnter={() => setHoveredItem(item.id)}
                   onMouseLeave={() => setHoveredItem(null)}
                 >
@@ -134,11 +132,11 @@ export default function FloatingActionDock() {
 
       {/* Quick Search Modal */}
       {showSearchModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-neutral-950/40 backdrop-blur-sm flex items-start justify-center pt-20 pb-10 px-4 overflow-y-auto"
           onClick={() => setShowSearchModal(false)}
         >
-          <div 
+          <div
             className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-neutral-200/90 p-5 overflow-hidden max-h-[85vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -152,7 +150,7 @@ export default function FloatingActionDock() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent border-none text-sm font-medium text-neutral-900 placeholder-neutral-400 focus:outline-none"
               />
-              <button 
+              <button
                 onClick={() => setShowSearchModal(false)}
                 className="w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500 transition-colors cursor-pointer"
               >
@@ -164,48 +162,48 @@ export default function FloatingActionDock() {
               <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider px-2">
                 Quick Navigation
               </p>
-              <Link 
-                href="/dashboard" 
+              <Link
+                href="/dashboard"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >
                 <span className="font-semibold text-neutral-800">Executive Dashboard</span>
                 <span className="text-[11px] text-neutral-400 font-mono">Overview</span>
               </Link>
-              <Link 
-                href="/inbox" 
+              <Link
+                href="/inbox"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >
                 <span className="font-semibold text-neutral-800">Unified Social Inbox</span>
                 <span className="text-[11px] text-neutral-400 font-mono">Comments & DMs</span>
               </Link>
-              <Link 
-                href="/content-studio" 
+              <Link
+                href="/content-studio"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >
                 <span className="font-semibold text-neutral-800">AI Content Studio</span>
                 <span className="text-[11px] text-neutral-400 font-mono">Creative Suite</span>
               </Link>
-              <Link 
-                href="/calendar" 
+              <Link
+                href="/calendar"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >
                 <span className="font-semibold text-neutral-800">Content Calendar</span>
                 <span className="text-[11px] text-neutral-400 font-mono">Scheduled Posts</span>
               </Link>
-              <Link 
-                href="/analytics" 
+              <Link
+                href="/analytics"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >
                 <span className="font-semibold text-neutral-800">Analytics Telemetry</span>
                 <span className="text-[11px] text-neutral-400 font-mono">Engagement & Sentiment</span>
               </Link>
-              <Link 
-                href="/settings" 
+              <Link
+                href="/settings"
                 onClick={() => setShowSearchModal(false)}
                 className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-neutral-50 transition-colors"
               >

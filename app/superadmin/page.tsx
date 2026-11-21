@@ -139,11 +139,10 @@ export default function SuperAdminPage() {
         </div>
 
         {notice && (
-          <div className={`p-4 rounded-[20px] border text-xs flex items-center justify-between shadow-2xs transition-all ${
-            notice.type === 'success' 
-              ? 'bg-emerald-50/80 border-emerald-200/90 text-emerald-900' 
-              : 'bg-rose-50/80 border-rose-200/90 text-rose-900'
-          }`}>
+          <div className={`p-4 rounded-[20px] border text-xs flex items-center justify-between shadow-2xs transition-all ${notice.type === 'success'
+            ? 'bg-emerald-50/80 border-emerald-200/90 text-emerald-900'
+            : 'bg-rose-50/80 border-rose-200/90 text-rose-900'
+            }`}>
             <div className="flex items-center gap-2.5">
               {notice.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -152,7 +151,7 @@ export default function SuperAdminPage() {
               )}
               <span className="font-medium">{notice.text}</span>
             </div>
-            <button 
+            <button
               onClick={() => setNotice(null)}
               className="text-slate-400 hover:text-slate-600 font-bold px-2 py-0.5"
             >
@@ -294,80 +293,76 @@ export default function SuperAdminPage() {
                   </tr>
                 ) : (
                   tenants.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-2xl bg-[#0A0D12] text-white flex items-center justify-center font-black text-xs">
-                          {t.name.slice(0, 2).toUpperCase()}
+                    <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-2xl bg-[#0A0D12] text-white flex items-center justify-center font-black text-xs">
+                            {t.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-slate-900 text-[13px]">{t.name}</p>
+                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{t.slug}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-extrabold text-slate-900 text-[13px]">{t.name}</p>
-                          <p className="text-[11px] text-slate-400 font-mono mt-0.5">{t.slug}</p>
+                      </td>
+                      <td className="py-4 px-6">
+                        <select
+                          value={t.plan?.id || plans[0]?.id}
+                          onChange={(e) => handleChangeTenantPlan(t.id, e.target.value)}
+                          className="text-xs font-bold border border-black/[0.08] rounded-xl px-3 py-1.5 bg-white text-slate-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-black/10 cursor-pointer"
+                        >
+                          {plans.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} (${p.priceMonthly}/mo)</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-4 px-6 text-slate-600 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-900">{t.userCount}</span> users
+                          <span className="text-slate-300">•</span>
+                          <span className="font-semibold text-slate-900">{t.brandCount}</span> brands
+                          <span className="text-slate-300">•</span>
+                          <span className="font-semibold text-slate-900">{t.accountCount}</span> channels
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <select
-                        value={t.plan?.id || plans[0]?.id}
-                        onChange={(e) => handleChangeTenantPlan(t.id, e.target.value)}
-                        className="text-xs font-bold border border-black/[0.08] rounded-xl px-3 py-1.5 bg-white text-slate-800 shadow-2xs focus:outline-hidden focus:ring-2 focus:ring-black/10 cursor-pointer"
-                      >
-                        {plans.map(p => (
-                          <option key={p.id} value={p.id}>{p.name} (${p.priceMonthly}/mo)</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-4 px-6 text-slate-600 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-slate-900">{t.userCount}</span> users
-                        <span className="text-slate-300">•</span>
-                        <span className="font-semibold text-slate-900">{t.brandCount}</span> brands
-                        <span className="text-slate-300">•</span>
-                        <span className="font-semibold text-slate-900">{t.accountCount}</span> channels
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          t.hasCustomMetaApp 
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.hasCustomMetaApp
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
                             : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {t.hasCustomMetaApp ? 'Custom Meta App' : 'Platform OAuth'}
-                        </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          t.hasCustomAiKey 
-                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' 
+                            }`}>
+                            {t.hasCustomMetaApp ? 'Custom Meta App' : 'Platform OAuth'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.hasCustomAiKey
+                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                             : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {t.hasCustomAiKey ? 'BYOK AI' : 'Default AI'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${
-                        t.status === 'ACTIVE' 
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            }`}>
+                            {t.hasCustomAiKey ? 'BYOK AI' : 'Default AI'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${t.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-rose-50 text-rose-700 border border-rose-200'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleToggleTenantStatus(t.id, t.status)}
-                        className={`text-xs font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                          t.status === 'ACTIVE'
+                          }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${t.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          onClick={() => handleToggleTenantStatus(t.id, t.status)}
+                          className={`text-xs font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer ${t.status === 'ACTIVE'
                             ? 'text-rose-700 border-rose-200 bg-rose-50/50 hover:bg-rose-100'
                             : 'text-emerald-700 border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {t.status === 'ACTIVE' ? 'Suspend Agency' : 'Reactivate Agency'}
-                      </button>
-                    </td>
-                  </tr>
-                )))}
+                            }`}
+                        >
+                          {t.status === 'ACTIVE' ? 'Suspend Agency' : 'Reactivate Agency'}
+                        </button>
+                      </td>
+                    </tr>
+                  )))}
               </tbody>
             </table>
           </div>
