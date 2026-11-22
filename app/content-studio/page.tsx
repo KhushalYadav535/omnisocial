@@ -555,7 +555,10 @@ function cleanMediaUrl(raw: any): string {
           setPreviousCaption(caption);
         }
         setCaption(res.generated.caption);
-        setMediaUrl(''); // Clear mediaUrl so prior post's image is never carried over!
+        // Preserve mediaUrl if user intentionally selected or attached an asset
+        if (!mediaUrl) {
+          setMediaUrl('');
+        }
         setActiveDraftId(null);
         const newTags = res.generated.hashtags || [];
         setHashtags(newTags);
@@ -1230,19 +1233,7 @@ function cleanMediaUrl(raw: any): string {
         setStatusMessage(successMsg);
         setActiveDraftId(null);
         setIsPublishGateConfirmed(false);
-        setTitle('');
-        setCaption('');
-        setRawIdea('');
-        setHashtags([]);
-        setMediaUrl('');
-        setScheduledFor('');
-        if (typeof window !== 'undefined') {
-          try {
-            sessionStorage.removeItem('omnisocial_composer_session_draft');
-            localStorage.removeItem('omnisocial_composer_draft');
-            localStorage.removeItem('omnisocial_platform_captions');
-          } catch {}
-        }
+        // Retain composer content and virality score for review instead of wiping to blank placeholder
         fetchOverview();
         return { success: true, mode: 'PENDING', notice: successMsg };
       }

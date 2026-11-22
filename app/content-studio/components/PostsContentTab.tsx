@@ -97,24 +97,37 @@ function extractDynamicTags(text: string): string[] {
   const currentYear = '2026';
   const clean = (text || '').replace(/202[0-5]\b/g, currentYear);
 
-  // Check for specific festive / niche phrases first
   const tags: string[] = [];
-  if (/diwali/i.test(clean)) tags.push('#Diwali2026', '#FestiveGifting');
-  if (/sweet|mithai|ladoo|kaju/i.test(clean)) tags.push('#HandmadeSweets');
-  if (/candle|diya|brass/i.test(clean)) tags.push('#ArtisanDiya');
-  if (/baker|bakery|cake|bread/i.test(clean)) tags.push('#HomeBakery');
-  if (/fashion|scarf|linen|clothing/i.test(clean)) tags.push('#SustainableFashion');
-  if (/ceramic|pottery|craft/i.test(clean)) tags.push('#CeramicArt');
-  if (/launch|sprint|b2b|strategy/i.test(clean)) tags.push('#BrandStrategy', '#GrowthMarketing');
 
-  const words = clean
-    .replace(/[^a-zA-Z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 5 && !/^(about|their|there|which|always|before|after|because|between|through|people|community|really|should|would|could|today|first|second)/i.test(w))
-    .map(w => '#' + w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  // Domain-specific compound hashtags (no word splits)
+  if (/ceramic|pottery|clay|wheel|glaz/i.test(clean)) {
+    tags.push('#PotteryStudio', '#HandmadeCeramics', '#CeramicWorkshop', '#ArtisanCrafts');
+  }
+  if (/baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(clean)) {
+    tags.push('#ArtisanBakery', '#HomeBakery', '#FreshBakedDaily', '#SmallBatchBaking');
+  }
+  if (/workshop|masterclass|course|session|learn|class/i.test(clean)) {
+    tags.push('#CreativeWorkshop', '#HandsOnLearning', '#SkillBuilding', '#WeekendWorkshop');
+  }
+  if (/diwali|festive|mithai|sweet|ladoo|kaju/i.test(clean)) {
+    tags.push('#FestiveGifting', '#Diwali2026', '#HandcraftedCelebrations', '#ArtisanGifts');
+  }
+  if (/candle|diya|brass|fragrance|wax/i.test(clean)) {
+    tags.push('#ArtisanCandles', '#HandpouredCandles', '#HomeAesthetics', '#WarmLiving');
+  }
+  if (/fashion|scarf|linen|clothing|wear|sustainable/i.test(clean)) {
+    tags.push('#SustainableFashion', '#SlowFashionMovement', '#ArtisanApparel', '#LinenWear');
+  }
+  if (/launch|sprint|b2b|strategy|marketing|growth/i.test(clean)) {
+    tags.push('#BrandStrategy', '#GrowthMarketing', '#SocialMediaMarketing', '#ContentCreator');
+  }
 
-  const combined = Array.from(new Set([...tags, ...words])).slice(0, 5);
-  return combined.length >= 3 ? combined : ['#ArtisanCraft', '#HandmadeWithLove', '#CommunitySpotlight', '#Festive2026'];
+  // Fallback compound defaults (ensures no single split words like #Running or #Weekend)
+  if (tags.length === 0) {
+    tags.push('#ArtisanCrafts', '#HandmadeWithLove', '#CommunitySpotlight', '#SmallBatchLiving');
+  }
+
+  return Array.from(new Set(tags)).slice(0, 4);
 }
 
 function generateVariantsForConcept(
@@ -122,59 +135,119 @@ function generateVariantsForConcept(
   activeCopy: string,
   tags: string[]
 ): PostVariantItem[] {
-  const rawClean = (concept || 'Artisan Craftsmanship & Festive Excellence').replace(/^#+\s*/, '').replace(/202[0-5]\b/g, '2026').trim();
+  const rawClean = (concept || 'Artisan Craftsmanship & Creative Excellence').replace(/^#+\s*/, '').replace(/202[0-5]\b/g, '2026').trim();
   const lines = rawClean.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
-  const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Festive Excellence';
+  const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Creative Excellence';
 
-  // Extract price, deadline, items
+  // Domain detection
+  const isWorkshop = /workshop|masterclass|class|session|signup|register|enroll|weekend/i.test(rawClean);
+  const isBakery = /baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(rawClean);
+
+  // Extract price, deadline
   const priceMatch = rawClean.match(/(?:₹|rs\.?|inr|\$)\s*[\d,]+|\b\d{3,5}\s*(?:₹|inr|rs)?/i);
   const priceStr = priceMatch ? priceMatch[0].trim() : '';
 
   const deadlineMatch = rawClean.match(/(?:by|before|until|deadline[:\s]*)\s*([0-9]{1,2}\s+[a-z]+|[a-z]+\s+[0-9]{1,2}|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i);
   const deadlineStr = deadlineMatch ? deadlineMatch[0].trim() : '';
 
-  // Extract items (separated by commas or colons)
-  const items = rawClean
-    .split(/[,:]/)
-    .map(s => s.trim())
-    .filter(s => s.length > 3 && !s.toLowerCase().includes('pre-book') && !s.toLowerCase().includes('deadline') && s !== cleanTopic)
-    .slice(0, 4);
-
   const dynamicTags = tags && tags.length > 0 ? tags.map(t => t.replace(/202[0-5]\b/g, '2026')) : extractDynamicTags(rawClean);
 
-  const itemsList = items.length > 0
-    ? items.map(item => `✨ ${item.charAt(0).toUpperCase() + item.slice(1)}`).join('\n')
-    : `✨ Freshly crafted in limited, intentional batches\n✨ Premium materials and authentic artisan ingredients\n✨ Thoughtfully packed to create an unforgettable unboxing`;
+  const priceLine = priceStr ? `\n💰 Fee / Price: ${priceStr}` : '';
+  const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited seats & slots available!';
 
-  const priceLine = priceStr ? `\n💰 Festive Price: ${priceStr}` : '';
-  const deadlineLine = deadlineStr ? `\n⏰ Limited Orders: ${deadlineStr}` : '\n⏰ Limited slots available — reserving fast!';
+  if (isWorkshop) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Ready to create something tangible with your own hands? ✨\n\nJoin our upcoming workshop: ${cleanTopic}.\n\nStep away from screens and immerse yourself in the tactile joy of making:\n• Step-by-step guidance designed for all skill levels\n• All premium tools, clay, and studio materials included\n• Take home your very own handcrafted finished piece${priceLine}${deadlineLine}\n\nSpaces are intentionally kept small for personal attention. Comment or DM to save your spot! 👇`,
+        hashtags: dynamicTags,
+        cta: 'Register Now'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Workshop Schedule & Details: ${cleanTopic}\n\nHere is everything you need to know:\n\n1. 👐 Hands-On Studio Time:\nLearn the core foundations, wheel techniques, and glazing fundamentals with personal guidance.\n2. 💎 What's Included:${priceStr ? ` Full session + materials for ${priceStr}` : ' All materials, firing, and firing glazes provided'}\n3. ⏳ Registration Cutoff:${deadlineStr ? ` Signups close ${deadlineStr}` : ' Only 8 spots available per batch'}\n\nSave this post for your weekend plans, or drop a comment below to enroll!`,
+        hashtags: dynamicTags,
+        cta: 'View Workshop Plan'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Behind the scenes at the studio 🏺\n\nSetting up the workbenches for ${cleanTopic}.\n\nThere is something deeply restorative about working with natural clay. No notifications, no rushing — just quiet concentration, patience, and the rhythm of the wheel.\n\nWhether you're looking for a creative outlet or a peaceful weekend reset, our doors are open.${priceLine}${deadlineLine}\n\nHave you ever tried pottery before? What is the first shape you would love to create?`,
+        hashtags: dynamicTags,
+        cta: 'Explore Studio'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Question for our creative community 👇\n\nWhen was the last time you spent an afternoon learning a new craft purely for the fun of it?\n\nWith ${cleanTopic}, we’re creating space to slow down and create with purpose.${priceLine}${deadlineLine}\n\nTag a friend who needs a creative weekend escape, or tell us what craft you've been wanting to try!`,
+        hashtags: dynamicTags,
+        cta: 'Join Conversation'
+      }
+    ];
+  }
 
+  if (isBakery) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `The ovens are on and the studio smells incredible 🥐\n\nIntroducing: ${cleanTopic}.\n\nCrafted with slow-fermented dough, pure butter, and unhurried artisan patience:\n• Baked fresh in small batches every morning\n• No artificial additives — pure honest flavor\n• The perfect comfort for your morning coffee${priceLine}${deadlineLine}\n\nOrder early before today's batch sells out! Drop a comment or DM to reserve yours 👇`,
+        hashtags: dynamicTags,
+        cta: 'Order Fresh'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Today's Fresh Bake: ${cleanTopic}\n\nHere is what makes our bake truly special:\n\n1. 🌾 Honest Ingredients: Slow fermentation and organic flours\n2. 💎 Artisan Standard:${priceStr ? ` Box of fresh bakes at ${priceStr}` : ' Uncompromising bakery quality'}\n3. ⏰ Order Window:${deadlineStr ? ` Pre-orders close ${deadlineStr}` : ' Fresh batches dispatched daily'}\n\nSave this for your weekend breakfast checklist!`,
+        hashtags: dynamicTags,
+        cta: 'Menu Breakdown'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `From pre-dawn kneading to the golden crust 🥖\n\nBehind every batch of ${cleanTopic} is hours of quiet craftsmanship. When you respect the process, the texture and aroma speak for themselves.\n\nThank you for supporting small-batch independent baking.${priceLine}${deadlineLine}\n\nWhat is your ultimate favorite breakfast bakery treat?`,
+        hashtags: dynamicTags,
+        cta: 'Baker’s Notes'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Weekend Bakery Poll ☕️👇\n\nWhen it comes to ${cleanTopic}, are you savoring it with hot filter coffee or a quiet cup of tea?\n\nTell us your go-to pairing below, or tag someone who deserves a fresh treat today!`,
+        hashtags: dynamicTags,
+        cta: 'Cast Your Vote'
+      }
+    ];
+  }
+
+  // Default / Artisan Craft
   return [
     {
       angleLabel: 'Direct Hook & Story',
       style: 'Storytelling',
-      copy: activeCopy || `${cleanTopic} ✨\n\nThere is nothing quite like celebrating moments that matter with gifts made from the heart.\n\nEvery piece in this collection is curated with personal dedication:\n${itemsList}${priceLine}${deadlineLine}\n\nHandcrafted in small batches so every detail is pure perfection. Have you reserved yours yet? Drop a comment or DM to secure your festive set! 👇`,
+      copy: activeCopy || `${cleanTopic} ✨\n\nThere is nothing quite like celebrating moments that matter with creations made from the heart.\n\nEvery piece in this release is curated with personal dedication:\n• Handcrafted in small, intentional studio batches\n• Premium materials and authentic artisan care\n• Designed to deliver lasting beauty and thoughtful daily utility${priceLine}${deadlineLine}\n\nHave you reserved yours yet? Drop a comment or DM to secure yours today! 👇`,
       hashtags: dynamicTags,
       cta: 'Order Now'
     },
     {
       angleLabel: 'Actionable Breakdown',
       style: 'Framework / Listicle',
-      copy: `Curated Overview: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌟 Handcrafted Inclusions:\n${itemsList}\n2. 💎 Honest Value:${priceStr ? ` Complete set at ${priceStr}` : ' Uncompromising artisan standard'}\n3. ⏳ Booking Window:${deadlineStr ? ` Pre-orders close ${deadlineStr}` : ' Strictly limited batch while supplies last'}\n\nSave this post for your festive gifting checklist, or comment below to order!`,
+      copy: `Curated Overview: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌟 Handcrafted Inclusions: Thoughtfully made with uncompromising standards\n2. 💎 Honest Value:${priceStr ? ` Complete set at ${priceStr}` : ' Authentic artisan standard'}\n3. ⏳ Booking Window:${deadlineStr ? ` Available until ${deadlineStr}` : ' Strictly limited batch while supplies last'}\n\nSave this post for your wishlist, or comment below to order!`,
       hashtags: dynamicTags,
       cta: 'View Breakdown'
     },
     {
       angleLabel: 'Behind-The-Scenes Craft',
       style: 'Insight / Advice',
-      copy: `Behind the scenes with ${cleanTopic} 🕯️\n\nTrue craftsmanship doesn't cut corners. From selecting each ingredient to hand-packing every box, here is why our community cherishes this work:\n\n• Made in small, intentional batches right in our studio\n• Sourced with care, dedication, and uncompromising standards\n• Designed to deliver pure warmth the moment you open the box\n${priceLine}${deadlineLine}\n\nThank you for trusting independent artisans and making celebrations meaningful. What festive detail do you look forward to most?`,
+      copy: `Behind the scenes with ${cleanTopic} 🕯️\n\nTrue craftsmanship doesn't cut corners. From selecting each material to hand-finishing every piece, here is why our community cherishes this work:\n\n• Made in small, intentional batches right in our studio\n• Sourced with care, dedication, and uncompromising standards\n• Designed to bring warmth and quiet beauty to your space\n${priceLine}${deadlineLine}\n\nThank you for trusting independent artisans. What detail do you value most in handcrafted work?`,
       hashtags: dynamicTags,
       cta: 'Discover the Craft'
     },
     {
       angleLabel: 'Community Discussion',
       style: 'Question / Discussion',
-      copy: `Festive Question for Our Community 👇\n\nWhen you think about gifting during ${cleanTopic}, what is the one gift that leaves a lasting impression?\n\nFor us, thoughtful curation always wins:\n${itemsList}\n\nWhether you're treating family, thanking mentors, or delighting colleagues${priceStr ? ` (${priceStr})` : ''}, we've got you covered.${deadlineLine}\n\nTell us your favorite gifting pick or tag someone who would love this!`,
+      copy: `Community Spotlight 👇\n\nWhen you look for thoughtful creations like ${cleanTopic}, what is the one quality that stands out to you most?\n\nFor us, intentional craftsmanship and honest materials always win.${priceLine}${deadlineLine}\n\nTell us your thoughts or tag someone who appreciates mindful design!`,
       hashtags: dynamicTags,
       cta: 'Join the Discussion'
     }
@@ -1391,6 +1464,16 @@ export default function PostsContentTab({
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
+                {((composerNotice || statusMessage)?.text?.includes('Approvals') || (composerNotice || statusMessage)?.text?.includes('Approval')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('approvals') : (window.location.href = '/content-studio?tab=approvals')}
+                    className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Approvals</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -2381,6 +2464,16 @@ export default function PostsContentTab({
                     className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
                   >
                     <span>View Drafts</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+                {((composerNotice || statusMessage)?.text?.includes('Approvals') || (composerNotice || statusMessage)?.text?.includes('Approval')) && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateTab ? onNavigateTab('approvals') : (window.location.href = '/content-studio?tab=approvals')}
+                    className="px-2.5 py-1 text-xs font-bold text-indigo-800 bg-white hover:bg-indigo-100 border border-indigo-300 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <span>View Approvals</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
