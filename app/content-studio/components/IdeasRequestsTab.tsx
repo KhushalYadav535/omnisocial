@@ -88,9 +88,15 @@ export default function IdeasRequestsTab({
   };
 
   useEffect(() => {
-    if (subView === 'ideas') fetchIdeas();
-    else fetchRequests();
-  }, [brandId, subView]);
+    fetchIdeas();
+    fetchRequests();
+  }, [brandId]);
+
+  useEffect(() => {
+    if (subView === 'requests') {
+      fetchRequests();
+    }
+  }, [subView]);
 
   useEffect(() => {
     if (notification) {

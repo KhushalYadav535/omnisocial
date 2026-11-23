@@ -1,8 +1,9 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { apiRequest } from '../lib/api';
 import {
   Home,
   Sparkles,
@@ -88,6 +89,27 @@ function SidebarContent({
     setOverrideTab(null);
   }, [pathname, searchParams]);
 
+  const [draftCount, setDraftCount] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchDraftCount = () => {
+      apiRequest('/content?status=DRAFT')
+        .then(res => {
+          if (!mounted) return;
+          const count = res.items?.length ?? res.contents?.length ?? 0;
+          setDraftCount(count);
+        })
+        .catch(() => {});
+    };
+    fetchDraftCount();
+    const interval = setInterval(fetchDraftCount, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [pathname, searchParams]);
+
   const totalUnreadEngage = (unreadCommentsCount || 0) + (unreadDmsCount || 0) || unreadInboxCount || 0;
 
   // Complete navigation structure bringing all Studio destinations into the sidebar
@@ -168,6 +190,7 @@ function SidebarContent({
           name: 'Drafts',
           href: '/content-studio?tab=drafts',
           icon: FileEdit,
+          badge: draftCount > 0 ? draftCount : undefined,
           isActive: () => pathname === '/content-studio' && currentTab === 'drafts'
         },
         {

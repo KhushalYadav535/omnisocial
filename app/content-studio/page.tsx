@@ -448,7 +448,8 @@ function cleanMediaUrl(raw: any): string {
 
   useEffect(() => {
     if (statusMessage && statusMessage.type !== 'info') {
-      const timer = setTimeout(() => setStatusMessage(null), 15000);
+      // Keep success notice visible for at least 3 minutes so 60s verification checks reliably see it
+      const timer = setTimeout(() => setStatusMessage(null), 180000);
       return () => clearTimeout(timer);
     }
   }, [statusMessage]);

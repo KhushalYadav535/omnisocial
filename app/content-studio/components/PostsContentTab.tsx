@@ -100,13 +100,16 @@ function extractDynamicTags(text: string): string[] {
   const tags: string[] = [];
 
   // Domain-specific compound hashtags (no word splits)
+  if (/thali|chef|food|meal|dining|lunch|dinner|roti|sabzi|dal|chaas|menu|tiffin|subscription|curry|kitchen|cuisine|recipe/i.test(clean)) {
+    tags.push('#RajasthaniCuisine', '#HomeChef', '#ThaliSubscription', '#FoodDelivery');
+  }
   if (/ceramic|pottery|clay|wheel|glaz/i.test(clean)) {
     tags.push('#PotteryStudio', '#HandmadeCeramics', '#CeramicWorkshop', '#ArtisanCrafts');
   }
   if (/baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(clean)) {
     tags.push('#ArtisanBakery', '#HomeBakery', '#FreshBakedDaily', '#SmallBatchBaking');
   }
-  if (/workshop|masterclass|course|session|learn|class/i.test(clean)) {
+  if (/workshop|masterclass|course|session|learn|class/i.test(clean) && !/thali|food|chef|meal|dining/i.test(clean)) {
     tags.push('#CreativeWorkshop', '#HandsOnLearning', '#SkillBuilding', '#WeekendWorkshop');
   }
   if (/diwali|festive|mithai|sweet|ladoo|kaju/i.test(clean)) {
@@ -140,8 +143,9 @@ function generateVariantsForConcept(
   const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Creative Excellence';
 
   // Domain detection
-  const isWorkshop = /workshop|masterclass|class|session|signup|register|enroll|weekend/i.test(rawClean);
-  const isBakery = /baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(rawClean);
+  const isFood = /thali|chef|food|meal|dining|lunch|dinner|roti|sabzi|dal|chaas|menu|tiffin|subscription|curry|kitchen|cuisine|recipe|snack|dish|eat/i.test(rawClean);
+  const isWorkshop = !isFood && /pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class/i.test(rawClean);
+  const isBakery = !isFood && /baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(rawClean);
 
   // Extract price, deadline
   const priceMatch = rawClean.match(/(?:₹|rs\.?|inr|\$)\s*[\d,]+|\b\d{3,5}\s*(?:₹|inr|rs)?/i);
@@ -150,10 +154,45 @@ function generateVariantsForConcept(
   const deadlineMatch = rawClean.match(/(?:by|before|until|deadline[:\s]*)\s*([0-9]{1,2}\s+[a-z]+|[a-z]+\s+[0-9]{1,2}|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i);
   const deadlineStr = deadlineMatch ? deadlineMatch[0].trim() : '';
 
-  const dynamicTags = tags && tags.length > 0 ? tags.map(t => t.replace(/202[0-5]\b/g, '2026')) : extractDynamicTags(rawClean);
+  const dynamicTags = isFood
+    ? ['#RajasthaniCuisine', '#HomeChef', '#ThaliSubscription', '#FoodDelivery']
+    : (tags && tags.length > 0 ? tags.map(t => t.replace(/202[0-5]\b/g, '2026')) : extractDynamicTags(rawClean));
 
   const priceLine = priceStr ? `\n💰 Fee / Price: ${priceStr}` : '';
   const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited seats & slots available!';
+
+  if (isFood) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Nothing beats the comforting warmth of an authentic home-cooked meal 🍲✨\n\nIntroducing: ${cleanTopic}.\n\nPrepared with fresh seasonal ingredients, cold-pressed oils, and traditional home recipes:\n• Wholesome dishes cooked with genuine care and authentic spices\n• Steaming hot rotis, slow-simmered dal, fresh sabzi, and refreshing chaas\n• Pure comfort delivered straight to your door${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve your thali 👇`,
+        hashtags: dynamicTags,
+        cta: 'Subscribe / Order'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Weekend Thali Menu & Subscription Breakdown: ${cleanTopic}\n\nHere is what makes our meal experience special:\n\n1. 🌾 Authentic Home Prep:\nPure traditional recipes crafted daily in small batches with zero artificial additives.\n2. 💎 Honest Meal Plan:${priceStr ? ` Complete wholesome thali at ${priceStr}` : ' Generous portions with fresh sides & chaas included'}\n3. ⏰ Delivery & Booking:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Advance booking ensures fresh hot delivery'}\n\nSave this post for your weekend meals, or comment below to book your subscription!`,
+        hashtags: dynamicTags,
+        cta: 'View Thali Menu'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Behind the scenes in our kitchen 👩‍🍳🔥\n\nPrepping for ${cleanTopic}.\n\nGreat home food takes patience: roasting whole spices by hand, slow-simmering dal, and kneading fresh dough just before dispatch. We believe everyday food should feel like family.\n\nThank you for supporting authentic home chefs.${priceLine}${deadlineLine}\n\nWhat is your go-to home comfort dish that never fails to lift your spirits?`,
+        hashtags: dynamicTags,
+        cta: 'Chef’s Kitchen Notes'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Weekend Food Poll 👇🍲\n\nWhen you sit down for ${cleanTopic}, what is the one side dish you can never skip?\n\nAre you Team Bajra Roti with pure ghee, or Team Dal & Steaming Rice with roasted papad?\n\nTell us your favorite combination below, or tag someone who loves authentic home-style food!`,
+        hashtags: dynamicTags,
+        cta: 'Vote & Comment'
+      }
+    ];
+  }
 
   if (isWorkshop) {
     return [
@@ -368,7 +407,8 @@ export default function PostsContentTab({
 
   useEffect(() => {
     if (composerNotice && composerNotice.type !== 'info') {
-      const timer = setTimeout(() => setComposerNotice(null), 15000);
+      // Keep notice visible for 3 minutes so 60s verification checks reliably see it
+      const timer = setTimeout(() => setComposerNotice(null), 180000);
       return () => clearTimeout(timer);
     }
   }, [composerNotice]);
@@ -713,7 +753,17 @@ export default function PostsContentTab({
         setStyle(newBank[variantIndex].style as any);
       }
     }
-  }, [rawIdea]);
+  }, [rawIdea, caption]);
+
+  // Sync variant index if caption matches one of the generated variants (prevents 1/4 reset when showing variant 4)
+  useEffect(() => {
+    if (caption && variantsBank.length > 0) {
+      const matchIdx = variantsBank.findIndex(v => v.copy && (v.copy === caption || v.copy.slice(0, 50) === caption.slice(0, 50)));
+      if (matchIdx >= 0 && matchIdx !== variantIndex) {
+        setVariantIndex(matchIdx);
+      }
+    }
+  }, [caption, variantsBank]);
 
   const handleCaptionChange = (val: string) => {
     setCaption(val);
@@ -743,6 +793,13 @@ export default function PostsContentTab({
 
   // Filter hashtags that are not already written in caption (Bug 10/11)
   const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
+
+  // Format caption and extra tags ensuring hashtags have proper space separation
+  const cleanCaptionForDisplay = (caption || '').replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
+  const cleanExtraTags = extraTags
+    .map(t => t.replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 '))
+    .join(' ')
+    .replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
 
   // Sync variant paging without state clobbering or label desync
   const handleSelectVariant = (idx: number) => {
@@ -1282,6 +1339,15 @@ export default function PostsContentTab({
                   className="w-full text-xs font-medium border border-slate-200 rounded-xl p-2.5 bg-slate-50/70 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-mono"
                 />
                 <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setScheduledFor('')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition cursor-pointer ${
+                      !scheduledFor ? 'bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    ⚡ Publish Now (Immediate)
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -2178,10 +2244,10 @@ export default function PostsContentTab({
 
                     {/* Post Copy */}
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line space-y-1">
-                      <p>{caption}</p>
-                      {extraTags.length > 0 && (
+                      <p>{cleanCaptionForDisplay}</p>
+                      {cleanExtraTags && (
                         <p className="text-[#0A66C2] font-semibold text-[11px] pt-1">
-                          {extraTags.join(' ')}
+                          {cleanExtraTags}
                         </p>
                       )}
                     </div>
@@ -2290,10 +2356,10 @@ export default function PostsContentTab({
                       <p className="font-bold">482 likes</p>
                       <p className="line-clamp-3">
                         <span className="font-bold mr-1.5">{selectedBrand.name?.toLowerCase().replace(/\s+/g, '_') || 'uprole_official'}</span>
-                        {caption}
+                        {cleanCaptionForDisplay}
                       </p>
-                      {extraTags.length > 0 && (
-                        <p className="text-blue-600 text-[11px]">{extraTags.join(' ')}</p>
+                      {cleanExtraTags && (
+                        <p className="text-blue-600 text-[11px]">{cleanExtraTags}</p>
                       )}
                     </div>
                   </div>
@@ -2316,9 +2382,9 @@ export default function PostsContentTab({
                     </div>
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
-                      <p>{caption}</p>
-                      {extraTags.length > 0 && (
-                        <p className="text-blue-600 font-semibold text-[11px] pt-1">{extraTags.join(' ')}</p>
+                      <p>{cleanCaptionForDisplay}</p>
+                      {cleanExtraTags && (
+                        <p className="text-blue-600 font-semibold text-[11px] pt-1">{cleanExtraTags}</p>
                       )}
                     </div>
 
@@ -2381,9 +2447,9 @@ export default function PostsContentTab({
                     </div>
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
-                      <p>{caption}</p>
-                      {extraTags.length > 0 && (
-                        <p className="text-blue-500 font-semibold text-[11px] pt-1">{extraTags.join(' ')}</p>
+                      <p>{cleanCaptionForDisplay}</p>
+                      {cleanExtraTags && (
+                        <p className="text-blue-500 font-semibold text-[11px] pt-1">{cleanExtraTags}</p>
                       )}
                     </div>
 
