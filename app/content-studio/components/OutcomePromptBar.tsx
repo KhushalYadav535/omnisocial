@@ -8,7 +8,7 @@ interface OutcomePromptBarProps {
   brandId: string;
   onNavigateTab: (tabId: string) => void;
   onRefreshData?: () => void;
-  onLoadIntoComposer?: (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => void;
+  onLoadIntoComposer?: (data: { caption: string; title?: string; hashtags?: string[]; format?: string; angleVariants?: any[] }) => void;
 }
 
 export default function OutcomePromptBar({
@@ -220,7 +220,8 @@ export default function OutcomePromptBar({
                     onLoadIntoComposer({
                       caption: executionResult.output.caption || executionResult.output.hook,
                       title: executionResult.output.title || 'AI Generated Post',
-                      hashtags: normalizedTags
+                      hashtags: normalizedTags,
+                      angleVariants: Array.isArray(executionResult.output.angleVariants) ? executionResult.output.angleVariants : undefined
                     });
                   } else {
                     onNavigateTab(dest);

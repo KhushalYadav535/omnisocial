@@ -257,7 +257,6 @@ function cleanMediaUrl(raw: any): string {
   const handleEditDraft = (draft: any) => {
     setActiveDraftId(draft.id);
     if (draft.title) setTitle(draft.title);
-    if (draft.caption) setCaption(draft.caption);
     if (draft.rawIdea) setRawIdea(draft.rawIdea);
     if (draft.format) setFormat(draft.format);
     let tags: string[] = [];
@@ -267,6 +266,24 @@ function cleanMediaUrl(raw: any): string {
     }
     const cleanTags = tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
     if (cleanTags.length > 0) setHashtags(cleanTags);
+
+    // Strip trailing line if it solely contains hashtags matching cleanTags (N5 / Focus 4)
+    let cleanCaption = draft.caption || '';
+    if (cleanTags.length > 0 && cleanCaption) {
+      const lines = cleanCaption.split('\n');
+      if (lines.length > 1) {
+        const lastLine = lines[lines.length - 1].trim();
+        const lastTokens: string[] = lastLine.split(/\s+/).filter(Boolean);
+        if (lastTokens.length > 0 && lastTokens.every((t: string) => t.startsWith('#') && cleanTags.some((ct: string) => ct.toLowerCase() === t.toLowerCase()))) {
+          lines.pop();
+          if (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+            lines.pop();
+          }
+          cleanCaption = lines.join('\n').trim();
+        }
+      }
+    }
+    setCaption(cleanCaption);
     const img = cleanMediaUrl(draft.mediaUrls);
     setMediaUrl(img);
 
@@ -431,16 +448,29 @@ function cleanMediaUrl(raw: any): string {
     setStatusMessage({ type: 'success', text: 'Composer reset. Ready to author a new post.' });
   };
 
-  const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
-    if (data.title) setTitle(data.title);
-    if (data.caption) setCaption(data.caption);
+  const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string; angleVariants?: any[] }) => {
+    setTitle(data.title || '');
+    setCaption(data.caption || '');
+    const cleanTopic = (data.title || (data.caption ? data.caption.slice(0, 60) : '')).trim();
+    setRawIdea(data.title || cleanTopic);
+    // Reset previous composer state to ensure a clean slate (N9)
+    setMediaUrl('');
+    setScheduledFor('');
     const normalized = (data.hashtags || []).map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
-    if (normalized.length > 0) setHashtags(normalized);
+    setHashtags(normalized);
     if (data.format) setFormat(data.format as any);
 
-    // Build stable 4 variants derived from the orchestrator caption/topic immediately
-    const cleanTopic = (data.title || data.caption.slice(0, 60)).trim();
-    const stagedVariants = generateVariantsForConcept(cleanTopic, data.caption, normalized);
+    // Build or adopt stable 4 variants (using real LLM variants from orchestrator if provided)
+    const stagedVariants = (data.angleVariants && Array.isArray(data.angleVariants) && data.angleVariants.length >= 4)
+      ? data.angleVariants.map((item: any, idx: number) => ({
+          angleLabel: item.angleLabel || (idx === 0 ? 'Direct Hook & Story' : idx === 1 ? 'Actionable Breakdown' : idx === 2 ? 'Behind-The-Scenes Craft' : 'Community Discussion'),
+          style: item.style || (idx === 0 ? 'Storytelling' : idx === 1 ? 'Framework / Listicle' : idx === 2 ? 'Insight / Advice' : 'Question / Discussion'),
+          copy: item.copy || data.caption,
+          hashtags: Array.isArray(item.hashtags) && item.hashtags.length > 0 ? item.hashtags : normalized,
+          cta: item.cta || (idx === 0 ? 'Learn More' : idx === 1 ? 'Read Full Article' : idx === 2 ? 'Share Your Thoughts' : 'Comment Below')
+        }))
+      : generateVariantsForConcept(cleanTopic, data.caption, normalized);
+
     setComposerVariants(stagedVariants);
     setAiAngleVariants(stagedVariants);
     setVariantIndex(0);
@@ -448,6 +478,11 @@ function cleanMediaUrl(raw: any): string {
     setSelectedStyle(stagedVariants[0]?.style || 'Storytelling');
     setActiveDraftId(null);
     setDraftMetadata(null);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(stagedVariants));
+      } catch {}
+    }
     handleTabChange('composer');
   };
 
@@ -1262,9 +1297,12 @@ function cleanMediaUrl(raw: any): string {
     setStatusMessage(inProgressNotice);
 
     try {
-      // Append non-duplicate hashtag chips to caption (Bug 11)
+      // For drafts (isDraftOnly), NEVER append hashtag chips to the caption text (N5 / Focus 4)
+      // The caption must remain pure copy, and hashtags are stored separately in the hashtags column.
       const tagsToAppend = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
-      const finalCaption = tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim();
+      const finalCaption = isDraftOnly
+        ? caption.trim()
+        : (tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim());
 
       let platformCaptions: any = undefined;
       if (typeof window !== 'undefined') {

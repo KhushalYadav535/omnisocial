@@ -152,13 +152,7 @@ export function generateVariantsForConcept(
   const rawClean = (concept || 'Artisan Craftsmanship & Creative Excellence').replace(/^#+\s*/, '').replace(/202[0-5]\b/g, '2026').trim();
   const lines = rawClean.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
   const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Creative Excellence';
-
-  // Domain detection with strict whole-word boundaries (prevents "create", "great", "treat" matching "eat")
-  const isFood = /\b(thali|tiffin|roti|sabzi|dal|chaas|biryani|curry|caterer|restaurant|dining|lunch|dinner|food|cuisine|recipe|snack|dishes)\b/i.test(rawClean);
-  const isWorkshop = !isFood && /\b(pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class)\b/i.test(rawClean);
-  const isBakery = !isFood && /\b(baker|bakery|cake|bread|pastry|cookie|sourdough|dessert)\b/i.test(rawClean);
-  const isFragranceOrSoap = !isFood && /\b(soap|incense|sandalwood|perfume|fragrance|candle|aromatherapy|skincare|bath|oil|botanical)\b/i.test(rawClean);
-  const isFarmingOrSpices = !isFood && /\b(spice|farm|plantation|spices|pepper|cardamom|harvest|organic)\b/i.test(rawClean);
+  const combinedContext = `${rawClean} ${activeCopy || ''}`.toLowerCase();
 
   // Extract price, deadline
   const priceMatch = rawClean.match(/(?:₹|rs\.?|inr|\$)\s*[\d,]+|\b\d{3,5}\s*(?:₹|inr|rs)?/i);
@@ -167,18 +161,133 @@ export function generateVariantsForConcept(
   const deadlineMatch = rawClean.match(/(?:by|before|until|deadline[:\s]*)\s*([0-9]{1,2}\s+[a-z]+|[a-z]+\s+[0-9]{1,2}|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i);
   const deadlineStr = deadlineMatch ? deadlineMatch[0].trim() : '';
 
+  // Domain detection with strict context
+  const isCafeOrBeverage = /\b(cafe|café|coffee|chai|tea|pakora|monsoon|rain|lakeside|brew|beverage|espresso|latte|cuppa)\b/i.test(combinedContext);
+  const isFootwearOrApparel = /\b(jutti|jutties|shoe|shoes|footwear|leather|sandal|mojari|artisan\s+craft|handloom|fashion|wear|apparel|stitched|embroid)\b/i.test(combinedContext);
+  const isWellnessOrYoga = /\b(yoga|retreat|wellness|meditation|pranayama|mindful|peace|healing|holistic|rishikesh|ashram|resort|mindfulness)\b/i.test(combinedContext);
+  const isFragranceOrSoap = /\b(soap|incense|sandalwood|perfume|fragrance|candle|aromatherapy|skincare|bath|oil|botanical)\b/i.test(combinedContext);
+  const isFarmingOrSpices = /\b(spice|farm|plantation|spices|pepper|cardamom|harvest|organic|single\s+origin)\b/i.test(combinedContext);
+  const isBakery = !isCafeOrBeverage && /\b(baker|bakery|cake|bread|pastry|cookie|sourdough|dessert)\b/i.test(combinedContext);
+  const isFood = !isCafeOrBeverage && !isBakery && /\b(thali|tiffin|roti|sabzi|dal|chaas|biryani|curry|caterer|restaurant|dining|lunch|dinner|food|cuisine|recipe|snack|dishes)\b/i.test(combinedContext);
+  const isWorkshop = /\b(pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class)\b/i.test(combinedContext);
+
   const dynamicTags = (tags && tags.length > 0)
     ? tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`).replace(/202[0-5]\b/g, '2026') : t)
-    : (isFood
-      ? ['#TraditionalCuisine', '#HomeChef', '#WholesomeMeals', '#FoodDelivery']
-      : (isFragranceOrSoap
-        ? ['#NaturalAromas', '#HandmadeSoap', '#ArtisanFragrance', '#MindfulLiving']
-        : (isFarmingOrSpices
-          ? ['#OrganicSpices', '#FarmToTable', '#SingleOrigin', '#ArtisanHarvest']
-          : extractDynamicTags(rawClean))));
+    : (isCafeOrBeverage
+      ? ['#CozyMoments', '#LakesideVibes', '#MasalaChai', '#MonsoonBites']
+      : (isFootwearOrApparel
+        ? ['#HandcraftedFootwear', '#ArtisanStyle', '#TraditionalCraft', '#HeritageFashion']
+        : (isWellnessOrYoga
+          ? ['#MindfulRetreat', '#DailyWellness', '#YogaJourney', '#InnerPeace']
+          : (isFood
+            ? ['#TraditionalCuisine', '#HomeChef', '#WholesomeMeals', '#FoodDelivery']
+            : (isFragranceOrSoap
+              ? ['#NaturalAromas', '#HandmadeSoap', '#ArtisanFragrance', '#MindfulLiving']
+              : (isFarmingOrSpices
+                ? ['#OrganicSpices', '#FarmToTable', '#SingleOrigin', '#ArtisanHarvest']
+                : extractDynamicTags(rawClean)))))));
 
   const priceLine = priceStr ? `\n💰 Fee / Price: ${priceStr}` : '';
   const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited batch available!';
+
+  if (isCafeOrBeverage) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Watching the rain dance across the water with a steaming cup in hand ☕🌧️\n\nWelcome to ${cleanTopic}.\n\nWhen the monsoon arrives, slow afternoons call for the ultimate comforting ritual:\n• Slow-brewed, aromatic masala chai infused with fresh hand-crushed ginger and green cardamom\n• Crispy, piping-hot savories prepared fresh to order as the rain sets in\n• Peaceful, panoramic views that turn every quiet sip into a treasured memory${priceLine}${deadlineLine}\n\nPre-book your favorite table or drop in to unwind! Drop a comment or DM below 👇`,
+        hashtags: dynamicTags,
+        cta: 'Learn More'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `The Ultimate ${cleanTopic} Experience Breakdown:\n\nThree elements that make every visit memorable:\n\n1. ☕ Freshly Brewed Spices — Slow-steeped aromatic spices crafted for deep, comforting warmth.\n2. 🌧️ Crispy Savory Pairings — Fresh, piping-hot bites prepared to order to complement every sip.\n3. 🪟 Lakeside Serenity — The gentle rhythm of raindrops and a cozy retreat from the everyday rush.${priceLine}${deadlineLine}\n\nSave this post for your next rainy-day escape, or comment below to plan a visit!`,
+        hashtags: dynamicTags,
+        cta: 'Read Full Article'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Behind the scenes at the counter ☕🌧️\n\nPreparing for ${cleanTopic}.\n\nThere is an art to bringing comfort to a rainy afternoon. From grinding whole cardamoms and brewing spiced tea to timing fresh savory batches as the rain rolls over the water, we treat every small detail as an invitation to slow down.\n\nThank you for making our space part of your rituals.${priceLine}${deadlineLine}\n\nWhat is your go-to rainy day comfort?`,
+        hashtags: dynamicTags,
+        cta: 'Share Your Thoughts'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Rainy Day Poll 👇☕\n\nWhen visiting ${cleanTopic}, what is your non-negotiable comfort order?\n\nAre you Team Piping Hot Masala Chai with crispy bites, or Team Filter Coffee and quiet lakeside reading?\n\nTell us your pick below, or tag someone who needs a cozy coffee date!`,
+        hashtags: dynamicTags,
+        cta: 'Comment Below'
+      }
+    ];
+  }
+
+  if (isFootwearOrApparel) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Timeless heritage meets modern everyday elegance ✨\n\nIntroducing handcrafted ${cleanTopic}.\n\nEvery pair carries generations of traditional artisanal dedication:\n• Meticulously crafted from supple, natural vegetable-tanned leather\n• Intricate hand-embroidery created stitch by stitch by master artisans\n• Double-padded cushioned insoles engineered for effortless all-day comfort${priceLine}${deadlineLine}\n\nFresh studio batch ready for dispatch! Drop a comment or DM to secure your pair 👇`,
+        hashtags: dynamicTags,
+        cta: 'Learn More'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Craft Details & Comfort Breakdown: ${cleanTopic}\n\nHere is why genuine hand-stitched footwear stands apart:\n\n1. 👞 Supple Natural Leather — Hand-selected, breathable materials that mold naturally to your feet over time.\n2. ✨ Traditional Hand-Embroidered Accents — Precise artisan needlework celebrating generational heritage.\n3. 👣 Cushioned Daily Wear — Double-padded soles engineered for effortless all-day comfort without pinch points.${priceLine}${deadlineLine}\n\nBookmark this post for your wardrobe essentials, or drop a comment to find your size!`,
+        hashtags: dynamicTags,
+        cta: 'Read Full Article'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Behind the workbench 🔨✨\n\nCrafting the latest run of ${cleanTopic}.\n\nBefore a single pair is boxed, master artisans spend hours hand-cutting patterns, conditioning natural leather, and finishing delicate embroidery. In a world of mass production, slow craft creates items that endure with character.\n\nThank you for supporting traditional Indian artisan families.${priceLine}${deadlineLine}\n\nWhich style or color do you love most?`,
+        hashtags: dynamicTags,
+        cta: 'Share Your Thoughts'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Artisan Style Discussion 👇👠\n\nWhen styling ${cleanTopic}, how do you love wearing them most?\n\nAre you pairing them with breezy everyday handlooms, or dressing them up with festive weekend ensembles?\n\nShare your favorite combination below, or tag a friend who appreciates handcrafted elegance!`,
+        hashtags: dynamicTags,
+        cta: 'Comment Below'
+      }
+    ];
+  }
+
+  if (isWellnessOrYoga) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Pause the noise. Reconnect with what matters ✨\n\nJoin us for ${cleanTopic}.\n\nSet in a quiet natural sanctuary, this immersive experience is crafted to restore clarity and vitality:\n• Daily guided sunrise pranayama and restorative movement for all experience levels\n• Peaceful riverside setting away from screens and daily overwhelm\n• Wholesome organic, seasonal cuisine crafted to nourish mind and body${priceLine}${deadlineLine}\n\nSpaces are kept intimate for personalized guidance. Drop a comment or DM to reserve your spot 👇`,
+        hashtags: dynamicTags,
+        cta: 'Learn More'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Experience & Daily Journey Breakdown: ${cleanTopic}\n\nThree pillars at the heart of our practice:\n\n1. 🧘 Restorative Daily Movement — Sunrise alignment, breathwork, and mindful flow adapted for every level.\n2. 🍃 Peaceful Natural Sanctuary — Quiet riverside surroundings that allow your mind to completely unplug.\n3. 🍵 Wholesome Seasonal Nourishment — Fresh, nutrient-dense cuisine designed to energize and heal.${priceLine}${deadlineLine}\n\nSave this guide for your retreat planning, or comment below to check upcoming dates!`,
+        hashtags: dynamicTags,
+        cta: 'Read Full Article'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Quiet moments before practice 🌿🕊️\n\nSetting the space for ${cleanTopic}.\n\nTrue wellness is about intentional subtraction: leaving behind notification fatigue, quietening mental noise, and returning to the breath. From lighting subtle botanicals to preparing the open studio space, we cultivate an environment of total presence.\n\nWhat is one mindfulness habit that brings you back to center when life gets busy?`,
+        hashtags: dynamicTags,
+        cta: 'Share Your Thoughts'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Mindful Community Check-In 👇✨\n\nWhen you think about joining ${cleanTopic}, what are you seeking most right now?\n\nIs it physical rejuvenation, mental stillness, or connecting with like-minded souls?\n\nDrop your thoughts below—we would love to welcome you into the circle!`,
+        hashtags: dynamicTags,
+        cta: 'Comment Below'
+      }
+    ];
+  }
 
   if (isFragranceOrSoap) {
     return [
@@ -251,28 +360,28 @@ export function generateVariantsForConcept(
       {
         angleLabel: 'Direct Hook & Story',
         style: 'Storytelling',
-        copy: activeCopy || `Nothing beats the comforting warmth of an authentic home-cooked meal 🍲✨\n\nIntroducing: ${cleanTopic}.\n\nPrepared with fresh seasonal ingredients, cold-pressed oils, and traditional home recipes:\n• Wholesome dishes cooked with genuine care and authentic spices\n• Steaming hot rotis, slow-simmered dal, fresh sabzi, and refreshing chaas\n• Pure comfort delivered straight to your door${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve your thali 👇`,
+        copy: activeCopy || `Nothing beats the comforting warmth of an authentic home-cooked meal 🍲✨\n\nIntroducing: ${cleanTopic}.\n\nPrepared with fresh seasonal ingredients, cold-pressed oils, and traditional recipes:\n• Wholesome dishes cooked with genuine care and authentic spices\n• Pure comfort delivered straight to your table${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve yours 👇`,
         hashtags: dynamicTags,
         cta: 'Learn More'
       },
       {
         angleLabel: 'Actionable Breakdown',
         style: 'Framework / Listicle',
-        copy: `Weekend Thali Menu & Subscription Breakdown: ${cleanTopic}\n\nHere is what makes our meal experience special:\n\n1. 🌾 Authentic Home Prep:\nPure traditional recipes crafted daily in small batches with zero artificial additives.\n2. 💎 Honest Meal Plan:${priceStr ? ` Complete wholesome thali at ${priceStr}` : ' Generous portions with fresh sides & chaas included'}\n3. ⏰ Delivery & Booking:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Advance booking ensures fresh hot delivery'}\n\nSave this post for your weekend meals, or comment below to book your subscription!`,
+        copy: `Menu & Flavor Breakdown: ${cleanTopic}\n\nHere is what makes this meal experience special:\n\n1. 🌾 Authentic Traditional Prep:\nPure recipes crafted daily in small batches with zero artificial additives.\n2. 💎 Honest Value:${priceStr ? ` Complete meal at ${priceStr}` : ' Generous portions with fresh sides included'}\n3. ⏰ Fresh Service Window:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Advance booking ensures fresh hot preparation'}\n\nSave this post for your meals, or comment below to order!`,
         hashtags: dynamicTags,
         cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
-        copy: `Behind the scenes in our kitchen 👩‍🍳🔥\n\nPrepping for ${cleanTopic}.\n\nGreat home food takes patience: roasting whole spices by hand, slow-simmering dal, and kneading fresh dough just before dispatch. We believe everyday food should feel like family.\n\nThank you for supporting authentic home chefs.${priceLine}${deadlineLine}\n\nWhat is your go-to home comfort dish that never fails to lift your spirits?`,
+        copy: `Behind the scenes in our kitchen 👩‍🍳🔥\n\nPrepping for ${cleanTopic}.\n\nGreat food takes patience: roasting whole spices by hand, slow-simmering flavors, and preparing fresh dough just before serving. We believe everyday food should feel like home.\n\nThank you for supporting authentic independent cooking.${priceLine}${deadlineLine}\n\nWhat is your go-to comfort dish that never fails to lift your spirits?`,
         hashtags: dynamicTags,
         cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
-        copy: `Weekend Food Poll 👇🍲\n\nWhen you sit down for ${cleanTopic}, what is the one side dish you can never skip?\n\nAre you Team Bajra Roti with pure ghee, or Team Dal & Steaming Rice with roasted papad?\n\nTell us your favorite combination below, or tag someone who loves authentic home-style food!`,
+        copy: `Food & Flavor Poll 👇🍲\n\nWhen you sit down for ${cleanTopic}, what is the one side dish you can never skip?\n\nTell us your favorite combination below, or tag someone who loves authentic good food!`,
         hashtags: dynamicTags,
         cta: 'Comment Below'
       }
@@ -345,33 +454,40 @@ export function generateVariantsForConcept(
     ];
   }
 
-  // Universal High-Impact Angles (Adapts cleanly to any industry, service, or product)
+  // Universal Contextual Synthesis derived cleanly from input text (zero corporate clichés)
+  const copyLines = (activeCopy || '')
+    .split(/[\n\.\?!]/)
+    .map(s => s.trim())
+    .filter(s => s.length > 15 && !s.startsWith('#') && !s.startsWith('http'));
+  const leadSentence = copyLines[0] || `Discover what sets ${cleanTopic} apart.`;
+  const secondaryDetail = copyLines[1] || `Thoughtfully crafted with genuine care and dedication to lasting quality.`;
+
   return [
     {
       angleLabel: 'Direct Hook & Story',
       style: 'Storytelling',
-      copy: activeCopy || `Discover ${cleanTopic} ✨\n\nWhen it comes to creating meaningful experiences, intentional focus makes all the difference.\n\nHere is what sets this apart:\n• Thoughtfully designed with clear intention and care\n• Proven quality that delivers lasting value\n• Crafted to elevate your everyday standards${priceLine}${deadlineLine}\n\nReady to experience the difference? Drop a comment or tap below to learn more! 👇`,
+      copy: activeCopy || `Discover ${cleanTopic} ✨\n\n${leadSentence}\n\nWhen it comes to creating meaningful experiences, intentional focus makes all the difference:\n• Thoughtfully designed with clear intention and care\n• Proven quality that delivers lasting value\n• Crafted to elevate your everyday standards${priceLine}${deadlineLine}\n\nReady to experience the difference? Drop a comment or tap below to learn more! 👇`,
       hashtags: dynamicTags,
       cta: 'Learn More'
     },
     {
       angleLabel: 'Actionable Breakdown',
       style: 'Framework / Listicle',
-      copy: `Essential Framework: ${cleanTopic}\n\nThree key principles that drive real results:\n\n1. 🌟 Focused Intent: Clear standards and authentic execution.\n2. 💎 Measurable Value: Prioritizing lasting substance over quick shortcuts.\n3. ⏳ Timely Action:${deadlineStr ? ` Available through ${deadlineStr}` : ' Early slots now open'}.\n\nSave this breakdown for reference, or tap below to explore full details!`,
+      copy: `Highlights & Practical Breakdown: ${cleanTopic}\n\n${leadSentence}\n\nKey takeaways to keep in mind:\n1. 🌟 Core Experience: ${secondaryDetail}\n2. 💎 Handcrafted Standard: Built with uncompromising attention to quality and substance.\n3. ⏳ Timely Window:${deadlineStr ? ` Available through ${deadlineStr}` : ' Curated release now open'}.${priceLine}\n\nSave this breakdown for reference, or tap below to explore full details!`,
       hashtags: dynamicTags,
       cta: 'Read Full Article'
     },
     {
       angleLabel: 'Behind-The-Scenes Craft',
       style: 'Insight / Advice',
-      copy: `Behind the scenes with ${cleanTopic} 💡\n\nTrue excellence doesn't happen by accident. Behind every milestone is a quiet commitment to getting the details right:\n\n• Purposeful preparation from day one\n• Uncompromising standards at every step\n• Built to create genuine, lasting impact${priceLine}${deadlineLine}\n\nWhat matters most to you when choosing quality? Share your perspective below!`,
+      copy: `Behind the scenes with ${cleanTopic} 💡✨\n\n${leadSentence}\n\nTrue excellence never happens by accident. Behind every finished detail is hours of intentional preparation, patient refinement, and a deep respect for the craft.\n\n${secondaryDetail}${priceLine}${deadlineLine}\n\nWhat matters most to you when choosing quality? Share your perspective below!`,
       hashtags: dynamicTags,
       cta: 'Share Your Thoughts'
     },
     {
       angleLabel: 'Community Discussion',
       style: 'Question / Discussion',
-      copy: `Community Spotlight 👇\n\nWhen considering ${cleanTopic}, what is the single most important factor for you?\n\nFor us, consistency and genuine quality will always come first.${priceLine}${deadlineLine}\n\nDrop your thoughts in the comments below—we would love to hear your take!`,
+      copy: `Community Spotlight 👇✨\n\nWhen considering ${cleanTopic}, what is the single most important factor for you?\n\n${leadSentence}\n\nFor us, consistency and genuine quality will always come first.${priceLine}${deadlineLine}\n\nDrop your thoughts in the comments below—we would love to hear your take!`,
       hashtags: dynamicTags,
       cta: 'Comment Below'
     }
@@ -947,10 +1063,11 @@ export default function PostsContentTab({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Filter hashtags that are not already written in caption (Bug 10/11)
+  // Filter hashtags that are not already explicitly written as hashtags in caption (Bug 10/11 & N7)
   const extraTags = (hashtags || [])
-    .map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t)
-    .filter(t => typeof t === 'string' && !caption.toLowerCase().includes(t.toLowerCase().replace(/^#/, '')));
+    .map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : '')
+    .filter(Boolean)
+    .filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
 
   // Format caption and extra tags ensuring hashtags have proper space separation
   const cleanCaptionForDisplay = (caption || '').replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
@@ -1902,7 +2019,7 @@ export default function PostsContentTab({
 
                 {/* AI Virality Index & Variant Pager */}
                 <div className="flex items-center space-x-2 text-xs text-slate-600">
-                  <span className={`hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border ${isGenerating ? 'text-indigo-700 bg-indigo-50 border-indigo-200 animate-pulse' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>
+                  <span className={`inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border ${isGenerating ? 'text-indigo-700 bg-indigo-50 border-indigo-200 animate-pulse' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>
                     {isGenerating ? '★ Analyzing Virality...' : `★ Virality: ${liveVirality.score}/100 • Grade ${liveVirality.grade}`}
                   </span>
                   <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
