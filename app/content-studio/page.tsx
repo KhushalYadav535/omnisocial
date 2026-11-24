@@ -253,9 +253,37 @@ function cleanMediaUrl(raw: any): string {
     else if (typeof draft.hashtags === 'string') {
       try { tags = JSON.parse(draft.hashtags); } catch { tags = draft.hashtags.split(/\s+/).filter(Boolean); }
     }
-    if (tags.length > 0) setHashtags(tags);
+    const cleanTags = tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
+    if (cleanTags.length > 0) setHashtags(cleanTags);
     const img = cleanMediaUrl(draft.mediaUrls);
     setMediaUrl(img);
+
+    // Restore draft metadata (variantIndex, selectedCta, style, viralityScore)
+    let meta = draft.metadata;
+    if (!meta && draft.clientFeedback) {
+      try {
+        const parsed = JSON.parse(draft.clientFeedback);
+        if (parsed && typeof parsed === 'object') {
+          meta = parsed.metadata || {
+            variantIndex: parsed.variantIndex,
+            selectedCta: parsed.selectedCta,
+            style: parsed.style,
+            angleLabel: parsed.angleLabel,
+            viralityScore: draft.viralityScore || parsed.viralityScore
+          };
+        }
+      } catch {}
+    }
+    const savedScore = meta?.viralityScore !== undefined ? Number(meta.viralityScore) : (draft.viralityScore !== undefined && draft.viralityScore !== null ? Number(draft.viralityScore) : null);
+    if (savedScore !== null && !isNaN(savedScore)) {
+      const grade = savedScore >= 90 ? 'A+' : savedScore >= 80 ? 'A' : savedScore >= 70 ? 'B' : savedScore >= 60 ? 'C' : 'D';
+      setViralityAnalysis({
+        score: savedScore,
+        overallScore: savedScore,
+        grade,
+        badge: savedScore >= 90 ? 'High Virality' : savedScore >= 80 ? 'Algorithm Ready' : 'Moderate Reach'
+      });
+    }
     const draftSched = draft.scheduledFor || (draft.publications && draft.publications[0]?.scheduledFor);
     if (draftSched) {
       try {
@@ -342,6 +370,7 @@ function cleanMediaUrl(raw: any): string {
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.removeItem('omnisocial_composer_session_draft');
+        sessionStorage.removeItem('omnisocial_angle_variants');
         localStorage.removeItem('omnisocial_composer_draft');
         localStorage.removeItem('omnisocial_platform_captions');
       } catch {}
@@ -352,7 +381,10 @@ function cleanMediaUrl(raw: any): string {
   const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
     if (data.title) setTitle(data.title);
     if (data.caption) setCaption(data.caption);
-    if (data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0) setHashtags(data.hashtags);
+    if (data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0) {
+      const normalized = data.hashtags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
+      setHashtags(normalized);
+    }
     if (data.format) setFormat(data.format as any);
     handleTabChange('composer');
   };
@@ -561,10 +593,22 @@ function cleanMediaUrl(raw: any): string {
           setMediaUrl('');
         }
         setActiveDraftId(null);
-        const newTags = res.generated.hashtags || [];
+        const newTags = (res.generated.hashtags || []).map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
         setHashtags(newTags);
         const newTitle = promptToUse.slice(0, 35) + '...';
         setTitle(newTitle);
+
+        if (res.generated.angleVariants && Array.isArray(res.generated.angleVariants) && res.generated.angleVariants.length >= 4) {
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(res.generated.angleVariants));
+            } catch {}
+          }
+        } else if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.removeItem('omnisocial_angle_variants');
+          } catch {}
+        }
 
         // Populate platformCaptions across ALL 4 platforms so other tabs never retain stale copy
         const formatTwitterCopy = (text: string): string => {
@@ -1070,7 +1114,8 @@ function cleanMediaUrl(raw: any): string {
     bypassGate = false,
     approvalStatusOverride?: 'PENDING' | 'DRAFT' | 'APPROVED',
     isDraftOnly = false,
-    isExplicitSchedule = false
+    isExplicitSchedule = false,
+    activeMeta?: any
   ) => {
     if (!caption.trim()) {
       const errNotice = { type: 'error' as const, text: 'Please write or generate a post caption first.' };
@@ -1173,7 +1218,9 @@ function cleanMediaUrl(raw: any): string {
             scheduledFor: scheduledIso,
             socialAccountIds: selectedAccountIds,
             targetPlatforms,
-            platformCaptions
+            platformCaptions,
+            metadata: activeMeta,
+            viralityScore: activeMeta?.viralityScore || viralityAnalysis?.score || undefined
           })
         });
         targetContentId = activeDraftId;
@@ -1195,10 +1242,11 @@ function cleanMediaUrl(raw: any): string {
             scheduledFor: immediatePublish ? undefined : scheduledIso,
             socialAccountIds: selectedAccountIds,
             firstComment: enableFirstComment && firstComment.trim() ? firstComment.trim() : undefined,
-            viralityScore: viralityAnalysis?.score || undefined,
+            viralityScore: activeMeta?.viralityScore || viralityAnalysis?.score || undefined,
             isEvergreen,
             recycleIntervalDays,
-            platformCaptions
+            platformCaptions,
+            metadata: activeMeta
           })
         });
         targetContentId = res.content.id;
@@ -1499,6 +1547,15 @@ function cleanMediaUrl(raw: any): string {
 
               {/* Action Buttons on Right */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <a
+                  href="/calendar"
+                  className="px-4 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-full shadow-2xs flex items-center space-x-1.5 transition-all cursor-pointer backdrop-blur-xs"
+                  title="Open 1-Click Quick Post & Reel Studio"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  <span>1-Click Deploy</span>
+                </a>
+
                 <button
                   type="button"
                   onClick={() => handleTabChange('launchpad')}
@@ -1706,7 +1763,8 @@ function cleanMediaUrl(raw: any): string {
               setMediaUrl('');
               setActiveDraftId(null);
               if (idea.tags && Array.isArray(idea.tags)) {
-                setHashtags(idea.tags);
+                const normalized = idea.tags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
+                setHashtags(normalized);
               }
               handleTabChange('composer');
               setStatusMessage({ type: 'success', text: `✨ Idea "${ideaTitle || 'Idea'}" staged into composer! Ready to craft or schedule.` });
@@ -1777,8 +1835,8 @@ function cleanMediaUrl(raw: any): string {
             setScheduledFor={setScheduledFor}
             submitting={submitting}
             isGenerating={generating}
-            onSaveDraft={async () => {
-              return await handleSavePost(false, false, 'DRAFT', true);
+            onSaveDraft={async (meta?: any) => {
+              return await handleSavePost(false, false, 'DRAFT', true, false, meta);
             }}
             onScheduleDrop={async () => {
               return await handleSavePost(false, false, 'APPROVED', false, true);

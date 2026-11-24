@@ -70,7 +70,7 @@ export interface PostsContentTabProps {
   setScheduledFor: (val: string) => void;
   submitting: boolean;
   isGenerating: boolean;
-  onSaveDraft: () => void;
+  onSaveDraft: (meta?: any) => Promise<any> | void;
   onScheduleDrop?: () => void;
   onPublishNow: () => void;
   onGenerateAi: (prompt?: string) => void;
@@ -142,10 +142,12 @@ function generateVariantsForConcept(
   const lines = rawClean.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
   const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Creative Excellence';
 
-  // Domain detection
-  const isFood = /thali|chef|food|meal|dining|lunch|dinner|roti|sabzi|dal|chaas|menu|tiffin|subscription|curry|kitchen|cuisine|recipe|snack|dish|eat/i.test(rawClean);
-  const isWorkshop = !isFood && /pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class/i.test(rawClean);
-  const isBakery = !isFood && /baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(rawClean);
+  // Domain detection with strict whole-word boundaries (prevents "create", "great", "treat" matching "eat")
+  const isFood = /\b(thali|tiffin|roti|sabzi|dal|chaas|biryani|curry|caterer|restaurant|dining|lunch|dinner|food|cuisine|recipe|snack|dishes)\b/i.test(rawClean);
+  const isWorkshop = !isFood && /\b(pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class)\b/i.test(rawClean);
+  const isBakery = !isFood && /\b(baker|bakery|cake|bread|pastry|cookie|sourdough|dessert)\b/i.test(rawClean);
+  const isFragranceOrSoap = !isFood && /\b(soap|incense|sandalwood|perfume|fragrance|candle|aromatherapy|skincare|bath|oil|botanical)\b/i.test(rawClean);
+  const isFarmingOrSpices = !isFood && /\b(spice|farm|plantation|spices|pepper|cardamom|harvest|organic)\b/i.test(rawClean);
 
   // Extract price, deadline
   const priceMatch = rawClean.match(/(?:₹|rs\.?|inr|\$)\s*[\d,]+|\b\d{3,5}\s*(?:₹|inr|rs)?/i);
@@ -154,12 +156,84 @@ function generateVariantsForConcept(
   const deadlineMatch = rawClean.match(/(?:by|before|until|deadline[:\s]*)\s*([0-9]{1,2}\s+[a-z]+|[a-z]+\s+[0-9]{1,2}|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i);
   const deadlineStr = deadlineMatch ? deadlineMatch[0].trim() : '';
 
-  const dynamicTags = isFood
-    ? ['#RajasthaniCuisine', '#HomeChef', '#ThaliSubscription', '#FoodDelivery']
-    : (tags && tags.length > 0 ? tags.map(t => t.replace(/202[0-5]\b/g, '2026')) : extractDynamicTags(rawClean));
+  const dynamicTags = (tags && tags.length > 0)
+    ? tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`).replace(/202[0-5]\b/g, '2026') : t)
+    : (isFood
+      ? ['#TraditionalCuisine', '#HomeChef', '#WholesomeMeals', '#FoodDelivery']
+      : (isFragranceOrSoap
+        ? ['#NaturalAromas', '#HandmadeSoap', '#ArtisanFragrance', '#MindfulLiving']
+        : (isFarmingOrSpices
+          ? ['#OrganicSpices', '#FarmToTable', '#SingleOrigin', '#ArtisanHarvest']
+          : extractDynamicTags(rawClean))));
 
   const priceLine = priceStr ? `\n💰 Fee / Price: ${priceStr}` : '';
-  const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited seats & slots available!';
+  const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited batch available!';
+
+  if (isFragranceOrSoap) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Immerse your space in the calming purity of ${cleanTopic} ✨\n\nCrafted with slow-aged natural botanicals, pure essential oils, and uncompromising artisan dedication:\n• Handcrafted in small, intentional studio batches\n• 100% pure natural ingredients with zero harsh synthetics\n• Long-lasting, grounding aroma that elevates your daily rituals${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve yours 👇`,
+        hashtags: dynamicTags,
+        cta: 'Reserve Batch'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Aromatic Notes & Blend Breakdown: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌿 Pure Botanicals: Sourced from sustainable growers, preserving delicate natural aromatic oils.\n2. 💎 Honest Craft:${priceStr ? ` Fresh batch at ${priceStr}` : ' Uncompromised studio purity'}\n3. ⏳ Dispatch Window:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Strictly small-batch studio releases'}\n\nSave this post for your daily self-care ritual, or comment below to order!`,
+        hashtags: dynamicTags,
+        cta: 'View Blend Notes'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Behind the scenes at the studio 🌿🕯️\n\nBlending the latest batch of ${cleanTopic}.\n\nTrue botanical aromatics cannot be rushed. From slowly extracting natural botanicals to aging our blends in small glass vessels, every step is done by hand with patience and respect for nature.\n\nThank you for supporting mindful independent makers.${priceLine}${deadlineLine}\n\nWhat is your go-to grounding scent when you need a quiet moment?`,
+        hashtags: dynamicTags,
+        cta: 'Studio Journal'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Aromatherapy Community Poll 👇✨\n\nWhen you light ${cleanTopic} or unwind at the end of the day, what time of day brings you the most peace?\n\nAre you Team Morning Meditation or Team Evening Wind-Down with soft candlelight?\n\nTell us your favorite ritual below, or tag someone who appreciates natural calm!`,
+        hashtags: dynamicTags,
+        cta: 'Share Your Ritual'
+      }
+    ];
+  }
+
+  if (isFarmingOrSpices) {
+    return [
+      {
+        angleLabel: 'Direct Hook & Story',
+        style: 'Storytelling',
+        copy: activeCopy || `Straight from our fertile soil to your kitchen ✨\n\nIntroducing single-origin ${cleanTopic}.\n\nHarvested at peak aroma, shade-dried, and hand-sorted with generations of farming heritage:\n• 100% sustainably cultivated harvests\n• Deep natural warmth and uncompromised essential oil potency\n• Directly supporting independent regenerative farming${priceLine}${deadlineLine}\n\nFresh harvest batches are now ready for dispatch! Drop a comment or DM to secure your supply 👇`,
+        hashtags: dynamicTags,
+        cta: 'Order Harvest'
+      },
+      {
+        angleLabel: 'Actionable Breakdown',
+        style: 'Framework / Listicle',
+        copy: `Harvest Breakdown & Flavor Profile: ${cleanTopic}\n\nHere is why single-origin farming makes all the difference:\n\n1. 🌿 Direct-From-Farm: Harvested and packed on the estate with zero long transit delays.\n2. 💎 Honest Value:${priceStr ? ` Farm direct at ${priceStr}` : ' Unadulterated harvest grade'}\n3. ⏳ Fresh Harvest Window:${deadlineStr ? ` Batch shipping until ${deadlineStr}` : ' Limited harvest supply while stock lasts'}\n\nBookmark this for your pantry staples, or comment below to order!`,
+        hashtags: dynamicTags,
+        cta: 'View Harvest Plan'
+      },
+      {
+        angleLabel: 'Behind-The-Scenes Craft',
+        style: 'Insight / Advice',
+        copy: `Morning mist over the plantation 🍃☀️\n\nHarvesting ${cleanTopic}.\n\nReal agriculture is a labor of love. Watching our crops grow from delicate seedlings to rich, fragrant harvests teaches patience you cannot learn anywhere else.\n\nThank you for honoring the hands that grow your ingredients.${priceLine}${deadlineLine}\n\nWhat is the one recipe in your home where authentic spices make all the magic happen?`,
+        hashtags: dynamicTags,
+        cta: 'Farmer Notes'
+      },
+      {
+        angleLabel: 'Community Discussion',
+        style: 'Question / Discussion',
+        copy: `Food & Flavor Discussion 👇🍲\n\nWhen cooking with fresh ${cleanTopic}, what is the secret technique you always rely on?\n\nAre you Team Whole Spices bloomed in warm ghee, or freshly ground right before serving?\n\nDrop your family secrets below, or tag a home chef who loves authentic ingredients!`,
+        hashtags: dynamicTags,
+        cta: 'Share Cooking Secret'
+      }
+    ];
+  }
 
   if (isFood) {
     return [
@@ -437,7 +511,14 @@ export default function PostsContentTab({
       const fallbackText = isScheduledDraft
         ? `Post draft successfully saved with scheduled time. View in Drafts tab.`
         : 'Post draft successfully saved to workbench. View in Drafts tab.';
-      const res: any = onSaveDraft ? await onSaveDraft() : null;
+      const activeMeta = {
+        variantIndex,
+        selectedCta,
+        style,
+        angleLabel: variantsBank[variantIndex]?.angleLabel || 'Direct Hook & Story',
+        viralityScore: liveVirality.score
+      };
+      const res: any = onSaveDraft ? await onSaveDraft(activeMeta) : null;
       if (res && res.success === false) {
         const errNotice = res.notice || { type: 'error' as const, text: res.error || 'Failed to save draft.' };
         setComposerNotice(errNotice);
@@ -586,6 +667,15 @@ export default function PostsContentTab({
 
   // Dynamic virality computation evaluated in real-time per variant
   const computeLiveVirality = (text: string, tags: string[], vIdx: number = 0) => {
+    if (isGenerating) {
+      return {
+        score: 0,
+        grade: '...',
+        badge: 'Crafting...',
+        color: 'text-indigo-600 bg-indigo-50 border-indigo-200 animate-pulse',
+        verdict: 'AI is analyzing audience hook, whitespace rhythm, and algorithmic reach...'
+      };
+    }
     const trimmed = (text || '').trim();
     if (!trimmed || trimmed.length < 25) {
       return {
@@ -734,9 +824,32 @@ export default function PostsContentTab({
 
   const hasValidMedia = !!mediaUrl && mediaUrl !== '[]' && mediaUrl !== '{}' && (mediaUrl.startsWith('http') || mediaUrl.startsWith('data:') || mediaUrl.startsWith('/'));
 
+  // Helper to retrieve authentic LLM angle variants from session
+  const getStoredAngleVariants = (): PostVariantItem[] | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = sessionStorage.getItem('omnisocial_angle_variants');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 4) {
+          return parsed.map((item: any) => ({
+            angleLabel: item.angleLabel || 'Direct Hook & Story',
+            style: item.style || 'Storytelling',
+            copy: item.copy || '',
+            hashtags: Array.isArray(item.hashtags)
+              ? item.hashtags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t)
+              : [],
+            cta: item.cta || 'Learn More'
+          }));
+        }
+      }
+    } catch {}
+    return null;
+  };
+
   // 4 Post Variants stored in dedicated state (prevents previous-navigation desync)
   const [variantsBank, setVariantsBank] = useState<PostVariantItem[]>(() => {
-    return generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
+    return getStoredAngleVariants() || generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
   });
   const lastBriefKeyRef = useRef<string>(rawIdea || (caption ? caption.slice(0, 40) : ''));
 
@@ -744,7 +857,8 @@ export default function PostsContentTab({
     const briefKey = rawIdea || (caption ? caption.slice(0, 40) : '');
     if (briefKey && briefKey !== lastBriefKeyRef.current) {
       lastBriefKeyRef.current = briefKey;
-      const newBank = generateVariantsForConcept(briefKey, caption, hashtags);
+      const stored = getStoredAngleVariants();
+      const newBank = stored || generateVariantsForConcept(briefKey, caption, hashtags);
       setVariantsBank(newBank);
       if (newBank[variantIndex]?.hashtags && (!hashtags || hashtags.length === 0)) {
         setHashtags(newBank[variantIndex].hashtags);
@@ -792,20 +906,23 @@ export default function PostsContentTab({
   };
 
   // Filter hashtags that are not already written in caption (Bug 10/11)
-  const extraTags = (hashtags || []).filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
+  const extraTags = (hashtags || [])
+    .map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t)
+    .filter(t => typeof t === 'string' && !caption.toLowerCase().includes(t.toLowerCase().replace(/^#/, '')));
 
   // Format caption and extra tags ensuring hashtags have proper space separation
   const cleanCaptionForDisplay = (caption || '').replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
-  const cleanExtraTags = extraTags
+  const cleanExtraTags = Array.from(new Set(extraTags))
     .map(t => t.replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 '))
     .join(' ')
-    .replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
+    .replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ')
+    .trim();
 
   // Sync variant paging without state clobbering or label desync
   const handleSelectVariant = (idx: number) => {
     const bank = variantsBank.length > 0 ? variantsBank : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
-    // Save active caption before switching
-    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption } : v);
+    // Save active caption AND active hashtags before switching (prevents hashtag clobbering)
+    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption, hashtags: hashtags } : v);
     const total = updated.length;
     const nextIdx = ((idx % total) + total) % total;
     setVariantsBank(updated);
@@ -885,14 +1002,18 @@ export default function PostsContentTab({
     if (!tag.startsWith('#')) tag = '#' + tag;
     tag = tag.replace(/\s+/g, '');
     if (!hashtags.includes(tag)) {
-      setHashtags([...hashtags, tag]);
+      const nextTags = [...hashtags, tag];
+      setHashtags(nextTags);
+      setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, hashtags: nextTags } : v));
     }
     setNewTagInput('');
     setIsAddingTag(false);
   };
 
   const handleRemoveHashtag = (tagToRemove: string) => {
-    setHashtags(hashtags.filter(t => t !== tagToRemove));
+    const nextTags = hashtags.filter(t => t !== tagToRemove);
+    setHashtags(nextTags);
+    setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, hashtags: nextTags } : v));
   };
 
   // File Upload handler with persistent backend storage upload
@@ -1472,8 +1593,8 @@ export default function PostsContentTab({
             </div>
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">AI Virality Index</span>
-              <p className={`text-sm font-extrabold ${liveVirality.score >= 80 ? 'text-emerald-600' : liveVirality.score >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
-                {liveVirality.score}/100 • Grade {liveVirality.grade} ({liveVirality.badge})
+              <p className={`text-sm font-extrabold ${isGenerating ? 'text-indigo-600 animate-pulse' : (liveVirality.score >= 80 ? 'text-emerald-600' : liveVirality.score >= 60 ? 'text-amber-600' : 'text-rose-600')}`}>
+                {isGenerating ? 'Analyzing live virality & algorithmic reach...' : `${liveVirality.score}/100 • Grade ${liveVirality.grade} (${liveVirality.badge})`}
               </p>
             </div>
           </div>
@@ -1717,8 +1838,8 @@ export default function PostsContentTab({
 
                 {/* AI Virality Index & Variant Pager */}
                 <div className="flex items-center space-x-2 text-xs text-slate-600">
-                  <span className="hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border text-emerald-700 bg-emerald-50 border-emerald-200">
-                    ★ Virality: {liveVirality.score}/100 • Grade {liveVirality.grade}
+                  <span className={`hidden sm:inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full border ${isGenerating ? 'text-indigo-700 bg-indigo-50 border-indigo-200 animate-pulse' : 'text-emerald-700 bg-emerald-50 border-emerald-200'}`}>
+                    {isGenerating ? '★ Analyzing Virality...' : `★ Virality: ${liveVirality.score}/100 • Grade ${liveVirality.grade}`}
                   </span>
                   <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
                     Angle: {variantsBank[variantIndex]?.angleLabel || 'Direct Hook & Story'}

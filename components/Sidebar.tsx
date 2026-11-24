@@ -104,9 +104,20 @@ function SidebarContent({
     };
     fetchDraftCount();
     const interval = setInterval(fetchDraftCount, 30000);
+
+    const handleCustomDraftCount = (e: any) => {
+      if (typeof e.detail === 'number') {
+        setDraftCount(e.detail);
+      } else {
+        fetchDraftCount();
+      }
+    };
+    window.addEventListener('omnisocial_draft_count_changed', handleCustomDraftCount);
+
     return () => {
       mounted = false;
       clearInterval(interval);
+      window.removeEventListener('omnisocial_draft_count_changed', handleCustomDraftCount);
     };
   }, [pathname, searchParams]);
 

@@ -215,10 +215,12 @@ export default function OutcomePromptBar({
                 onClick={() => {
                   const dest = getDestinationTab();
                   if (dest === 'composer' && onLoadIntoComposer && (executionResult.output?.caption || executionResult.output?.hook)) {
+                    const rawTags = Array.isArray(executionResult.output.hashtags) ? executionResult.output.hashtags : [];
+                    const normalizedTags = rawTags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
                     onLoadIntoComposer({
                       caption: executionResult.output.caption || executionResult.output.hook,
                       title: executionResult.output.title || 'AI Generated Post',
-                      hashtags: executionResult.output.hashtags || []
+                      hashtags: normalizedTags
                     });
                   } else {
                     onNavigateTab(dest);
@@ -417,7 +419,8 @@ export default function OutcomePromptBar({
                       onClick={() => {
                         const cap = executionResult.output.caption || executionResult.output.hook || '';
                         const hook = executionResult.output.hook;
-                        const hashtags = Array.isArray(executionResult.output.hashtags) ? executionResult.output.hashtags : [];
+                        const rawTags = Array.isArray(executionResult.output.hashtags) ? executionResult.output.hashtags : [];
+                        const hashtags = rawTags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
                         if (onLoadIntoComposer) {
                           onLoadIntoComposer({
                             caption: cap,

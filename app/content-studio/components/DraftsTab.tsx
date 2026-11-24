@@ -48,6 +48,9 @@ export default function DraftsTab({
       // Strictly filter items that are active drafts awaiting submission (not in Approvals or Scheduled)
       const draftList = contents.filter((c: any) => c.status === 'DRAFT' && c.clientApprovalStatus === 'DRAFT');
       setDrafts(draftList);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('omnisocial_draft_count_changed', { detail: draftList.length }));
+      }
     } catch (err: any) {
       console.error('Fetch drafts error:', err);
     } finally {
@@ -86,7 +89,13 @@ export default function DraftsTab({
   const handleDeleteDraft = async (draftId: string) => {
     setActionLoadingId(draftId);
     // Optimistically remove from list immediately (no blocking confirm dialog)
-    setDrafts(prev => prev.filter(d => d.id !== draftId));
+    setDrafts(prev => {
+      const updated = prev.filter(d => d.id !== draftId);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('omnisocial_draft_count_changed', { detail: updated.length }));
+      }
+      return updated;
+    });
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('omnisocial_composer_draft');
@@ -102,7 +111,7 @@ export default function DraftsTab({
       await apiRequest(`/content/${draftId}`, {
         method: 'DELETE'
       });
-      setNotice({ type: 'success', text: 'Draft deleted successfully.' });
+      setNotice({ type: 'success', text: 'Draft successfully deleted from workbench.' });
       if (onRefreshOverview) onRefreshOverview();
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Failed to delete draft.' });
@@ -243,11 +252,14 @@ export default function DraftsTab({
                   {/* Hashtags */}
                   {tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
-                      {tags.slice(0, 4).map((t, idx) => (
-                        <span key={idx} className="text-[10px] font-semibold text-blue-600 bg-blue-50/70 px-2 py-0.5 rounded-md">
-                          {t}
-                        </span>
-                      ))}
+                      {tags.slice(0, 4).map((t, idx) => {
+                        const cleanT = typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t;
+                        return (
+                          <span key={idx} className="text-[10px] font-semibold text-blue-600 bg-blue-50/70 px-2 py-0.5 rounded-md">
+                            {cleanT}
+                          </span>
+                        );
+                      })}
                       {tags.length > 4 && (
                         <span className="text-[10px] text-slate-400 self-center">+{tags.length - 4} more</span>
                       )}
