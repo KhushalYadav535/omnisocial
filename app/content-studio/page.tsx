@@ -66,7 +66,7 @@ import MediaLibraryTab from './components/MediaLibraryTab';
 import ApprovalsTab from './components/ApprovalsTab';
 import LaunchpadTab from './components/LaunchpadTab';
 import SkillLibraryTab from './components/SkillLibraryTab';
-import PostsContentTab from './components/PostsContentTab';
+import PostsContentTab, { generateVariantsForConcept, PostVariantItem } from './components/PostsContentTab';
 import DraftsTab from './components/DraftsTab';
 
 function AccountPillAvatar({
@@ -216,6 +216,16 @@ function ContentStudioContent() {
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
   const [aiAngleVariants, setAiAngleVariants] = useState<any[] | null>(null);
   const [draftMetadata, setDraftMetadata] = useState<any | null>(null);
+  const [selectedCta, setSelectedCta] = useState<string>(() => getSessionDraft()?.selectedCta || 'Learn More');
+  const [selectedStyle, setSelectedStyle] = useState<string>(() => getSessionDraft()?.style || 'Insight / Advice');
+  const [variantIndex, setVariantIndex] = useState<number>(() => getSessionDraft()?.variantIndex || 0);
+  const [composerVariants, setComposerVariants] = useState<PostVariantItem[]>(() => {
+    const draft = getSessionDraft();
+    if (draft?.variants && Array.isArray(draft.variants) && draft.variants.length >= 4) {
+      return draft.variants;
+    }
+    return generateVariantsForConcept(draft?.rawIdea || draft?.caption || '', draft?.caption || '', draft?.hashtags || []);
+  });
 
 function cleanMediaUrl(raw: any): string {
   if (!raw) return '';
@@ -277,7 +287,34 @@ function cleanMediaUrl(raw: any): string {
       } catch {}
     }
     const savedScore = meta?.viralityScore !== undefined ? Number(meta.viralityScore) : (draft.viralityScore !== undefined && draft.viralityScore !== null ? Number(draft.viralityScore) : null);
-    const draftMeta = meta || (savedScore !== null ? { viralityScore: savedScore } : null);
+
+    // CRITICAL: Clear any active angle variants from prior AI generation so they don't overwrite draft's caption!
+    setAiAngleVariants(null);
+    if (typeof window !== 'undefined') {
+      try { sessionStorage.removeItem('omnisocial_angle_variants'); } catch {}
+    }
+
+    const restoredIndex = meta?.variantIndex !== undefined ? Number(meta.variantIndex) : 0;
+    const restoredCta = meta?.selectedCta || 'Learn More';
+    const restoredStyle = meta?.style || 'Insight / Advice';
+
+    // Build draft variants ensuring the saved (and possibly edited) draft caption is in the restored variant
+    const draftVariants = generateVariantsForConcept(draft.rawIdea || draft.title || draft.caption, draft.caption, cleanTags);
+    if (draftVariants[restoredIndex]) {
+      draftVariants[restoredIndex] = {
+        ...draftVariants[restoredIndex],
+        copy: draft.caption,
+        cta: restoredCta,
+        style: restoredStyle,
+        hashtags: cleanTags
+      };
+    }
+    setComposerVariants(draftVariants);
+    setVariantIndex(restoredIndex);
+    setSelectedCta(restoredCta);
+    setSelectedStyle(restoredStyle);
+
+    const draftMeta = meta || (savedScore !== null ? { viralityScore: savedScore, variantIndex: restoredIndex, selectedCta: restoredCta, style: restoredStyle } : null);
     if (draftMeta) {
       setDraftMetadata(draftMeta);
     }
@@ -350,7 +387,11 @@ function cleanMediaUrl(raw: any): string {
             mediaUrl,
             format,
             title,
-            scheduledFor
+            scheduledFor,
+            selectedCta,
+            style: selectedStyle,
+            variantIndex,
+            variants: composerVariants
           });
           sessionStorage.setItem('omnisocial_composer_session_draft', draftPayload);
           localStorage.setItem('omnisocial_composer_draft', draftPayload);
@@ -363,7 +404,7 @@ function cleanMediaUrl(raw: any): string {
         } catch {}
       }
     }
-  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title, scheduledFor]);
+  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title, scheduledFor, selectedCta, selectedStyle, variantIndex, composerVariants]);
 
   const handleResetComposer = () => {
     setTitle('');
@@ -373,6 +414,10 @@ function cleanMediaUrl(raw: any): string {
     setMediaUrl('');
     setScheduledFor('');
     setActiveDraftId(null);
+    setSelectedCta('Learn More');
+    setSelectedStyle('Insight / Advice');
+    setVariantIndex(0);
+    setComposerVariants(generateVariantsForConcept('', '', []));
     setAiAngleVariants(null);
     setDraftMetadata(null);
     if (typeof window !== 'undefined') {
@@ -389,11 +434,20 @@ function cleanMediaUrl(raw: any): string {
   const handleLoadIntoComposer = (data: { caption: string; title?: string; hashtags?: string[]; format?: string }) => {
     if (data.title) setTitle(data.title);
     if (data.caption) setCaption(data.caption);
-    if (data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0) {
-      const normalized = data.hashtags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
-      setHashtags(normalized);
-    }
+    const normalized = (data.hashtags || []).map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
+    if (normalized.length > 0) setHashtags(normalized);
     if (data.format) setFormat(data.format as any);
+
+    // Build stable 4 variants derived from the orchestrator caption/topic immediately
+    const cleanTopic = (data.title || data.caption.slice(0, 60)).trim();
+    const stagedVariants = generateVariantsForConcept(cleanTopic, data.caption, normalized);
+    setComposerVariants(stagedVariants);
+    setAiAngleVariants(stagedVariants);
+    setVariantIndex(0);
+    setSelectedCta(stagedVariants[0]?.cta || 'Learn More');
+    setSelectedStyle(stagedVariants[0]?.style || 'Storytelling');
+    setActiveDraftId(null);
+    setDraftMetadata(null);
     handleTabChange('composer');
   };
 
@@ -608,14 +662,24 @@ function cleanMediaUrl(raw: any): string {
         setTitle(newTitle);
 
         if (res.generated.angleVariants && Array.isArray(res.generated.angleVariants) && res.generated.angleVariants.length >= 4) {
+          setComposerVariants(res.generated.angleVariants);
           setAiAngleVariants(res.generated.angleVariants);
+          setVariantIndex(0);
+          const first = res.generated.angleVariants[0];
+          if (first?.cta) setSelectedCta(first.cta);
+          if (first?.style) setSelectedStyle(first.style);
           if (typeof window !== 'undefined') {
             try {
               sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(res.generated.angleVariants));
             } catch {}
           }
         } else {
-          setAiAngleVariants(null);
+          const fallback = generateVariantsForConcept(promptToUse, res.generated.caption, newTags);
+          setComposerVariants(fallback);
+          setAiAngleVariants(fallback);
+          setVariantIndex(0);
+          if (fallback[0]?.cta) setSelectedCta(fallback[0].cta);
+          if (fallback[0]?.style) setSelectedStyle(fallback[0].style);
           if (typeof window !== 'undefined') {
             try {
               sessionStorage.removeItem('omnisocial_angle_variants');
@@ -1775,10 +1839,18 @@ function cleanMediaUrl(raw: any): string {
               setCaption(stagedCopy);
               setMediaUrl('');
               setActiveDraftId(null);
+              let normalizedTags: string[] = [];
               if (idea.tags && Array.isArray(idea.tags)) {
-                const normalized = idea.tags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
-                setHashtags(normalized);
+                normalizedTags = idea.tags.map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
+                setHashtags(normalizedTags);
               }
+              const stagedVariants = generateVariantsForConcept(combinedBrief, stagedCopy, normalizedTags);
+              setComposerVariants(stagedVariants);
+              setAiAngleVariants(stagedVariants);
+              setVariantIndex(0);
+              setSelectedCta(stagedVariants[0]?.cta || 'Learn More');
+              setSelectedStyle(stagedVariants[0]?.style || 'Storytelling');
+              setDraftMetadata(null);
               handleTabChange('composer');
               setStatusMessage({ type: 'success', text: `✨ Idea "${ideaTitle || 'Idea'}" staged into composer! Ready to craft or schedule.` });
             }}
@@ -1871,6 +1943,14 @@ function cleanMediaUrl(raw: any): string {
             onResetComposer={handleResetComposer}
             generatedAngleVariants={aiAngleVariants}
             draftMetadata={draftMetadata}
+            selectedCta={selectedCta}
+            setSelectedCta={setSelectedCta}
+            style={selectedStyle}
+            setStyle={setSelectedStyle}
+            variantIndex={variantIndex}
+            setVariantIndex={setVariantIndex}
+            variantsBank={composerVariants}
+            setVariantsBank={setComposerVariants}
           />
         )}
 

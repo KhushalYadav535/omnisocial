@@ -85,6 +85,14 @@ export interface PostsContentTabProps {
   onSubmitForApproval?: () => Promise<any> | void;
   generatedAngleVariants?: any[] | null;
   draftMetadata?: any | null;
+  selectedCta?: string;
+  setSelectedCta?: (cta: string) => void;
+  style?: string;
+  setStyle?: (style: any) => void;
+  variantIndex?: number;
+  setVariantIndex?: (idx: number) => void;
+  variantsBank?: PostVariantItem[];
+  setVariantsBank?: React.Dispatch<React.SetStateAction<PostVariantItem[]>>;
 }
 
 export interface PostVariantItem {
@@ -93,6 +101,7 @@ export interface PostVariantItem {
   cta?: string;
   angleLabel?: string;
   style?: string;
+  viralityScore?: number;
 }
 
 function extractDynamicTags(text: string): string[] {
@@ -135,7 +144,7 @@ function extractDynamicTags(text: string): string[] {
   return Array.from(new Set(tags)).slice(0, 4);
 }
 
-function generateVariantsForConcept(
+export function generateVariantsForConcept(
   concept: string,
   activeCopy: string,
   tags: string[]
@@ -178,28 +187,28 @@ function generateVariantsForConcept(
         style: 'Storytelling',
         copy: activeCopy || `Immerse your space in the calming purity of ${cleanTopic} ✨\n\nCrafted with slow-aged natural botanicals, pure essential oils, and uncompromising artisan dedication:\n• Handcrafted in small, intentional studio batches\n• 100% pure natural ingredients with zero harsh synthetics\n• Long-lasting, grounding aroma that elevates your daily rituals${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve yours 👇`,
         hashtags: dynamicTags,
-        cta: 'Reserve Batch'
+        cta: 'Learn More'
       },
       {
         angleLabel: 'Actionable Breakdown',
         style: 'Framework / Listicle',
         copy: `Aromatic Notes & Blend Breakdown: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌿 Pure Botanicals: Sourced from sustainable growers, preserving delicate natural aromatic oils.\n2. 💎 Honest Craft:${priceStr ? ` Fresh batch at ${priceStr}` : ' Uncompromised studio purity'}\n3. ⏳ Dispatch Window:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Strictly small-batch studio releases'}\n\nSave this post for your daily self-care ritual, or comment below to order!`,
         hashtags: dynamicTags,
-        cta: 'View Blend Notes'
+        cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
         copy: `Behind the scenes at the studio 🌿🕯️\n\nBlending the latest batch of ${cleanTopic}.\n\nTrue botanical aromatics cannot be rushed. From slowly extracting natural botanicals to aging our blends in small glass vessels, every step is done by hand with patience and respect for nature.\n\nThank you for supporting mindful independent makers.${priceLine}${deadlineLine}\n\nWhat is your go-to grounding scent when you need a quiet moment?`,
         hashtags: dynamicTags,
-        cta: 'Studio Journal'
+        cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
         copy: `Aromatherapy Community Poll 👇✨\n\nWhen you light ${cleanTopic} or unwind at the end of the day, what time of day brings you the most peace?\n\nAre you Team Morning Meditation or Team Evening Wind-Down with soft candlelight?\n\nTell us your favorite ritual below, or tag someone who appreciates natural calm!`,
         hashtags: dynamicTags,
-        cta: 'Share Your Ritual'
+        cta: 'Comment Below'
       }
     ];
   }
@@ -211,28 +220,28 @@ function generateVariantsForConcept(
         style: 'Storytelling',
         copy: activeCopy || `Straight from our fertile soil to your kitchen ✨\n\nIntroducing single-origin ${cleanTopic}.\n\nHarvested at peak aroma, shade-dried, and hand-sorted with generations of farming heritage:\n• 100% sustainably cultivated harvests\n• Deep natural warmth and uncompromised essential oil potency\n• Directly supporting independent regenerative farming${priceLine}${deadlineLine}\n\nFresh harvest batches are now ready for dispatch! Drop a comment or DM to secure your supply 👇`,
         hashtags: dynamicTags,
-        cta: 'Order Harvest'
+        cta: 'Learn More'
       },
       {
         angleLabel: 'Actionable Breakdown',
         style: 'Framework / Listicle',
         copy: `Harvest Breakdown & Flavor Profile: ${cleanTopic}\n\nHere is why single-origin farming makes all the difference:\n\n1. 🌿 Direct-From-Farm: Harvested and packed on the estate with zero long transit delays.\n2. 💎 Honest Value:${priceStr ? ` Farm direct at ${priceStr}` : ' Unadulterated harvest grade'}\n3. ⏳ Fresh Harvest Window:${deadlineStr ? ` Batch shipping until ${deadlineStr}` : ' Limited harvest supply while stock lasts'}\n\nBookmark this for your pantry staples, or comment below to order!`,
         hashtags: dynamicTags,
-        cta: 'View Harvest Plan'
+        cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
         copy: `Morning mist over the plantation 🍃☀️\n\nHarvesting ${cleanTopic}.\n\nReal agriculture is a labor of love. Watching our crops grow from delicate seedlings to rich, fragrant harvests teaches patience you cannot learn anywhere else.\n\nThank you for honoring the hands that grow your ingredients.${priceLine}${deadlineLine}\n\nWhat is the one recipe in your home where authentic spices make all the magic happen?`,
         hashtags: dynamicTags,
-        cta: 'Farmer Notes'
+        cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
         copy: `Food & Flavor Discussion 👇🍲\n\nWhen cooking with fresh ${cleanTopic}, what is the secret technique you always rely on?\n\nAre you Team Whole Spices bloomed in warm ghee, or freshly ground right before serving?\n\nDrop your family secrets below, or tag a home chef who loves authentic ingredients!`,
         hashtags: dynamicTags,
-        cta: 'Share Cooking Secret'
+        cta: 'Comment Below'
       }
     ];
   }
@@ -244,28 +253,28 @@ function generateVariantsForConcept(
         style: 'Storytelling',
         copy: activeCopy || `Nothing beats the comforting warmth of an authentic home-cooked meal 🍲✨\n\nIntroducing: ${cleanTopic}.\n\nPrepared with fresh seasonal ingredients, cold-pressed oils, and traditional home recipes:\n• Wholesome dishes cooked with genuine care and authentic spices\n• Steaming hot rotis, slow-simmered dal, fresh sabzi, and refreshing chaas\n• Pure comfort delivered straight to your door${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve your thali 👇`,
         hashtags: dynamicTags,
-        cta: 'Subscribe / Order'
+        cta: 'Learn More'
       },
       {
         angleLabel: 'Actionable Breakdown',
         style: 'Framework / Listicle',
         copy: `Weekend Thali Menu & Subscription Breakdown: ${cleanTopic}\n\nHere is what makes our meal experience special:\n\n1. 🌾 Authentic Home Prep:\nPure traditional recipes crafted daily in small batches with zero artificial additives.\n2. 💎 Honest Meal Plan:${priceStr ? ` Complete wholesome thali at ${priceStr}` : ' Generous portions with fresh sides & chaas included'}\n3. ⏰ Delivery & Booking:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Advance booking ensures fresh hot delivery'}\n\nSave this post for your weekend meals, or comment below to book your subscription!`,
         hashtags: dynamicTags,
-        cta: 'View Thali Menu'
+        cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
         copy: `Behind the scenes in our kitchen 👩‍🍳🔥\n\nPrepping for ${cleanTopic}.\n\nGreat home food takes patience: roasting whole spices by hand, slow-simmering dal, and kneading fresh dough just before dispatch. We believe everyday food should feel like family.\n\nThank you for supporting authentic home chefs.${priceLine}${deadlineLine}\n\nWhat is your go-to home comfort dish that never fails to lift your spirits?`,
         hashtags: dynamicTags,
-        cta: 'Chef’s Kitchen Notes'
+        cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
         copy: `Weekend Food Poll 👇🍲\n\nWhen you sit down for ${cleanTopic}, what is the one side dish you can never skip?\n\nAre you Team Bajra Roti with pure ghee, or Team Dal & Steaming Rice with roasted papad?\n\nTell us your favorite combination below, or tag someone who loves authentic home-style food!`,
         hashtags: dynamicTags,
-        cta: 'Vote & Comment'
+        cta: 'Comment Below'
       }
     ];
   }
@@ -284,21 +293,21 @@ function generateVariantsForConcept(
         style: 'Framework / Listicle',
         copy: `Workshop Schedule & Details: ${cleanTopic}\n\nHere is everything you need to know:\n\n1. 👐 Hands-On Studio Time:\nLearn the core foundations, wheel techniques, and glazing fundamentals with personal guidance.\n2. 💎 What's Included:${priceStr ? ` Full session + materials for ${priceStr}` : ' All materials, firing, and firing glazes provided'}\n3. ⏳ Registration Cutoff:${deadlineStr ? ` Signups close ${deadlineStr}` : ' Only 8 spots available per batch'}\n\nSave this post for your weekend plans, or drop a comment below to enroll!`,
         hashtags: dynamicTags,
-        cta: 'View Workshop Plan'
+        cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
         copy: `Behind the scenes at the studio 🏺\n\nSetting up the workbenches for ${cleanTopic}.\n\nThere is something deeply restorative about working with natural clay. No notifications, no rushing — just quiet concentration, patience, and the rhythm of the wheel.\n\nWhether you're looking for a creative outlet or a peaceful weekend reset, our doors are open.${priceLine}${deadlineLine}\n\nHave you ever tried pottery before? What is the first shape you would love to create?`,
         hashtags: dynamicTags,
-        cta: 'Explore Studio'
+        cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
         copy: `Question for our creative community 👇\n\nWhen was the last time you spent an afternoon learning a new craft purely for the fun of it?\n\nWith ${cleanTopic}, we’re creating space to slow down and create with purpose.${priceLine}${deadlineLine}\n\nTag a friend who needs a creative weekend escape, or tell us what craft you've been wanting to try!`,
         hashtags: dynamicTags,
-        cta: 'Join Conversation'
+        cta: 'Comment Below'
       }
     ];
   }
@@ -310,28 +319,28 @@ function generateVariantsForConcept(
         style: 'Storytelling',
         copy: activeCopy || `The ovens are on and the studio smells incredible 🥐\n\nIntroducing: ${cleanTopic}.\n\nCrafted with slow-fermented dough, pure butter, and unhurried artisan patience:\n• Baked fresh in small batches every morning\n• No artificial additives — pure honest flavor\n• The perfect comfort for your morning coffee${priceLine}${deadlineLine}\n\nOrder early before today's batch sells out! Drop a comment or DM to reserve yours 👇`,
         hashtags: dynamicTags,
-        cta: 'Order Fresh'
+        cta: 'Learn More'
       },
       {
         angleLabel: 'Actionable Breakdown',
         style: 'Framework / Listicle',
         copy: `Today's Fresh Bake: ${cleanTopic}\n\nHere is what makes our bake truly special:\n\n1. 🌾 Honest Ingredients: Slow fermentation and organic flours\n2. 💎 Artisan Standard:${priceStr ? ` Box of fresh bakes at ${priceStr}` : ' Uncompromising bakery quality'}\n3. ⏰ Order Window:${deadlineStr ? ` Pre-orders close ${deadlineStr}` : ' Fresh batches dispatched daily'}\n\nSave this for your weekend breakfast checklist!`,
         hashtags: dynamicTags,
-        cta: 'Menu Breakdown'
+        cta: 'Read Full Article'
       },
       {
         angleLabel: 'Behind-The-Scenes Craft',
         style: 'Insight / Advice',
         copy: `From pre-dawn kneading to the golden crust 🥖\n\nBehind every batch of ${cleanTopic} is hours of quiet craftsmanship. When you respect the process, the texture and aroma speak for themselves.\n\nThank you for supporting small-batch independent baking.${priceLine}${deadlineLine}\n\nWhat is your ultimate favorite breakfast bakery treat?`,
         hashtags: dynamicTags,
-        cta: 'Baker’s Notes'
+        cta: 'Share Your Thoughts'
       },
       {
         angleLabel: 'Community Discussion',
         style: 'Question / Discussion',
         copy: `Weekend Bakery Poll ☕️👇\n\nWhen it comes to ${cleanTopic}, are you savoring it with hot filter coffee or a quiet cup of tea?\n\nTell us your go-to pairing below, or tag someone who deserves a fresh treat today!`,
         hashtags: dynamicTags,
-        cta: 'Cast Your Vote'
+        cta: 'Comment Below'
       }
     ];
   }
@@ -350,7 +359,7 @@ function generateVariantsForConcept(
       style: 'Framework / Listicle',
       copy: `Essential Framework: ${cleanTopic}\n\nThree key principles that drive real results:\n\n1. 🌟 Focused Intent: Clear standards and authentic execution.\n2. 💎 Measurable Value: Prioritizing lasting substance over quick shortcuts.\n3. ⏳ Timely Action:${deadlineStr ? ` Available through ${deadlineStr}` : ' Early slots now open'}.\n\nSave this breakdown for reference, or tap below to explore full details!`,
       hashtags: dynamicTags,
-      cta: 'Learn More'
+      cta: 'Read Full Article'
     },
     {
       angleLabel: 'Behind-The-Scenes Craft',
@@ -404,7 +413,15 @@ export default function PostsContentTab({
   onNavigateTab,
   onResetComposer,
   generatedAngleVariants,
-  draftMetadata
+  draftMetadata,
+  selectedCta: propSelectedCta,
+  setSelectedCta: propSetSelectedCta,
+  style: propStyle,
+  setStyle: propSetStyle,
+  variantIndex: propVariantIndex,
+  setVariantIndex: propSetVariantIndex,
+  variantsBank: propVariantsBank,
+  setVariantsBank: propSetVariantsBank
 }: PostsContentTabProps) {
   // Stepper state: 1: Brief & Settings, 2: Generated Posts, 3: Review & Publish
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(() => (caption || rawIdea ? 2 : 1));
@@ -415,14 +432,21 @@ export default function PostsContentTab({
   // Preview Device Mode: Desktop vs Mobile
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
-  // Post variant carousel state: 1 of 4
-  const [variantIndex, setVariantIndex] = useState(0);
+  // Post variant carousel state: 1 of 4 (lifted to prop with local fallback)
+  const [internalVariantIndex, setInternalVariantIndex] = useState(0);
+  const variantIndex = propVariantIndex !== undefined ? propVariantIndex : internalVariantIndex;
+  const setVariantIndex = propSetVariantIndex || setInternalVariantIndex;
 
-  // Editor selectors
+  // Editor selectors (lifted to prop with local fallback)
   const [tone, setTone] = useState<'Professional' | 'Inspirational' | 'Casual' | 'Bold' | 'Technical' | 'Storytelling'>('Professional');
   const [length, setLength] = useState<'Standard' | 'Short' | 'Long-form'>('Standard');
-  const [style, setStyle] = useState<'Insight / Advice' | 'Case Study' | 'Question / Discussion' | 'Framework / Listicle'>('Insight / Advice');
-  const [selectedCta, setSelectedCta] = useState('Learn More');
+  const [internalStyle, setInternalStyle] = useState<'Insight / Advice' | 'Case Study' | 'Question / Discussion' | 'Framework / Listicle'>('Insight / Advice');
+  const style = (propStyle !== undefined ? propStyle : internalStyle) as any;
+  const setStyle = propSetStyle || setInternalStyle;
+
+  const [internalSelectedCta, setInternalSelectedCta] = useState('Learn More');
+  const selectedCta = propSelectedCta !== undefined ? propSelectedCta : internalSelectedCta;
+  const setSelectedCta = propSetSelectedCta || setInternalSelectedCta;
 
   // Dropdown popover controls
   const [showRewriteMenu, setShowRewriteMenu] = useState(false);
@@ -853,14 +877,15 @@ export default function PostsContentTab({
     return null;
   };
 
-  // 4 Post Variants stored in dedicated state (prevents previous-navigation desync)
-  const [variantsBank, setVariantsBank] = useState<PostVariantItem[]>(() => {
+  // 4 Post Variants stored in dedicated state (lifted to prop with local fallback)
+  const [internalVariantsBank, setInternalVariantsBank] = useState<PostVariantItem[]>(() => {
     if (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
       return generatedAngleVariants;
     }
     return getStoredAngleVariants() || generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
   });
-  const lastBriefKeyRef = useRef<string>(rawIdea || (caption ? caption.slice(0, 40) : ''));
+  const variantsBank = propVariantsBank || internalVariantsBank;
+  const setVariantsBank = propSetVariantsBank || setInternalVariantsBank;
 
   // Sync when AI finishes generating angle variants
   useEffect(() => {
@@ -895,32 +920,6 @@ export default function PostsContentTab({
       }
     }
   }, [draftMetadata]);
-
-  useEffect(() => {
-    const briefKey = rawIdea || (caption ? caption.slice(0, 40) : '');
-    if ((!generatedAngleVariants || generatedAngleVariants.length === 0) && briefKey && briefKey !== lastBriefKeyRef.current) {
-      lastBriefKeyRef.current = briefKey;
-      const stored = getStoredAngleVariants();
-      const newBank = stored || generateVariantsForConcept(briefKey, caption, hashtags);
-      setVariantsBank(newBank);
-      if (newBank[variantIndex]?.hashtags && (!hashtags || hashtags.length === 0)) {
-        setHashtags(newBank[variantIndex].hashtags);
-      }
-      if (newBank[variantIndex]?.style) {
-        setStyle(newBank[variantIndex].style as any);
-      }
-    }
-  }, [rawIdea, caption, generatedAngleVariants]);
-
-  // Sync variant index if caption matches one of the generated variants (prevents 1/4 reset when showing variant 4)
-  useEffect(() => {
-    if (caption && variantsBank.length > 0) {
-      const matchIdx = variantsBank.findIndex(v => v.copy && (v.copy === caption || v.copy.slice(0, 50) === caption.slice(0, 50)));
-      if (matchIdx >= 0 && matchIdx !== variantIndex) {
-        setVariantIndex(matchIdx);
-      }
-    }
-  }, [caption, variantsBank]);
 
   const handleCaptionChange = (val: string) => {
     setCaption(val);
@@ -961,23 +960,40 @@ export default function PostsContentTab({
     .replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ')
     .trim();
 
-  // Sync variant paging without state clobbering or label desync
+  // PURE INDEX NAVIGATION: never regenerate variants or mutate copy on navigation
   const handleSelectVariant = (idx: number) => {
-    const bank = variantsBank.length > 0 ? variantsBank : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
-    // Save active caption, hashtags, cta, style before switching (prevents hashtag & CTA clobbering)
-    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption, hashtags: hashtags, cta: selectedCta, style: style } : v);
-    const total = updated.length;
+    const bank = variantsBank && variantsBank.length > 0
+      ? variantsBank
+      : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
+    const total = bank.length;
+    if (total === 0) return;
     const nextIdx = ((idx % total) + total) % total;
+
+    // 1. Commit active caption, hashtags, cta, style into current variant before switching
+    const updated = bank.map((v, i) => i === variantIndex ? {
+      ...v,
+      copy: caption,
+      hashtags: hashtags,
+      cta: selectedCta,
+      style: style
+    } : v);
     setVariantsBank(updated);
+
+    // 2. Advance index cleanly
     setVariantIndex(nextIdx);
-    setCaption(updated[nextIdx].copy);
-    if (updated[nextIdx].hashtags && updated[nextIdx].hashtags.length > 0) {
-      setHashtags(updated[nextIdx].hashtags);
+
+    // 3. Switch to next variant's properties
+    const target = updated[nextIdx];
+    if (target.copy) {
+      setCaption(target.copy);
     }
-    const nextCta = updated[nextIdx].cta || 'Learn More';
+    if (target.hashtags && target.hashtags.length > 0) {
+      setHashtags(target.hashtags);
+    }
+    const nextCta = target.cta || 'Learn More';
     setSelectedCta(nextCta);
-    if (updated[nextIdx].style) {
-      setStyle(updated[nextIdx].style as any);
+    if (target.style) {
+      setStyle(target.style as any);
     }
   };
 
