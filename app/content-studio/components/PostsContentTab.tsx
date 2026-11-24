@@ -83,14 +83,16 @@ export interface PostsContentTabProps {
   onNavigateTab?: (tabId: string) => void;
   onResetComposer?: () => void;
   onSubmitForApproval?: () => Promise<any> | void;
+  generatedAngleVariants?: any[] | null;
+  draftMetadata?: any | null;
 }
 
 export interface PostVariantItem {
   copy: string;
   hashtags: string[];
-  cta: string;
-  angleLabel: string;
-  style: 'Storytelling' | 'Framework / Listicle' | 'Insight / Advice' | 'Question / Discussion';
+  cta?: string;
+  angleLabel?: string;
+  style?: string;
 }
 
 function extractDynamicTags(text: string): string[] {
@@ -334,35 +336,35 @@ function generateVariantsForConcept(
     ];
   }
 
-  // Default / Artisan Craft
+  // Universal High-Impact Angles (Adapts cleanly to any industry, service, or product)
   return [
     {
       angleLabel: 'Direct Hook & Story',
       style: 'Storytelling',
-      copy: activeCopy || `${cleanTopic} ✨\n\nThere is nothing quite like celebrating moments that matter with creations made from the heart.\n\nEvery piece in this release is curated with personal dedication:\n• Handcrafted in small, intentional studio batches\n• Premium materials and authentic artisan care\n• Designed to deliver lasting beauty and thoughtful daily utility${priceLine}${deadlineLine}\n\nHave you reserved yours yet? Drop a comment or DM to secure yours today! 👇`,
+      copy: activeCopy || `Discover ${cleanTopic} ✨\n\nWhen it comes to creating meaningful experiences, intentional focus makes all the difference.\n\nHere is what sets this apart:\n• Thoughtfully designed with clear intention and care\n• Proven quality that delivers lasting value\n• Crafted to elevate your everyday standards${priceLine}${deadlineLine}\n\nReady to experience the difference? Drop a comment or tap below to learn more! 👇`,
       hashtags: dynamicTags,
-      cta: 'Order Now'
+      cta: 'Learn More'
     },
     {
       angleLabel: 'Actionable Breakdown',
       style: 'Framework / Listicle',
-      copy: `Curated Overview: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌟 Handcrafted Inclusions: Thoughtfully made with uncompromising standards\n2. 💎 Honest Value:${priceStr ? ` Complete set at ${priceStr}` : ' Authentic artisan standard'}\n3. ⏳ Booking Window:${deadlineStr ? ` Available until ${deadlineStr}` : ' Strictly limited batch while supplies last'}\n\nSave this post for your wishlist, or comment below to order!`,
+      copy: `Essential Framework: ${cleanTopic}\n\nThree key principles that drive real results:\n\n1. 🌟 Focused Intent: Clear standards and authentic execution.\n2. 💎 Measurable Value: Prioritizing lasting substance over quick shortcuts.\n3. ⏳ Timely Action:${deadlineStr ? ` Available through ${deadlineStr}` : ' Early slots now open'}.\n\nSave this breakdown for reference, or tap below to explore full details!`,
       hashtags: dynamicTags,
-      cta: 'View Breakdown'
+      cta: 'Learn More'
     },
     {
       angleLabel: 'Behind-The-Scenes Craft',
       style: 'Insight / Advice',
-      copy: `Behind the scenes with ${cleanTopic} 🕯️\n\nTrue craftsmanship doesn't cut corners. From selecting each material to hand-finishing every piece, here is why our community cherishes this work:\n\n• Made in small, intentional batches right in our studio\n• Sourced with care, dedication, and uncompromising standards\n• Designed to bring warmth and quiet beauty to your space\n${priceLine}${deadlineLine}\n\nThank you for trusting independent artisans. What detail do you value most in handcrafted work?`,
+      copy: `Behind the scenes with ${cleanTopic} 💡\n\nTrue excellence doesn't happen by accident. Behind every milestone is a quiet commitment to getting the details right:\n\n• Purposeful preparation from day one\n• Uncompromising standards at every step\n• Built to create genuine, lasting impact${priceLine}${deadlineLine}\n\nWhat matters most to you when choosing quality? Share your perspective below!`,
       hashtags: dynamicTags,
-      cta: 'Discover the Craft'
+      cta: 'Share Your Thoughts'
     },
     {
       angleLabel: 'Community Discussion',
       style: 'Question / Discussion',
-      copy: `Community Spotlight 👇\n\nWhen you look for thoughtful creations like ${cleanTopic}, what is the one quality that stands out to you most?\n\nFor us, intentional craftsmanship and honest materials always win.${priceLine}${deadlineLine}\n\nTell us your thoughts or tag someone who appreciates mindful design!`,
+      copy: `Community Spotlight 👇\n\nWhen considering ${cleanTopic}, what is the single most important factor for you?\n\nFor us, consistency and genuine quality will always come first.${priceLine}${deadlineLine}\n\nDrop your thoughts in the comments below—we would love to hear your take!`,
       hashtags: dynamicTags,
-      cta: 'Join the Discussion'
+      cta: 'Comment Below'
     }
   ];
 }
@@ -400,7 +402,9 @@ export default function PostsContentTab({
   statusMessage,
   setStatusMessage,
   onNavigateTab,
-  onResetComposer
+  onResetComposer,
+  generatedAngleVariants,
+  draftMetadata
 }: PostsContentTabProps) {
   // Stepper state: 1: Brief & Settings, 2: Generated Posts, 3: Review & Publish
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(() => (caption || rawIdea ? 2 : 1));
@@ -715,7 +719,9 @@ export default function PostsContentTab({
     if (hasTags) base += 2;
     if (hasSpacing) base += 2;
     if (firstLine.length < 100) base += 2;
-    const finalScore = Math.min(Math.max(base, 65), 98);
+    const finalScore = (draftMetadata?.viralityScore !== undefined && draftMetadata?.viralityScore !== null && vIdx === (draftMetadata.variantIndex ?? 0))
+      ? Number(draftMetadata.viralityScore)
+      : Math.min(Math.max(base, 65), 98);
     const calcGrade = finalScore >= 90 ? 'A+' : finalScore >= 80 ? 'A' : finalScore >= 70 ? 'B' : 'C';
     return {
       score: finalScore,
@@ -849,13 +855,50 @@ export default function PostsContentTab({
 
   // 4 Post Variants stored in dedicated state (prevents previous-navigation desync)
   const [variantsBank, setVariantsBank] = useState<PostVariantItem[]>(() => {
+    if (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
+      return generatedAngleVariants;
+    }
     return getStoredAngleVariants() || generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
   });
   const lastBriefKeyRef = useRef<string>(rawIdea || (caption ? caption.slice(0, 40) : ''));
 
+  // Sync when AI finishes generating angle variants
+  useEffect(() => {
+    if (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
+      setVariantsBank(generatedAngleVariants);
+      setVariantIndex(0);
+      const first = generatedAngleVariants[0];
+      if (first.copy) setCaption(first.copy);
+      if (first.hashtags && Array.isArray(first.hashtags) && first.hashtags.length > 0) {
+        setHashtags(first.hashtags);
+      }
+      if (first.cta) {
+        setSelectedCta(first.cta);
+      }
+      if (first.style) {
+        setStyle(first.style as any);
+      }
+    }
+  }, [generatedAngleVariants]);
+
+  // Sync when a saved draft is loaded with metadata
+  useEffect(() => {
+    if (draftMetadata) {
+      if (draftMetadata.variantIndex !== undefined && typeof draftMetadata.variantIndex === 'number') {
+        setVariantIndex(draftMetadata.variantIndex);
+      }
+      if (draftMetadata.selectedCta) {
+        setSelectedCta(draftMetadata.selectedCta);
+      }
+      if (draftMetadata.style) {
+        setStyle(draftMetadata.style as any);
+      }
+    }
+  }, [draftMetadata]);
+
   useEffect(() => {
     const briefKey = rawIdea || (caption ? caption.slice(0, 40) : '');
-    if (briefKey && briefKey !== lastBriefKeyRef.current) {
+    if ((!generatedAngleVariants || generatedAngleVariants.length === 0) && briefKey && briefKey !== lastBriefKeyRef.current) {
       lastBriefKeyRef.current = briefKey;
       const stored = getStoredAngleVariants();
       const newBank = stored || generateVariantsForConcept(briefKey, caption, hashtags);
@@ -867,7 +910,7 @@ export default function PostsContentTab({
         setStyle(newBank[variantIndex].style as any);
       }
     }
-  }, [rawIdea, caption]);
+  }, [rawIdea, caption, generatedAngleVariants]);
 
   // Sync variant index if caption matches one of the generated variants (prevents 1/4 reset when showing variant 4)
   useEffect(() => {
@@ -921,8 +964,8 @@ export default function PostsContentTab({
   // Sync variant paging without state clobbering or label desync
   const handleSelectVariant = (idx: number) => {
     const bank = variantsBank.length > 0 ? variantsBank : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
-    // Save active caption AND active hashtags before switching (prevents hashtag clobbering)
-    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption, hashtags: hashtags } : v);
+    // Save active caption, hashtags, cta, style before switching (prevents hashtag & CTA clobbering)
+    const updated = bank.map((v, i) => i === variantIndex ? { ...v, copy: caption, hashtags: hashtags, cta: selectedCta, style: style } : v);
     const total = updated.length;
     const nextIdx = ((idx % total) + total) % total;
     setVariantsBank(updated);
@@ -931,9 +974,8 @@ export default function PostsContentTab({
     if (updated[nextIdx].hashtags && updated[nextIdx].hashtags.length > 0) {
       setHashtags(updated[nextIdx].hashtags);
     }
-    if (updated[nextIdx].cta) {
-      setSelectedCta(updated[nextIdx].cta);
-    }
+    const nextCta = updated[nextIdx].cta || 'Learn More';
+    setSelectedCta(nextCta);
     if (updated[nextIdx].style) {
       setStyle(updated[nextIdx].style as any);
     }
@@ -1605,11 +1647,17 @@ export default function PostsContentTab({
               "{caption || lastSubmittedDetails?.caption || 'Ready to craft or schedule'}"
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {hashtags.map((tag, i) => (
-                <span key={i} className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                  {tag}
+              {isGenerating ? (
+                <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md animate-pulse">
+                  Analyzing optimal hashtags...
                 </span>
-              ))}
+              ) : (
+                hashtags.map((tag, i) => (
+                  <span key={i} className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                    {tag}
+                  </span>
+                ))
+              )}
             </div>
           </div>
 
@@ -2090,21 +2138,27 @@ export default function PostsContentTab({
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-800 block">Hashtags</label>
                     <div className="flex flex-wrap items-center gap-2">
-                      {hashtags.map((tag, i) => (
-                        <span
-                          key={i}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center space-x-1.5 transition"
-                        >
-                          <span>{tag}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveHashtag(tag)}
-                            className="text-slate-400 hover:text-slate-700 cursor-pointer"
-                          >
-                            ✕
-                          </button>
+                      {isGenerating ? (
+                        <span className="bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-lg flex items-center space-x-1.5 animate-pulse">
+                          <span>Crafting high-engagement hashtags...</span>
                         </span>
-                      ))}
+                      ) : (
+                        hashtags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center space-x-1.5 transition"
+                          >
+                            <span>{tag}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveHashtag(tag)}
+                              className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))
+                      )}
 
                       {isAddingTag ? (
                         <div className="flex items-center space-x-1">
@@ -2173,6 +2227,7 @@ export default function PostsContentTab({
                                 type="button"
                                 onClick={() => {
                                   setSelectedCta(c);
+                                  setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, cta: c } : v));
                                   setShowCtaMenu(false);
                                 }}
                                 className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition ${selectedCta === c ? 'bg-amber-50 text-amber-900 font-bold' : 'text-slate-700 hover:bg-slate-50'

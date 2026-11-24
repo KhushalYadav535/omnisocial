@@ -214,6 +214,8 @@ function ContentStudioContent() {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(() => getSessionDraft()?.activeDraftId || null);
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
+  const [aiAngleVariants, setAiAngleVariants] = useState<any[] | null>(null);
+  const [draftMetadata, setDraftMetadata] = useState<any | null>(null);
 
 function cleanMediaUrl(raw: any): string {
   if (!raw) return '';
@@ -275,6 +277,10 @@ function cleanMediaUrl(raw: any): string {
       } catch {}
     }
     const savedScore = meta?.viralityScore !== undefined ? Number(meta.viralityScore) : (draft.viralityScore !== undefined && draft.viralityScore !== null ? Number(draft.viralityScore) : null);
+    const draftMeta = meta || (savedScore !== null ? { viralityScore: savedScore } : null);
+    if (draftMeta) {
+      setDraftMetadata(draftMeta);
+    }
     if (savedScore !== null && !isNaN(savedScore)) {
       const grade = savedScore >= 90 ? 'A+' : savedScore >= 80 ? 'A' : savedScore >= 70 ? 'B' : savedScore >= 60 ? 'C' : 'D';
       setViralityAnalysis({
@@ -367,6 +373,8 @@ function cleanMediaUrl(raw: any): string {
     setMediaUrl('');
     setScheduledFor('');
     setActiveDraftId(null);
+    setAiAngleVariants(null);
+    setDraftMetadata(null);
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.removeItem('omnisocial_composer_session_draft');
@@ -571,6 +579,7 @@ function cleanMediaUrl(raw: any): string {
     setShowReplaceConfirmModal(false);
     setGenerating(true);
     setStatusMessage(null);
+    setHashtags([]);
 
     try {
       const res = await apiRequest('/ai/generate-post', {
@@ -599,15 +608,19 @@ function cleanMediaUrl(raw: any): string {
         setTitle(newTitle);
 
         if (res.generated.angleVariants && Array.isArray(res.generated.angleVariants) && res.generated.angleVariants.length >= 4) {
+          setAiAngleVariants(res.generated.angleVariants);
           if (typeof window !== 'undefined') {
             try {
               sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(res.generated.angleVariants));
             } catch {}
           }
-        } else if (typeof window !== 'undefined') {
-          try {
-            sessionStorage.removeItem('omnisocial_angle_variants');
-          } catch {}
+        } else {
+          setAiAngleVariants(null);
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.removeItem('omnisocial_angle_variants');
+            } catch {}
+          }
         }
 
         // Populate platformCaptions across ALL 4 platforms so other tabs never retain stale copy
@@ -1856,6 +1869,8 @@ function cleanMediaUrl(raw: any): string {
             setStatusMessage={setStatusMessage}
             onNavigateTab={(tabId) => handleTabChange(tabId as any)}
             onResetComposer={handleResetComposer}
+            generatedAngleVariants={aiAngleVariants}
+            draftMetadata={draftMetadata}
           />
         )}
 
