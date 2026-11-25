@@ -108,390 +108,115 @@ function extractDynamicTags(text: string): string[] {
   const currentYear = '2026';
   const clean = (text || '').replace(/202[0-5]\b/g, currentYear);
 
-  const tags: string[] = [];
-
-  // Domain-specific compound hashtags (no word splits)
-  if (/thali|chef|food|meal|dining|lunch|dinner|roti|sabzi|dal|chaas|menu|tiffin|subscription|curry|kitchen|cuisine|recipe/i.test(clean)) {
-    tags.push('#RajasthaniCuisine', '#HomeChef', '#ThaliSubscription', '#FoodDelivery');
-  }
-  if (/ceramic|pottery|clay|wheel|glaz/i.test(clean)) {
-    tags.push('#PotteryStudio', '#HandmadeCeramics', '#CeramicWorkshop', '#ArtisanCrafts');
-  }
-  if (/baker|bakery|cake|bread|pastry|cookie|sourdough|dessert/i.test(clean)) {
-    tags.push('#ArtisanBakery', '#HomeBakery', '#FreshBakedDaily', '#SmallBatchBaking');
-  }
-  if (/workshop|masterclass|course|session|learn|class/i.test(clean) && !/thali|food|chef|meal|dining/i.test(clean)) {
-    tags.push('#CreativeWorkshop', '#HandsOnLearning', '#SkillBuilding', '#WeekendWorkshop');
-  }
-  if (/diwali|festive|mithai|sweet|ladoo|kaju/i.test(clean)) {
-    tags.push('#FestiveGifting', '#Diwali2026', '#HandcraftedCelebrations', '#ArtisanGifts');
-  }
-  if (/candle|diya|brass|fragrance|wax/i.test(clean)) {
-    tags.push('#ArtisanCandles', '#HandpouredCandles', '#HomeAesthetics', '#WarmLiving');
-  }
-  if (/fashion|scarf|linen|clothing|wear|sustainable/i.test(clean)) {
-    tags.push('#SustainableFashion', '#SlowFashionMovement', '#ArtisanApparel', '#LinenWear');
-  }
-  if (/launch|sprint|b2b|strategy|marketing|growth/i.test(clean)) {
-    tags.push('#BrandStrategy', '#GrowthMarketing', '#SocialMediaMarketing', '#ContentCreator');
+  // Extract explicit inline hashtags first if present
+  const inlineTags = clean.match(/#[a-zA-Z0-9_]{2,}/g) || [];
+  if (inlineTags.length >= 3) {
+    return Array.from(new Set(inlineTags)).slice(0, 4);
   }
 
-  // Fallback compound defaults (ensures no single split words like #Running or #Weekend)
+  // Synthesize CamelCase compound hashtags strictly from significant words in user's text (no unrelated defaults)
+  const stopWords = new Set(['about', 'after', 'again', 'always', 'before', 'below', 'between', 'brand', 'build', 'could', 'craft', 'every', 'first', 'focus', 'from', 'great', 'here', 'just', 'like', 'make', 'more', 'most', 'need', 'only', 'other', 'our', 'over', 'post', 'share', 'should', 'some', 'such', 'than', 'that', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'those', 'through', 'today', 'very', 'want', 'what', 'when', 'where', 'which', 'while', 'with', 'would', 'your']);
+  const meaningfulWords = clean
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .map(w => w.trim())
+    .filter(w => w.length >= 4 && !stopWords.has(w.toLowerCase()));
+
+  const uniqueWords = Array.from(new Set(meaningfulWords.map(w => w[0].toUpperCase() + w.slice(1))));
+  const tags: string[] = [...inlineTags];
+  for (let i = 0; i < uniqueWords.length && tags.length < 4; i += 2) {
+    const pair = uniqueWords[i + 1] ? `${uniqueWords[i]}${uniqueWords[i + 1]}` : `${uniqueWords[i]}2026`;
+    tags.push(`#${pair}`);
+  }
+
   if (tags.length === 0) {
-    tags.push('#ArtisanCrafts', '#HandmadeWithLove', '#CommunitySpotlight', '#SmallBatchLiving');
+    tags.push('#BrandSpotlight', '#FeaturedStory', '#CommunityFirst', '#Updates2026');
   }
 
   return Array.from(new Set(tags)).slice(0, 4);
 }
 
+/**
+ * Pure topic-faithful variant synthesizer (zero cross-category template invention).
+ * Strictly derives all copy from keywords, clauses, prices, and details actually present in concept/activeCopy.
+ */
 export function generateVariantsForConcept(
   concept: string,
   activeCopy: string,
   tags: string[]
 ): PostVariantItem[] {
-  const rawClean = (concept || 'Artisan Craftsmanship & Creative Excellence').replace(/^#+\s*/, '').replace(/202[0-5]\b/g, '2026').trim();
-  const lines = rawClean.split(/[\n;]/).map(l => l.trim()).filter(Boolean);
-  const cleanTopic = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Artisan Craftsmanship & Creative Excellence';
-  const combinedContext = `${rawClean} ${activeCopy || ''}`.toLowerCase();
-
-  // Extract price, deadline
-  const priceMatch = rawClean.match(/(?:₹|rs\.?|inr|\$)\s*[\d,]+|\b\d{3,5}\s*(?:₹|inr|rs)?/i);
-  const priceStr = priceMatch ? priceMatch[0].trim() : '';
-
-  const deadlineMatch = rawClean.match(/(?:by|before|until|deadline[:\s]*)\s*([0-9]{1,2}\s+[a-z]+|[a-z]+\s+[0-9]{1,2}|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i);
-  const deadlineStr = deadlineMatch ? deadlineMatch[0].trim() : '';
-
-  // Domain detection with strict context
-  const isCafeOrBeverage = /\b(cafe|café|coffee|chai|tea|pakora|monsoon|rain|lakeside|brew|beverage|espresso|latte|cuppa)\b/i.test(combinedContext);
-  const isFootwearOrApparel = /\b(jutti|jutties|shoe|shoes|footwear|leather|sandal|mojari|artisan\s+craft|handloom|fashion|wear|apparel|stitched|embroid)\b/i.test(combinedContext);
-  const isWellnessOrYoga = /\b(yoga|retreat|wellness|meditation|pranayama|mindful|peace|healing|holistic|rishikesh|ashram|resort|mindfulness)\b/i.test(combinedContext);
-  const isFragranceOrSoap = /\b(soap|incense|sandalwood|perfume|fragrance|candle|aromatherapy|skincare|bath|oil|botanical)\b/i.test(combinedContext);
-  const isFarmingOrSpices = /\b(spice|farm|plantation|spices|pepper|cardamom|harvest|organic|single\s+origin)\b/i.test(combinedContext);
-  const isBakery = !isCafeOrBeverage && /\b(baker|bakery|cake|bread|pastry|cookie|sourdough|dessert)\b/i.test(combinedContext);
-  const isFood = !isCafeOrBeverage && !isBakery && /\b(thali|tiffin|roti|sabzi|dal|chaas|biryani|curry|caterer|restaurant|dining|lunch|dinner|food|cuisine|recipe|snack|dishes)\b/i.test(combinedContext);
-  const isWorkshop = /\b(pottery|ceramic|clay|wheel|glaz|workshop|masterclass|art\s+class)\b/i.test(combinedContext);
+  const rawClean = (concept || '').replace(/^#+\s*/, '').replace(/202[0-5]\b/g, '2026').trim();
+  const cleanActive = (activeCopy || '').replace(/202[0-5]\b/g, '2026').trim();
+  const lines = (rawClean || cleanActive || 'Featured Highlight').split(/[\n;]/).map(l => l.trim()).filter(Boolean);
+  const firstHeadline = lines[0]?.replace(/[:\-\.]\s*$/, '') || 'Featured Highlight';
+  const shortTopic = firstHeadline.length > 70 ? firstHeadline.slice(0, 67) + '...' : firstHeadline;
 
   const dynamicTags = (tags && tags.length > 0)
-    ? tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`).replace(/202[0-5]\b/g, '2026') : t)
-    : (isCafeOrBeverage
-      ? ['#CozyMoments', '#LakesideVibes', '#MasalaChai', '#MonsoonBites']
-      : (isFootwearOrApparel
-        ? ['#HandcraftedFootwear', '#ArtisanStyle', '#TraditionalCraft', '#HeritageFashion']
-        : (isWellnessOrYoga
-          ? ['#MindfulRetreat', '#DailyWellness', '#YogaJourney', '#InnerPeace']
-          : (isFood
-            ? ['#TraditionalCuisine', '#HomeChef', '#WholesomeMeals', '#FoodDelivery']
-            : (isFragranceOrSoap
-              ? ['#NaturalAromas', '#HandmadeSoap', '#ArtisanFragrance', '#MindfulLiving']
-              : (isFarmingOrSpices
-                ? ['#OrganicSpices', '#FarmToTable', '#SingleOrigin', '#ArtisanHarvest']
-                : extractDynamicTags(rawClean)))))));
+    ? Array.from(new Set(tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`).replace(/202[0-5]\b/g, '2026') : t))).slice(0, 4)
+    : extractDynamicTags(`${rawClean} ${cleanActive}`);
 
-  const priceLine = priceStr ? `\n💰 Fee / Price: ${priceStr}` : '';
-  const deadlineLine = deadlineStr ? `\n⏰ Cutoff: ${deadlineStr}` : '\n⏰ Limited batch available!';
+  const tagLine = dynamicTags.slice(0, 4).join(' ');
 
-  if (isCafeOrBeverage) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Watching the rain dance across the water with a steaming cup in hand ☕🌧️\n\nWelcome to ${cleanTopic}.\n\nWhen the monsoon arrives, slow afternoons call for the ultimate comforting ritual:\n• Slow-brewed, aromatic masala chai infused with fresh hand-crushed ginger and green cardamom\n• Crispy, piping-hot savories prepared fresh to order as the rain sets in\n• Peaceful, panoramic views that turn every quiet sip into a treasured memory${priceLine}${deadlineLine}\n\nPre-book your favorite table or drop in to unwind! Drop a comment or DM below 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `The Ultimate ${cleanTopic} Experience Breakdown:\n\nThree elements that make every visit memorable:\n\n1. ☕ Freshly Brewed Spices — Slow-steeped aromatic spices crafted for deep, comforting warmth.\n2. 🌧️ Crispy Savory Pairings — Fresh, piping-hot bites prepared to order to complement every sip.\n3. 🪟 Lakeside Serenity — The gentle rhythm of raindrops and a cozy retreat from the everyday rush.${priceLine}${deadlineLine}\n\nSave this post for your next rainy-day escape, or comment below to plan a visit!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Behind the scenes at the counter ☕🌧️\n\nPreparing for ${cleanTopic}.\n\nThere is an art to bringing comfort to a rainy afternoon. From grinding whole cardamoms and brewing spiced tea to timing fresh savory batches as the rain rolls over the water, we treat every small detail as an invitation to slow down.\n\nThank you for making our space part of your rituals.${priceLine}${deadlineLine}\n\nWhat is your go-to rainy day comfort?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Rainy Day Poll 👇☕\n\nWhen visiting ${cleanTopic}, what is your non-negotiable comfort order?\n\nAre you Team Piping Hot Masala Chai with crispy bites, or Team Filter Coffee and quiet lakeside reading?\n\nTell us your pick below, or tag someone who needs a cozy coffee date!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
+  // Extract concrete details strictly from activeCopy + concept without inventing outside products
+  const rawClauses = `${cleanActive}\n${rawClean}`
+    .split(/[\n•\|]+|(?<=[.!?])\s+/)
+    .map(s => s.replace(/^[*\-\d.)\s]+/, '').trim())
+    .filter(s => s.length > 16 && !s.startsWith('#') && !/^https?:\/\//i.test(s));
+  const uniqueClauses = Array.from(new Set(rawClauses));
 
-  if (isFootwearOrApparel) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Timeless heritage meets modern everyday elegance ✨\n\nIntroducing handcrafted ${cleanTopic}.\n\nEvery pair carries generations of traditional artisanal dedication:\n• Meticulously crafted from supple, natural vegetable-tanned leather\n• Intricate hand-embroidery created stitch by stitch by master artisans\n• Double-padded cushioned insoles engineered for effortless all-day comfort${priceLine}${deadlineLine}\n\nFresh studio batch ready for dispatch! Drop a comment or DM to secure your pair 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Craft Details & Comfort Breakdown: ${cleanTopic}\n\nHere is why genuine hand-stitched footwear stands apart:\n\n1. 👞 Supple Natural Leather — Hand-selected, breathable materials that mold naturally to your feet over time.\n2. ✨ Traditional Hand-Embroidered Accents — Precise artisan needlework celebrating generational heritage.\n3. 👣 Cushioned Daily Wear — Double-padded soles engineered for effortless all-day comfort without pinch points.${priceLine}${deadlineLine}\n\nBookmark this post for your wardrobe essentials, or drop a comment to find your size!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Behind the workbench 🔨✨\n\nCrafting the latest run of ${cleanTopic}.\n\nBefore a single pair is boxed, master artisans spend hours hand-cutting patterns, conditioning natural leather, and finishing delicate embroidery. In a world of mass production, slow craft creates items that endure with character.\n\nThank you for supporting traditional Indian artisan families.${priceLine}${deadlineLine}\n\nWhich style or color do you love most?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Artisan Style Discussion 👇👠\n\nWhen styling ${cleanTopic}, how do you love wearing them most?\n\nAre you pairing them with breezy everyday handlooms, or dressing them up with festive weekend ensembles?\n\nShare your favorite combination below, or tag a friend who appreciates handcrafted elegance!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
+  const detail1 = uniqueClauses[0] || `Spotlight on ${shortTopic}.`;
+  const detail2 = uniqueClauses[1] || (rawClean && rawClean !== detail1 ? rawClean : `Thoughtfully designed around ${shortTopic}.`);
+  const detail3 = uniqueClauses[2] || `Built to deliver genuine value and a standout experience.`;
 
-  if (isWellnessOrYoga) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Pause the noise. Reconnect with what matters ✨\n\nJoin us for ${cleanTopic}.\n\nSet in a quiet natural sanctuary, this immersive experience is crafted to restore clarity and vitality:\n• Daily guided sunrise pranayama and restorative movement for all experience levels\n• Peaceful riverside setting away from screens and daily overwhelm\n• Wholesome organic, seasonal cuisine crafted to nourish mind and body${priceLine}${deadlineLine}\n\nSpaces are kept intimate for personalized guidance. Drop a comment or DM to reserve your spot 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Experience & Daily Journey Breakdown: ${cleanTopic}\n\nThree pillars at the heart of our practice:\n\n1. 🧘 Restorative Daily Movement — Sunrise alignment, breathwork, and mindful flow adapted for every level.\n2. 🍃 Peaceful Natural Sanctuary — Quiet riverside surroundings that allow your mind to completely unplug.\n3. 🍵 Wholesome Seasonal Nourishment — Fresh, nutrient-dense cuisine designed to energize and heal.${priceLine}${deadlineLine}\n\nSave this guide for your retreat planning, or comment below to check upcoming dates!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Quiet moments before practice 🌿🕊️\n\nSetting the space for ${cleanTopic}.\n\nTrue wellness is about intentional subtraction: leaving behind notification fatigue, quietening mental noise, and returning to the breath. From lighting subtle botanicals to preparing the open studio space, we cultivate an environment of total presence.\n\nWhat is one mindfulness habit that brings you back to center when life gets busy?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Mindful Community Check-In 👇✨\n\nWhen you think about joining ${cleanTopic}, what are you seeking most right now?\n\nIs it physical rejuvenation, mental stillness, or connecting with like-minded souls?\n\nDrop your thoughts below—we would love to welcome you into the circle!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  if (isFragranceOrSoap) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Immerse your space in the calming purity of ${cleanTopic} ✨\n\nCrafted with slow-aged natural botanicals, pure essential oils, and uncompromising artisan dedication:\n• Handcrafted in small, intentional studio batches\n• 100% pure natural ingredients with zero harsh synthetics\n• Long-lasting, grounding aroma that elevates your daily rituals${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve yours 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Aromatic Notes & Blend Breakdown: ${cleanTopic}\n\nHere is what makes this edition truly special:\n\n1. 🌿 Pure Botanicals: Sourced from sustainable growers, preserving delicate natural aromatic oils.\n2. 💎 Honest Craft:${priceStr ? ` Fresh batch at ${priceStr}` : ' Uncompromised studio purity'}\n3. ⏳ Dispatch Window:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Strictly small-batch studio releases'}\n\nSave this post for your daily self-care ritual, or comment below to order!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Behind the scenes at the studio 🌿🕯️\n\nBlending the latest batch of ${cleanTopic}.\n\nTrue botanical aromatics cannot be rushed. From slowly extracting natural botanicals to aging our blends in small glass vessels, every step is done by hand with patience and respect for nature.\n\nThank you for supporting mindful independent makers.${priceLine}${deadlineLine}\n\nWhat is your go-to grounding scent when you need a quiet moment?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Aromatherapy Community Poll 👇✨\n\nWhen you light ${cleanTopic} or unwind at the end of the day, what time of day brings you the most peace?\n\nAre you Team Morning Meditation or Team Evening Wind-Down with soft candlelight?\n\nTell us your favorite ritual below, or tag someone who appreciates natural calm!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  if (isFarmingOrSpices) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Straight from our fertile soil to your kitchen ✨\n\nIntroducing single-origin ${cleanTopic}.\n\nHarvested at peak aroma, shade-dried, and hand-sorted with generations of farming heritage:\n• 100% sustainably cultivated harvests\n• Deep natural warmth and uncompromised essential oil potency\n• Directly supporting independent regenerative farming${priceLine}${deadlineLine}\n\nFresh harvest batches are now ready for dispatch! Drop a comment or DM to secure your supply 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Harvest Breakdown & Flavor Profile: ${cleanTopic}\n\nHere is why single-origin farming makes all the difference:\n\n1. 🌿 Direct-From-Farm: Harvested and packed on the estate with zero long transit delays.\n2. 💎 Honest Value:${priceStr ? ` Farm direct at ${priceStr}` : ' Unadulterated harvest grade'}\n3. ⏳ Fresh Harvest Window:${deadlineStr ? ` Batch shipping until ${deadlineStr}` : ' Limited harvest supply while stock lasts'}\n\nBookmark this for your pantry staples, or comment below to order!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Morning mist over the plantation 🍃☀️\n\nHarvesting ${cleanTopic}.\n\nReal agriculture is a labor of love. Watching our crops grow from delicate seedlings to rich, fragrant harvests teaches patience you cannot learn anywhere else.\n\nThank you for honoring the hands that grow your ingredients.${priceLine}${deadlineLine}\n\nWhat is the one recipe in your home where authentic spices make all the magic happen?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Food & Flavor Discussion 👇🍲\n\nWhen cooking with fresh ${cleanTopic}, what is the secret technique you always rely on?\n\nAre you Team Whole Spices bloomed in warm ghee, or freshly ground right before serving?\n\nDrop your family secrets below, or tag a home chef who loves authentic ingredients!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  if (isFood) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Nothing beats the comforting warmth of an authentic home-cooked meal 🍲✨\n\nIntroducing: ${cleanTopic}.\n\nPrepared with fresh seasonal ingredients, cold-pressed oils, and traditional recipes:\n• Wholesome dishes cooked with genuine care and authentic spices\n• Pure comfort delivered straight to your table${priceLine}${deadlineLine}\n\nPre-orders open for our fresh batch! Drop a comment or DM to reserve yours 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Menu & Flavor Breakdown: ${cleanTopic}\n\nHere is what makes this meal experience special:\n\n1. 🌾 Authentic Traditional Prep:\nPure recipes crafted daily in small batches with zero artificial additives.\n2. 💎 Honest Value:${priceStr ? ` Complete meal at ${priceStr}` : ' Generous portions with fresh sides included'}\n3. ⏰ Fresh Service Window:${deadlineStr ? ` Orders close ${deadlineStr}` : ' Advance booking ensures fresh hot preparation'}\n\nSave this post for your meals, or comment below to order!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Behind the scenes in our kitchen 👩‍🍳🔥\n\nPrepping for ${cleanTopic}.\n\nGreat food takes patience: roasting whole spices by hand, slow-simmering flavors, and preparing fresh dough just before serving. We believe everyday food should feel like home.\n\nThank you for supporting authentic independent cooking.${priceLine}${deadlineLine}\n\nWhat is your go-to comfort dish that never fails to lift your spirits?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Food & Flavor Poll 👇🍲\n\nWhen you sit down for ${cleanTopic}, what is the one side dish you can never skip?\n\nTell us your favorite combination below, or tag someone who loves authentic good food!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  if (isWorkshop) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `Ready to create something tangible with your own hands? ✨\n\nJoin our upcoming workshop: ${cleanTopic}.\n\nStep away from screens and immerse yourself in the tactile joy of making:\n• Step-by-step guidance designed for all skill levels\n• All premium tools, clay, and studio materials included\n• Take home your very own handcrafted finished piece${priceLine}${deadlineLine}\n\nSpaces are intentionally kept small for personal attention. Comment or DM to save your spot! 👇`,
-        hashtags: dynamicTags,
-        cta: 'Register Now'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Workshop Schedule & Details: ${cleanTopic}\n\nHere is everything you need to know:\n\n1. 👐 Hands-On Studio Time:\nLearn the core foundations, wheel techniques, and glazing fundamentals with personal guidance.\n2. 💎 What's Included:${priceStr ? ` Full session + materials for ${priceStr}` : ' All materials, firing, and firing glazes provided'}\n3. ⏳ Registration Cutoff:${deadlineStr ? ` Signups close ${deadlineStr}` : ' Only 8 spots available per batch'}\n\nSave this post for your weekend plans, or drop a comment below to enroll!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `Behind the scenes at the studio 🏺\n\nSetting up the workbenches for ${cleanTopic}.\n\nThere is something deeply restorative about working with natural clay. No notifications, no rushing — just quiet concentration, patience, and the rhythm of the wheel.\n\nWhether you're looking for a creative outlet or a peaceful weekend reset, our doors are open.${priceLine}${deadlineLine}\n\nHave you ever tried pottery before? What is the first shape you would love to create?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Question for our creative community 👇\n\nWhen was the last time you spent an afternoon learning a new craft purely for the fun of it?\n\nWith ${cleanTopic}, we’re creating space to slow down and create with purpose.${priceLine}${deadlineLine}\n\nTag a friend who needs a creative weekend escape, or tell us what craft you've been wanting to try!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  if (isBakery) {
-    return [
-      {
-        angleLabel: 'Direct Hook & Story',
-        style: 'Storytelling',
-        copy: activeCopy || `The ovens are on and the studio smells incredible 🥐\n\nIntroducing: ${cleanTopic}.\n\nCrafted with slow-fermented dough, pure butter, and unhurried artisan patience:\n• Baked fresh in small batches every morning\n• No artificial additives — pure honest flavor\n• The perfect comfort for your morning coffee${priceLine}${deadlineLine}\n\nOrder early before today's batch sells out! Drop a comment or DM to reserve yours 👇`,
-        hashtags: dynamicTags,
-        cta: 'Learn More'
-      },
-      {
-        angleLabel: 'Actionable Breakdown',
-        style: 'Framework / Listicle',
-        copy: `Today's Fresh Bake: ${cleanTopic}\n\nHere is what makes our bake truly special:\n\n1. 🌾 Honest Ingredients: Slow fermentation and organic flours\n2. 💎 Artisan Standard:${priceStr ? ` Box of fresh bakes at ${priceStr}` : ' Uncompromising bakery quality'}\n3. ⏰ Order Window:${deadlineStr ? ` Pre-orders close ${deadlineStr}` : ' Fresh batches dispatched daily'}\n\nSave this for your weekend breakfast checklist!`,
-        hashtags: dynamicTags,
-        cta: 'Read Full Article'
-      },
-      {
-        angleLabel: 'Behind-The-Scenes Craft',
-        style: 'Insight / Advice',
-        copy: `From pre-dawn kneading to the golden crust 🥖\n\nBehind every batch of ${cleanTopic} is hours of quiet craftsmanship. When you respect the process, the texture and aroma speak for themselves.\n\nThank you for supporting small-batch independent baking.${priceLine}${deadlineLine}\n\nWhat is your ultimate favorite breakfast bakery treat?`,
-        hashtags: dynamicTags,
-        cta: 'Share Your Thoughts'
-      },
-      {
-        angleLabel: 'Community Discussion',
-        style: 'Question / Discussion',
-        copy: `Weekend Bakery Poll ☕️👇\n\nWhen it comes to ${cleanTopic}, are you savoring it with hot filter coffee or a quiet cup of tea?\n\nTell us your go-to pairing below, or tag someone who deserves a fresh treat today!`,
-        hashtags: dynamicTags,
-        cta: 'Comment Below'
-      }
-    ];
-  }
-
-  // Universal Contextual Synthesis derived cleanly from input text (zero corporate clichés)
-  const copyLines = (activeCopy || '')
-    .split(/[\n\.\?!]/)
-    .map(s => s.trim())
-    .filter(s => s.length > 15 && !s.startsWith('#') && !s.startsWith('http'));
-  const leadSentence = copyLines[0] || `Discover what sets ${cleanTopic} apart.`;
-  const secondaryDetail = copyLines[1] || `Thoughtfully crafted with genuine care and dedication to lasting quality.`;
+  const ensureTagsInCopy = (text: string) => {
+    const trimmed = text.trim();
+    const inlineCount = (trimmed.match(/(?:^|\s)#[a-zA-Z0-9_]{2,}/g) || []).length;
+    if (inlineCount >= 2 || dynamicTags.length === 0) return trimmed;
+    const missing = dynamicTags.filter(t => !trimmed.toLowerCase().includes(t.toLowerCase()));
+    return missing.length > 0 ? `${trimmed}\n\n${missing.join(' ')}` : trimmed;
+  };
 
   return [
     {
       angleLabel: 'Direct Hook & Story',
       style: 'Storytelling',
-      copy: activeCopy || `Discover ${cleanTopic} ✨\n\n${leadSentence}\n\nWhen it comes to creating meaningful experiences, intentional focus makes all the difference:\n• Thoughtfully designed with clear intention and care\n• Proven quality that delivers lasting value\n• Crafted to elevate your everyday standards${priceLine}${deadlineLine}\n\nReady to experience the difference? Drop a comment or tap below to learn more! 👇`,
+      copy: ensureTagsInCopy(cleanActive || `${shortTopic}\n\n${detail2}`),
       hashtags: dynamicTags,
-      cta: 'Learn More'
+      cta: 'Explore Now'
     },
     {
       angleLabel: 'Actionable Breakdown',
       style: 'Framework / Listicle',
-      copy: `Highlights & Practical Breakdown: ${cleanTopic}\n\n${leadSentence}\n\nKey takeaways to keep in mind:\n1. 🌟 Core Experience: ${secondaryDetail}\n2. 💎 Handcrafted Standard: Built with uncompromising attention to quality and substance.\n3. ⏳ Timely Window:${deadlineStr ? ` Available through ${deadlineStr}` : ' Curated release now open'}.${priceLine}\n\nSave this breakdown for reference, or tap below to explore full details!`,
+      copy: ensureTagsInCopy(`Closer Look: ${shortTopic}\n\nKey highlights to keep in mind:\n\n1. ${detail1}\n2. ${detail2}\n3. ${detail3}\n\nSave this post for reference or reach out for full details.`),
       hashtags: dynamicTags,
-      cta: 'Read Full Article'
+      cta: 'Learn More'
     },
     {
       angleLabel: 'Behind-The-Scenes Craft',
       style: 'Insight / Advice',
-      copy: `Behind the scenes with ${cleanTopic} 💡✨\n\n${leadSentence}\n\nTrue excellence never happens by accident. Behind every finished detail is hours of intentional preparation, patient refinement, and a deep respect for the craft.\n\n${secondaryDetail}${priceLine}${deadlineLine}\n\nWhat matters most to you when choosing quality? Share your perspective below!`,
+      copy: ensureTagsInCopy(`Inside the Story: ${shortTopic}\n\n${detail1}\n\nEvery detail reflects focused preparation and uncompromising attention to quality: ${detail2}`),
       hashtags: dynamicTags,
       cta: 'Share Your Thoughts'
     },
     {
       angleLabel: 'Community Discussion',
       style: 'Question / Discussion',
-      copy: `Community Spotlight 👇✨\n\nWhen considering ${cleanTopic}, what is the single most important factor for you?\n\n${leadSentence}\n\nFor us, consistency and genuine quality will always come first.${priceLine}${deadlineLine}\n\nDrop your thoughts in the comments below—we would love to hear your take!`,
+      copy: ensureTagsInCopy(`We would love your perspective on ${shortTopic} 👇\n\n${detail1}\n\nWhich highlight stands out most to you? Drop your thoughts in the comments below!`),
       hashtags: dynamicTags,
       cta: 'Comment Below'
     }
   ];
+}
+
+function renderPreviewCopy(text: string): React.ReactNode {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[^*\n]+\*\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={idx} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
 }
 
 export default function PostsContentTab({
@@ -575,6 +300,20 @@ export default function PostsContentTab({
   const [showEditAllModal, setShowEditAllModal] = useState(false);
   const [showAiGeneratedBanner, setShowAiGeneratedBanner] = useState(false);
   const rewriteMenuRef = useRef<HTMLDivElement | null>(null);
+  const toneMenuRef = useRef<HTMLDivElement | null>(null);
+  const lengthMenuRef = useRef<HTMLDivElement | null>(null);
+  const styleMenuRef = useRef<HTMLDivElement | null>(null);
+  const ctaMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const closeAllDropdowns = () => {
+    setShowRewriteMenu(false);
+    setShowToneMenu(false);
+    setShowLengthMenu(false);
+    setShowStyleMenu(false);
+    setShowCtaMenu(false);
+    setShowScheduleMenu(false);
+    setShowCropMenu(false);
+  };
 
   // Monitor AI generation completion to show the banner only after AI generates
   const wasGeneratingRef = useRef(false);
@@ -585,19 +324,30 @@ export default function PostsContentTab({
     wasGeneratingRef.current = isGenerating;
   }, [isGenerating, caption]);
 
-  // Dismiss rewrite menu on Escape, outside click, or scroll
+  // Dismiss any open dropdown popover on Escape, outside click, or scroll
+  const anyDropdownOpen = showRewriteMenu || showToneMenu || showLengthMenu || showStyleMenu || showCtaMenu;
   useEffect(() => {
-    if (!showRewriteMenu) return;
+    if (!anyDropdownOpen) return;
     const handleClose = (e: MouseEvent | KeyboardEvent) => {
       if (e instanceof KeyboardEvent && e.key === 'Escape') {
-        setShowRewriteMenu(false);
+        closeAllDropdowns();
         return;
       }
-      if (e instanceof MouseEvent && rewriteMenuRef.current && !rewriteMenuRef.current.contains(e.target as Node)) {
-        setShowRewriteMenu(false);
+      if (e instanceof MouseEvent) {
+        const target = e.target as Node;
+        const insideRewrite = rewriteMenuRef.current?.contains(target);
+        const insideTone = toneMenuRef.current?.contains(target);
+        const insideLength = lengthMenuRef.current?.contains(target);
+        const insideStyle = styleMenuRef.current?.contains(target);
+        const insideCta = ctaMenuRef.current?.contains(target);
+        if (!insideRewrite) setShowRewriteMenu(false);
+        if (!insideTone) setShowToneMenu(false);
+        if (!insideLength) setShowLengthMenu(false);
+        if (!insideStyle) setShowStyleMenu(false);
+        if (!insideCta) setShowCtaMenu(false);
       }
     };
-    const handleScroll = () => setShowRewriteMenu(false);
+    const handleScroll = () => closeAllDropdowns();
 
     window.addEventListener('keydown', handleClose);
     window.addEventListener('mousedown', handleClose);
@@ -607,7 +357,7 @@ export default function PostsContentTab({
       window.removeEventListener('mousedown', handleClose);
       window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [showRewriteMenu]);
+  }, [anyDropdownOpen]);
 
   // Local confirmation state ensuring immediate, unmissable feedback
   const [composerNotice, setComposerNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -930,6 +680,7 @@ export default function PostsContentTab({
   }, [caption]);
 
   const handleSwitchPlatform = (plat: 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER') => {
+    closeAllDropdowns();
     const updated = {
       ...platformCaptions,
       [activePlatform]: caption
@@ -1079,6 +830,7 @@ export default function PostsContentTab({
 
   // PURE INDEX NAVIGATION: never regenerate variants or mutate copy on navigation
   const handleSelectVariant = (idx: number) => {
+    closeAllDropdowns();
     const bank = variantsBank && variantsBank.length > 0
       ? variantsBank
       : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
@@ -1944,10 +1696,14 @@ export default function PostsContentTab({
           )}
 
           {/* 4. PLATFORM SWITCHER PILLS */}
-          <div className="flex items-center space-x-3 overflow-x-auto pb-1">
+          <div className="flex items-center space-x-3 overflow-x-auto pb-1" role="tablist" aria-label="Target social platform">
             {/* LinkedIn Pill */}
             <button
               type="button"
+              role="tab"
+              aria-selected={activePlatform === 'LINKEDIN'}
+              aria-label="Switch platform to LinkedIn"
+              data-testid="platform-pill-linkedin"
               onClick={() => handleSwitchPlatform('LINKEDIN')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'LINKEDIN'
                 ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
@@ -1961,6 +1717,10 @@ export default function PostsContentTab({
             {/* Instagram Pill */}
             <button
               type="button"
+              role="tab"
+              aria-selected={activePlatform === 'INSTAGRAM'}
+              aria-label="Switch platform to Instagram"
+              data-testid="platform-pill-instagram"
               onClick={() => handleSwitchPlatform('INSTAGRAM')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'INSTAGRAM'
                 ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
@@ -1974,6 +1734,10 @@ export default function PostsContentTab({
             {/* Facebook Pill */}
             <button
               type="button"
+              role="tab"
+              aria-selected={activePlatform === 'FACEBOOK'}
+              aria-label="Switch platform to Facebook"
+              data-testid="platform-pill-facebook"
               onClick={() => handleSwitchPlatform('FACEBOOK')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'FACEBOOK'
                 ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
@@ -1987,6 +1751,10 @@ export default function PostsContentTab({
             {/* X Pill */}
             <button
               type="button"
+              role="tab"
+              aria-selected={activePlatform === 'TWITTER'}
+              aria-label="Switch platform to X"
+              data-testid="platform-pill-twitter"
               onClick={() => handleSwitchPlatform('TWITTER')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all cursor-pointer ${activePlatform === 'TWITTER'
                 ? 'border border-[#EA580C] bg-[#FFF5ED] text-slate-900 shadow-2xs'
@@ -2029,17 +1797,21 @@ export default function PostsContentTab({
                     <button
                       type="button"
                       onClick={() => handleSelectVariant(variantIndex - 1)}
+                      aria-label="Previous variant"
+                      data-testid="variant-prev-btn"
                       className="p-1 rounded-md hover:bg-white text-slate-500 hover:text-slate-800 transition cursor-pointer"
                       title="Previous variant"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="font-bold text-slate-800 px-1 text-[11px]">
+                    <span data-testid="variant-counter" className="font-bold text-slate-800 px-1 text-[11px]">
                       {variantIndex + 1} / {variantsBank.length || 4}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleSelectVariant(variantIndex + 1)}
+                      aria-label="Next variant"
+                      data-testid="variant-next-btn"
                       className="p-1 rounded-md hover:bg-white text-slate-500 hover:text-slate-800 transition cursor-pointer"
                       title="Next variant"
                     >
@@ -2165,7 +1937,7 @@ export default function PostsContentTab({
                   {/* 3 CONTROL DROPDOWNS: TONE, LENGTH, STYLE */}
                   <div className="grid grid-cols-3 gap-2">
                     {/* Tone Dropdown */}
-                    <div className="relative">
+                    <div ref={toneMenuRef} className="relative">
                       <button
                         type="button"
                         onClick={() => setShowToneMenu(!showToneMenu)}
@@ -2199,7 +1971,7 @@ export default function PostsContentTab({
                     </div>
 
                     {/* Length Dropdown */}
-                    <div className="relative">
+                    <div ref={lengthMenuRef} className="relative">
                       <button
                         type="button"
                         onClick={() => setShowLengthMenu(!showLengthMenu)}
@@ -2233,7 +2005,7 @@ export default function PostsContentTab({
                     </div>
 
                     {/* Style Dropdown */}
-                    <div className="relative">
+                    <div ref={styleMenuRef} className="relative">
                       <button
                         type="button"
                         onClick={() => setShowStyleMenu(!showStyleMenu)}
@@ -2339,7 +2111,7 @@ export default function PostsContentTab({
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-800 block">Call to Action (CTA)</label>
                     <div className="flex items-center space-x-2.5">
-                      <div className="relative flex-1">
+                      <div ref={ctaMenuRef} className="relative flex-1">
                         <button
                           type="button"
                           onClick={() => setShowCtaMenu(!showCtaMenu)}
@@ -2553,7 +2325,7 @@ export default function PostsContentTab({
 
                     {/* Post Copy */}
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line space-y-1">
-                      <p>{cleanCaptionForDisplay}</p>
+                      <p>{renderPreviewCopy(cleanCaptionForDisplay)}</p>
                       {cleanExtraTags && (
                         <p className="text-[#0A66C2] font-semibold text-[11px] pt-1">
                           {cleanExtraTags}
@@ -2665,7 +2437,7 @@ export default function PostsContentTab({
                       <p className="font-bold">482 likes</p>
                       <p className="line-clamp-3">
                         <span className="font-bold mr-1.5">{selectedBrand.name?.toLowerCase().replace(/\s+/g, '_') || 'uprole_official'}</span>
-                        {cleanCaptionForDisplay}
+                        {renderPreviewCopy(cleanCaptionForDisplay)}
                       </p>
                       {cleanExtraTags && (
                         <p className="text-blue-600 text-[11px]">{cleanExtraTags}</p>
@@ -2691,7 +2463,7 @@ export default function PostsContentTab({
                     </div>
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
-                      <p>{cleanCaptionForDisplay}</p>
+                      <p>{renderPreviewCopy(cleanCaptionForDisplay)}</p>
                       {cleanExtraTags && (
                         <p className="text-blue-600 font-semibold text-[11px] pt-1">{cleanExtraTags}</p>
                       )}
@@ -2756,7 +2528,7 @@ export default function PostsContentTab({
                     </div>
 
                     <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
-                      <p>{cleanCaptionForDisplay}</p>
+                      <p>{renderPreviewCopy(cleanCaptionForDisplay)}</p>
                       {cleanExtraTags && (
                         <p className="text-blue-500 font-semibold text-[11px] pt-1">{cleanExtraTags}</p>
                       )}

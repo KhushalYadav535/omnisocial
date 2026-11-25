@@ -257,6 +257,7 @@ function cleanMediaUrl(raw: any): string {
   const handleEditDraft = (draft: any) => {
     setActiveDraftId(draft.id);
     if (draft.title) setTitle(draft.title);
+    if (draft.caption) setCaption(draft.caption);
     if (draft.rawIdea) setRawIdea(draft.rawIdea);
     if (draft.format) setFormat(draft.format);
     let tags: string[] = [];
@@ -266,24 +267,6 @@ function cleanMediaUrl(raw: any): string {
     }
     const cleanTags = tags.map(t => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
     if (cleanTags.length > 0) setHashtags(cleanTags);
-
-    // Strip trailing line if it solely contains hashtags matching cleanTags (N5 / Focus 4)
-    let cleanCaption = draft.caption || '';
-    if (cleanTags.length > 0 && cleanCaption) {
-      const lines = cleanCaption.split('\n');
-      if (lines.length > 1) {
-        const lastLine = lines[lines.length - 1].trim();
-        const lastTokens: string[] = lastLine.split(/\s+/).filter(Boolean);
-        if (lastTokens.length > 0 && lastTokens.every((t: string) => t.startsWith('#') && cleanTags.some((ct: string) => ct.toLowerCase() === t.toLowerCase()))) {
-          lines.pop();
-          if (lines.length > 0 && lines[lines.length - 1].trim() === '') {
-            lines.pop();
-          }
-          cleanCaption = lines.join('\n').trim();
-        }
-      }
-    }
-    setCaption(cleanCaption);
     const img = cleanMediaUrl(draft.mediaUrls);
     setMediaUrl(img);
 
