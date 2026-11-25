@@ -66,7 +66,14 @@ import MediaLibraryTab from './components/MediaLibraryTab';
 import ApprovalsTab from './components/ApprovalsTab';
 import LaunchpadTab from './components/LaunchpadTab';
 import SkillLibraryTab from './components/SkillLibraryTab';
-import PostsContentTab, { generateVariantsForConcept, PostVariantItem } from './components/PostsContentTab';
+import PostsContentTab, {
+  generateVariantsForConcept,
+  buildPlatformVariantMap,
+  PostVariantItem,
+  PlatformKey,
+  PlatformVariantMap,
+  PlatformIndexMap
+} from './components/PostsContentTab';
 import DraftsTab from './components/DraftsTab';
 
 function AccountPillAvatar({
@@ -213,11 +220,26 @@ function ContentStudioContent() {
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(() => getSessionDraft()?.activeDraftId || null);
   const [showUnapprovedPublishModal, setShowUnapprovedPublishModal] = useState(false);
+  const [approvalGateContext, setApprovalGateContext] = useState(false);
   const [isPublishGateConfirmed, setIsPublishGateConfirmed] = useState(false);
   const [aiAngleVariants, setAiAngleVariants] = useState<any[] | null>(null);
   const [draftMetadata, setDraftMetadata] = useState<any | null>(null);
   const [selectedCta, setSelectedCta] = useState<string>(() => getSessionDraft()?.selectedCta || 'Learn More');
   const [selectedStyle, setSelectedStyle] = useState<string>(() => getSessionDraft()?.style || 'Insight / Advice');
+  const [activePlatform, setActivePlatform] = useState<PlatformKey>(() => getSessionDraft()?.activePlatform || 'LINKEDIN');
+  const [platformVariantIndices, setPlatformVariantIndices] = useState<PlatformIndexMap>(() => {
+    const saved = getSessionDraft()?.platformVariantIndices;
+    if (saved && typeof saved === 'object') {
+      return {
+        LINKEDIN: Number(saved.LINKEDIN) || 0,
+        INSTAGRAM: Number(saved.INSTAGRAM) || 0,
+        FACEBOOK: Number(saved.FACEBOOK) || 0,
+        TWITTER: Number(saved.TWITTER) || 0
+      };
+    }
+    const fallbackIdx = Number(getSessionDraft()?.variantIndex) || 0;
+    return { LINKEDIN: fallbackIdx, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 };
+  });
   const [variantIndex, setVariantIndex] = useState<number>(() => getSessionDraft()?.variantIndex || 0);
   const [composerVariants, setComposerVariants] = useState<PostVariantItem[]>(() => {
     const draft = getSessionDraft();
@@ -225,6 +247,16 @@ function ContentStudioContent() {
       return draft.variants;
     }
     return generateVariantsForConcept(draft?.rawIdea || draft?.caption || '', draft?.caption || '', draft?.hashtags || []);
+  });
+  const [platformVariants, setPlatformVariants] = useState<PlatformVariantMap>(() => {
+    const draft = getSessionDraft();
+    if (draft?.platformVariants && draft.platformVariants.LINKEDIN && draft.platformVariants.FACEBOOK) {
+      return draft.platformVariants;
+    }
+    const base = (draft?.variants && Array.isArray(draft.variants) && draft.variants.length >= 4)
+      ? draft.variants
+      : generateVariantsForConcept(draft?.rawIdea || draft?.caption || '', draft?.caption || '', draft?.hashtags || []);
+    return buildPlatformVariantMap(base, draft?.platformCaptions, draft?.hashtags || []);
   });
 
 function cleanMediaUrl(raw: any): string {
@@ -343,22 +375,29 @@ function cleanMediaUrl(raw: any): string {
     } else {
       setScheduledFor('');
     }
+    let parsedPlatformCaptions: Partial<Record<PlatformKey, string>> | undefined;
     if (draft.platformCaptions) {
       try {
-        const pc = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
-        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(pc));
+        parsedPlatformCaptions = typeof draft.platformCaptions === 'string' ? JSON.parse(draft.platformCaptions) : draft.platformCaptions;
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(parsedPlatformCaptions));
       } catch {}
     } else if (draft.caption) {
-      const pc = {
+      parsedPlatformCaptions = {
         LINKEDIN: draft.caption,
         INSTAGRAM: draft.caption,
         FACEBOOK: draft.caption,
         TWITTER: draft.caption
       };
       try {
-        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(pc));
+        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(parsedPlatformCaptions));
       } catch {}
     }
+
+    const draftPlatformMap = buildPlatformVariantMap(draftVariants, parsedPlatformCaptions, cleanTags);
+    draftPlatformMap.LINKEDIN = draftVariants;
+    setActivePlatform('LINKEDIN');
+    setPlatformVariantIndices({ LINKEDIN: restoredIndex, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+    setPlatformVariants(draftPlatformMap);
     handleTabChange('composer');
     setStatusMessage({ type: 'success', text: `Loaded draft "${draft.title || 'Untitled'}" into composer.` });
   };
@@ -368,6 +407,7 @@ function cleanMediaUrl(raw: any): string {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showUnapprovedPublishModal) {
         setShowUnapprovedPublishModal(false);
+        setApprovalGateContext(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -390,6 +430,9 @@ function cleanMediaUrl(raw: any): string {
             scheduledFor,
             selectedCta,
             style: selectedStyle,
+            activePlatform,
+            platformVariantIndices,
+            platformVariants,
             variantIndex,
             variants: composerVariants
           });
@@ -404,7 +447,7 @@ function cleanMediaUrl(raw: any): string {
         } catch {}
       }
     }
-  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title, scheduledFor, selectedCta, selectedStyle, variantIndex, composerVariants]);
+  }, [activeDraftId, caption, rawIdea, hashtags, mediaUrl, format, title, scheduledFor, selectedCta, selectedStyle, activePlatform, platformVariantIndices, platformVariants, variantIndex, composerVariants]);
 
   const handleResetComposer = () => {
     setTitle('');
@@ -416,8 +459,12 @@ function cleanMediaUrl(raw: any): string {
     setActiveDraftId(null);
     setSelectedCta('Learn More');
     setSelectedStyle('Insight / Advice');
+    setActivePlatform('LINKEDIN');
+    setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
     setVariantIndex(0);
-    setComposerVariants(generateVariantsForConcept('', '', []));
+    const blankVariants = generateVariantsForConcept('', '', []);
+    setComposerVariants(blankVariants);
+    setPlatformVariants(buildPlatformVariantMap(blankVariants));
     setAiAngleVariants(null);
     setDraftMetadata(null);
     if (typeof window !== 'undefined') {
@@ -454,6 +501,9 @@ function cleanMediaUrl(raw: any): string {
         }))
       : generateVariantsForConcept(cleanTopic, data.caption, normalized);
 
+    setActivePlatform('LINKEDIN');
+    setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+    setPlatformVariants(buildPlatformVariantMap(stagedVariants, undefined, normalized));
     setComposerVariants(stagedVariants);
     setAiAngleVariants(stagedVariants);
     setVariantIndex(0);
@@ -464,6 +514,7 @@ function cleanMediaUrl(raw: any): string {
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(stagedVariants));
+        localStorage.removeItem('omnisocial_platform_captions');
       } catch {}
     }
     handleTabChange('composer');
@@ -668,44 +719,28 @@ function cleanMediaUrl(raw: any): string {
         if (caption.trim().length > 0) {
           setPreviousCaption(caption);
         }
-        setCaption(res.generated.caption);
-        // Preserve mediaUrl if user intentionally selected or attached an asset
         if (!mediaUrl) {
           setMediaUrl('');
         }
         setActiveDraftId(null);
         const newTags = (res.generated.hashtags || []).map((t: string) => typeof t === 'string' ? (t.trim().startsWith('#') ? t.trim() : `#${t.trim()}`) : t);
-        setHashtags(newTags);
         const newTitle = promptToUse.slice(0, 35) + '...';
         setTitle(newTitle);
 
-        if (res.generated.angleVariants && Array.isArray(res.generated.angleVariants) && res.generated.angleVariants.length >= 4) {
-          setComposerVariants(res.generated.angleVariants);
-          setAiAngleVariants(res.generated.angleVariants);
-          setVariantIndex(0);
-          const first = res.generated.angleVariants[0];
-          if (first?.cta) setSelectedCta(first.cta);
-          if (first?.style) setSelectedStyle(first.style);
-          if (typeof window !== 'undefined') {
-            try {
-              sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(res.generated.angleVariants));
-            } catch {}
-          }
-        } else {
-          const fallback = generateVariantsForConcept(promptToUse, res.generated.caption, newTags);
-          setComposerVariants(fallback);
-          setAiAngleVariants(fallback);
-          setVariantIndex(0);
-          if (fallback[0]?.cta) setSelectedCta(fallback[0].cta);
-          if (fallback[0]?.style) setSelectedStyle(fallback[0].style);
-          if (typeof window !== 'undefined') {
-            try {
-              sessionStorage.removeItem('omnisocial_angle_variants');
-            } catch {}
-          }
-        }
+        const baseVariants: PostVariantItem[] = (res.generated.angleVariants && Array.isArray(res.generated.angleVariants) && res.generated.angleVariants.length >= 4)
+          ? res.generated.angleVariants
+          : generateVariantsForConcept(promptToUse, res.generated.caption, newTags);
 
-        // Populate platformCaptions across ALL 4 platforms so other tabs never retain stale copy
+        const appendTagsIfMissing = (txt: string, plat: PlatformKey): string => {
+          const cleanTxt = (txt || '').trim();
+          if (!cleanTxt) return baseVariants[0]?.copy || res.generated.caption;
+          if (plat === 'TWITTER') return cleanTxt;
+          const inlineCount = (cleanTxt.match(/(?:^|\s)#[A-Za-z0-9_\u00C0-\u024F]{2,}/g) || []).length;
+          if (inlineCount >= 2 || newTags.length === 0) return cleanTxt;
+          const missing = newTags.slice(0, 4).filter((t: string) => !cleanTxt.toLowerCase().includes(t.toLowerCase()));
+          return missing.length > 0 ? `${cleanTxt}\n\n${missing.join(' ')}` : cleanTxt;
+        };
+
         const formatTwitterCopy = (text: string): string => {
           if (!text) return '';
           if (text.length <= 280) return text;
@@ -714,24 +749,51 @@ function cleanMediaUrl(raw: any): string {
           return firstBlock.slice(0, 277) + '...';
         };
 
-        const variants = res.generated.variants || {};
+        const variantsObj = res.generated.variants || {};
+        const platformBankMap = buildPlatformVariantMap(
+          baseVariants,
+          {
+            LINKEDIN: baseVariants[0]?.copy || appendTagsIfMissing(variantsObj.linkedin || res.generated.caption, 'LINKEDIN'),
+            INSTAGRAM: appendTagsIfMissing(variantsObj.instagram || baseVariants[0]?.copy || res.generated.caption, 'INSTAGRAM'),
+            FACEBOOK: appendTagsIfMissing(variantsObj.facebook || baseVariants[0]?.copy || res.generated.caption, 'FACEBOOK'),
+            TWITTER: formatTwitterCopy(variantsObj.twitter || variantsObj.linkedin || baseVariants[0]?.copy || res.generated.caption)
+          },
+          newTags
+        );
+
+        const primaryLi = platformBankMap.LINKEDIN[0];
+        setActivePlatform('LINKEDIN');
+        setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+        setPlatformVariants(platformBankMap);
+        setComposerVariants(platformBankMap.LINKEDIN);
+        setAiAngleVariants(platformBankMap.LINKEDIN);
+        setVariantIndex(0);
+        setCaption(primaryLi?.copy || res.generated.caption);
+        setHashtags(primaryLi?.hashtags?.length ? primaryLi.hashtags : newTags);
+        if (primaryLi?.cta) setSelectedCta(primaryLi.cta);
+        if (primaryLi?.style) setSelectedStyle(primaryLi.style);
+
         const newPlatformCaptions: Record<string, string> = {
-          LINKEDIN: variants.linkedin || res.generated.caption,
-          INSTAGRAM: variants.instagram || res.generated.caption,
-          FACEBOOK: variants.facebook || res.generated.caption,
-          TWITTER: formatTwitterCopy(variants.twitter || variants.linkedin || res.generated.caption)
+          LINKEDIN: platformBankMap.LINKEDIN[0]?.copy || res.generated.caption,
+          INSTAGRAM: platformBankMap.INSTAGRAM[0]?.copy || res.generated.caption,
+          FACEBOOK: platformBankMap.FACEBOOK[0]?.copy || res.generated.caption,
+          TWITTER: platformBankMap.TWITTER[0]?.copy || res.generated.caption
         };
 
         if (typeof window !== 'undefined') {
           try {
+            sessionStorage.setItem('omnisocial_angle_variants', JSON.stringify(platformBankMap.LINKEDIN));
             localStorage.setItem('omnisocial_platform_captions', JSON.stringify(newPlatformCaptions));
             localStorage.setItem('omnisocial_composer_draft', JSON.stringify({
-              caption: res.generated.caption,
+              caption: primaryLi?.copy || res.generated.caption,
               rawIdea: promptToUse,
-              hashtags: newTags,
+              hashtags: primaryLi?.hashtags?.length ? primaryLi.hashtags : newTags,
               mediaUrl: '',
               format,
               title: newTitle,
+              activePlatform: 'LINKEDIN',
+              platformVariantIndices: { LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 },
+              platformVariants: platformBankMap,
               platformCaptions: newPlatformCaptions
             }));
           } catch {}
@@ -739,7 +801,7 @@ function cleanMediaUrl(raw: any): string {
 
         setViralityAnalysis(null);
         setStatusMessage({ type: 'success', text: 'AI copy crafted successfully across all platforms. Updating virality score...' });
-        handleAnalyzeVirality(res.generated.caption, newTags);
+        handleAnalyzeVirality(primaryLi?.copy || res.generated.caption, primaryLi?.hashtags?.length ? primaryLi.hashtags : newTags);
       }
     } catch (err: any) {
       const msg = err.message || '';
@@ -1043,10 +1105,15 @@ function cleanMediaUrl(raw: any): string {
   const handleApplyRepurposed = (type: 'linkedin' | 'instagram' | 'twitter' | 'facebook') => {
     if (!repurposedCampaign) return;
 
+    const targetPlat: PlatformKey = type === 'twitter' ? 'TWITTER' : type.toUpperCase() as PlatformKey;
+    let nextCaption = caption;
+    let nextTags = hashtags;
+
     if (type === 'linkedin') {
       const li = repurposedCampaign.linkedinCarousel;
       setTitle(li.title);
-      setCaption(`📌 ${li.title}\n\n${repurposedCampaign.summary}\n\nSwipe through the multi-slide carousel below for the complete actionable framework 👇`);
+      nextCaption = `📌 ${li.title}\n\n${repurposedCampaign.summary}\n\nSwipe through the multi-slide carousel below for the complete actionable framework 👇`;
+      setCaption(nextCaption);
       setCarouselTopic(li.title);
       setFormat('CAROUSEL');
       setMediaMode('carousel');
@@ -1055,8 +1122,10 @@ function cleanMediaUrl(raw: any): string {
     } else if (type === 'instagram') {
       const ig = repurposedCampaign.instagramReel;
       setTitle(`Reel: ${ig.hookText}`);
-      setCaption(`🎬 ${ig.hookText}\n\n${ig.caption}`);
-      setHashtags(ig.hashtags || ['#ReelsViral', '#Growth']);
+      nextCaption = `🎬 ${ig.hookText}\n\n${ig.caption}`;
+      nextTags = ig.hashtags || ['#ReelsViral', '#Growth'];
+      setCaption(nextCaption);
+      setHashtags(nextTags);
       setVideoPrompt(`${ig.visualDirection}. Audio mood: ${ig.suggestedAudioStyle}. Voiceover: ${ig.voiceoverScript}`);
       setFormat('REEL');
       setMediaMode('ai-video');
@@ -1064,19 +1133,27 @@ function cleanMediaUrl(raw: any): string {
       setPreviewPlatform('INSTAGRAM');
     } else if (type === 'twitter') {
       const tw = repurposedCampaign.twitterThread;
-      const combined = tw.map((t: any) => t.text).join('\n\n---\n\n');
+      nextCaption = tw.map((t: any) => t.text).join('\n\n---\n\n');
       setTitle(`Thread: ${repurposedCampaign.title}`);
-      setCaption(combined);
+      setCaption(nextCaption);
       setFormat('POST');
     } else if (type === 'facebook') {
       const fb = repurposedCampaign.facebookPost;
       setTitle(fb.headline);
-      setCaption(`🔥 ${fb.headline}\n\n${fb.body}\n\n👉 ${fb.questionPrompt}`);
-      setHashtags(fb.hashtags || ['#Community']);
+      nextCaption = `🔥 ${fb.headline}\n\n${fb.body}\n\n👉 ${fb.questionPrompt}`;
+      nextTags = fb.hashtags || ['#Community'];
+      setCaption(nextCaption);
+      setHashtags(nextTags);
       setFormat('POST');
       setTargetPlatforms(['FACEBOOK']);
       setPreviewPlatform('FACEBOOK');
     }
+
+    const stagedRepurposed = generateVariantsForConcept(repurposedCampaign.title || nextCaption.slice(0, 60), nextCaption, nextTags);
+    const nextMap = buildPlatformVariantMap(stagedRepurposed, { [targetPlat]: nextCaption }, nextTags);
+    setActivePlatform(targetPlat);
+    setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+    setPlatformVariants(nextMap);
 
     setShowRepurposeModal(false);
     setStatusMessage({
@@ -1230,6 +1307,7 @@ function cleanMediaUrl(raw: any): string {
 
       // Safety Gate 2: Human-in-the-loop Governance confirmation if unapproved
       if (!bypassGate && !isPublishGateConfirmed) {
+        setApprovalGateContext(false);
         setShowUnapprovedPublishModal(true);
         return { gated: true };
       }
@@ -1238,9 +1316,17 @@ function cleanMediaUrl(raw: any): string {
     // Safety Gate 2B: Human-in-the-loop Governance for scheduled drops
     if (isExplicitSchedule && !isDraftOnly && approvalStatusOverride !== 'PENDING') {
       if (!bypassGate && !isPublishGateConfirmed) {
+        setApprovalGateContext(false);
         setShowUnapprovedPublishModal(true);
         return { gated: true };
       }
+    }
+
+    // Safety Gate 2C: Human-in-the-loop Governance gate on immediate submit-for-approval path (Regression B)
+    if (approvalStatusOverride === 'PENDING' && !isDraftOnly && !scheduledFor && !bypassGate) {
+      setApprovalGateContext(true);
+      setShowUnapprovedPublishModal(true);
+      return { gated: true };
     }
 
     setSubmitting(true);
@@ -1287,13 +1373,12 @@ function cleanMediaUrl(raw: any): string {
         ? caption.trim()
         : (tagsToAppend.length > 0 ? `${caption.trim()}\n\n${tagsToAppend.join(' ')}` : caption.trim());
 
-      let platformCaptions: any = undefined;
-      if (typeof window !== 'undefined') {
-        try {
-          const pc = localStorage.getItem('omnisocial_platform_captions');
-          if (pc) platformCaptions = JSON.parse(pc);
-        } catch {}
-      }
+      const platformCaptions: Record<PlatformKey, string> = {
+        LINKEDIN: activePlatform === 'LINKEDIN' ? finalCaption : (platformVariants.LINKEDIN?.[platformVariantIndices.LINKEDIN ?? 0]?.copy || finalCaption),
+        INSTAGRAM: activePlatform === 'INSTAGRAM' ? finalCaption : (platformVariants.INSTAGRAM?.[platformVariantIndices.INSTAGRAM ?? 0]?.copy || finalCaption),
+        FACEBOOK: activePlatform === 'FACEBOOK' ? finalCaption : (platformVariants.FACEBOOK?.[platformVariantIndices.FACEBOOK ?? 0]?.copy || finalCaption),
+        TWITTER: activePlatform === 'TWITTER' ? finalCaption : (platformVariants.TWITTER?.[platformVariantIndices.TWITTER ?? 0]?.copy || finalCaption)
+      };
 
       const finalApprovalStatus = isDraftOnly ? 'DRAFT' : (approvalStatusOverride || (isExplicitSchedule || scheduledFor ? 'APPROVED' : 'DRAFT'));
       const finalContentStatus = isDraftOnly ? 'DRAFT' : ((finalApprovalStatus === 'PENDING' || finalApprovalStatus === 'APPROVED' || isExplicitSchedule || scheduledFor) ? 'SCHEDULED' : 'DRAFT');
@@ -1866,6 +1951,9 @@ function cleanMediaUrl(raw: any): string {
                 setHashtags(normalizedTags);
               }
               const stagedVariants = generateVariantsForConcept(combinedBrief, stagedCopy, normalizedTags);
+              setActivePlatform('LINKEDIN');
+              setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+              setPlatformVariants(buildPlatformVariantMap(stagedVariants, undefined, normalizedTags));
               setComposerVariants(stagedVariants);
               setAiAngleVariants(stagedVariants);
               setVariantIndex(0);
@@ -1972,6 +2060,12 @@ function cleanMediaUrl(raw: any): string {
             setVariantIndex={setVariantIndex}
             variantsBank={composerVariants}
             setVariantsBank={setComposerVariants}
+            activePlatform={activePlatform}
+            setActivePlatform={setActivePlatform}
+            platformVariants={platformVariants}
+            setPlatformVariants={setPlatformVariants}
+            platformVariantIndices={platformVariantIndices}
+            setPlatformVariantIndices={setPlatformVariantIndices}
           />
         )}
 
@@ -1996,7 +2090,10 @@ function cleanMediaUrl(raw: any): string {
           <div
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setShowUnapprovedPublishModal(false);
+              if (e.target === e.currentTarget) {
+                setShowUnapprovedPublishModal(false);
+                setApprovalGateContext(false);
+              }
             }}
           >
             <div
@@ -2005,7 +2102,10 @@ function cleanMediaUrl(raw: any): string {
             >
               <button
                 type="button"
-                onClick={() => setShowUnapprovedPublishModal(false)}
+                onClick={() => {
+                  setShowUnapprovedPublishModal(false);
+                  setApprovalGateContext(false);
+                }}
                 aria-label="Close modal"
                 className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
               >
@@ -2024,7 +2124,9 @@ function cleanMediaUrl(raw: any): string {
 
               <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 leading-relaxed space-y-2">
                 <p className="font-semibold">
-                  This post has not yet received client or internal stakeholder sign-off in the Approvals queue.
+                  {approvalGateContext
+                    ? 'You are submitting this Immediate Dispatch post into the Client Approvals queue before live release.'
+                    : 'This post has not yet received client or internal stakeholder sign-off in the Approvals queue.'}
                 </p>
                 <p className="text-amber-800 text-[11px]">
                   {scheduledFor
@@ -2038,16 +2140,18 @@ function cleanMediaUrl(raw: any): string {
                   type="button"
                   onClick={async () => {
                     setShowUnapprovedPublishModal(false);
-                    await handleSavePost(false, false, 'PENDING');
+                    setApprovalGateContext(false);
+                    await handleSavePost(false, true, 'PENDING');
                   }}
                   className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
                 >
-                  Submit for Client Approval First
+                  {approvalGateContext ? 'Confirm & Submit for Client Approval' : 'Submit for Client Approval First'}
                 </button>
                 <button
                   type="button"
                   onClick={async () => {
                     setShowUnapprovedPublishModal(false);
+                    setApprovalGateContext(false);
                     setIsPublishGateConfirmed(true);
                     if (scheduledFor) {
                       await handleSavePost(false, true, 'APPROVED', false, true);

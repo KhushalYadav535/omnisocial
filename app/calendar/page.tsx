@@ -3845,7 +3845,7 @@ export default function CalendarPage() {
                                 if (activePlat === 'INSTAGRAM' && (rawUrl.includes('instagram.com/p/') || rawUrl.includes('instagram.com/reel/'))) {
                                   liveUrl = rawUrl;
                                 } else if (activePlat === 'FACEBOOK' && rawUrl.includes('facebook.com') && !rawUrl.endsWith('/apexdigital')) {
-                                  liveUrl = rawUrl;
+                                  liveUrl = rawUrl.replace(/^https:\/\/facebook\.com\//i, 'https://www.facebook.com/');
                                 } else if (activePlat === 'LINKEDIN' && rawUrl.includes('linkedin.com/feed/update/')) {
                                   liveUrl = rawUrl;
                                 }

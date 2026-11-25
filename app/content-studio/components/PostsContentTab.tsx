@@ -93,7 +93,17 @@ export interface PostsContentTabProps {
   setVariantIndex?: (idx: number) => void;
   variantsBank?: PostVariantItem[];
   setVariantsBank?: React.Dispatch<React.SetStateAction<PostVariantItem[]>>;
+  activePlatform?: PlatformKey;
+  setActivePlatform?: React.Dispatch<React.SetStateAction<PlatformKey>>;
+  platformVariants?: PlatformVariantMap;
+  setPlatformVariants?: React.Dispatch<React.SetStateAction<PlatformVariantMap>>;
+  platformVariantIndices?: PlatformIndexMap;
+  setPlatformVariantIndices?: React.Dispatch<React.SetStateAction<PlatformIndexMap>>;
 }
+
+export type PlatformKey = 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER';
+export type PlatformVariantMap = Record<PlatformKey, PostVariantItem[]>;
+export type PlatformIndexMap = Record<PlatformKey, number>;
 
 export interface PostVariantItem {
   copy: string;
@@ -102,6 +112,48 @@ export interface PostVariantItem {
   angleLabel?: string;
   style?: string;
   viralityScore?: number;
+}
+
+export function buildPlatformVariantMap(
+  baseVariants: PostVariantItem[],
+  platformOverrides?: Partial<Record<PlatformKey, string>>,
+  fallbackTags: string[] = []
+): PlatformVariantMap {
+  const safeBase = Array.isArray(baseVariants) && baseVariants.length >= 4
+    ? baseVariants
+    : generateVariantsForConcept('', '', fallbackTags);
+
+  const cloneForPlatform = (plat: PlatformKey): PostVariantItem[] => {
+    const overrideV1 = platformOverrides?.[plat];
+    return safeBase.map((item, idx) => {
+      const clonedTags = Array.isArray(item.hashtags) && item.hashtags.length > 0
+        ? [...item.hashtags]
+        : [...fallbackTags];
+      let nextCopy = item.copy || '';
+      if (idx === 0 && typeof overrideV1 === 'string' && overrideV1.trim().length > 0) {
+        nextCopy = overrideV1.trim();
+      }
+      if (plat === 'TWITTER' && nextCopy.length > 280) {
+        const firstBlock = nextCopy.split('\n\n')[0] || nextCopy;
+        nextCopy = firstBlock.length <= 280 ? firstBlock : firstBlock.slice(0, 277) + '...';
+      }
+      return {
+        angleLabel: item.angleLabel,
+        style: item.style,
+        copy: nextCopy,
+        hashtags: clonedTags,
+        cta: item.cta,
+        viralityScore: item.viralityScore
+      };
+    });
+  };
+
+  return {
+    LINKEDIN: cloneForPlatform('LINKEDIN'),
+    INSTAGRAM: cloneForPlatform('INSTAGRAM'),
+    FACEBOOK: cloneForPlatform('FACEBOOK'),
+    TWITTER: cloneForPlatform('TWITTER')
+  };
 }
 
 function extractDynamicTags(text: string): string[] {
@@ -262,21 +314,45 @@ export default function PostsContentTab({
   variantIndex: propVariantIndex,
   setVariantIndex: propSetVariantIndex,
   variantsBank: propVariantsBank,
-  setVariantsBank: propSetVariantsBank
+  setVariantsBank: propSetVariantsBank,
+  activePlatform: propActivePlatform,
+  setActivePlatform: propSetActivePlatform,
+  platformVariants: propPlatformVariants,
+  setPlatformVariants: propSetPlatformVariants,
+  platformVariantIndices: propPlatformVariantIndices,
+  setPlatformVariantIndices: propSetPlatformVariantIndices
 }: PostsContentTabProps) {
   // Stepper state: 1: Brief & Settings, 2: Generated Posts, 3: Review & Publish
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(() => (caption || rawIdea ? 2 : 1));
 
-  // Active Platform Selector: LINKEDIN | INSTAGRAM | FACEBOOK | TWITTER
-  const [activePlatform, setActivePlatform] = useState<'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER'>('LINKEDIN');
+  // Active Platform Selector (lifted to prop with local fallback so New Post & AI generation always reset cleanly)
+  const [internalActivePlatform, setInternalActivePlatform] = useState<PlatformKey>('LINKEDIN');
+  const activePlatform = propActivePlatform || internalActivePlatform;
+  const setActivePlatform = propSetActivePlatform || setInternalActivePlatform;
 
   // Preview Device Mode: Desktop vs Mobile
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
-  // Post variant carousel state: 1 of 4 (lifted to prop with local fallback)
+  // Post variant carousel index (lifted or keyed per-platform)
+  const [internalVariantIndices, setInternalVariantIndices] = useState<PlatformIndexMap>({
+    LINKEDIN: 0,
+    INSTAGRAM: 0,
+    FACEBOOK: 0,
+    TWITTER: 0
+  });
+  const platformVariantIndices = propPlatformVariantIndices || internalVariantIndices;
+  const setPlatformVariantIndices = propSetPlatformVariantIndices || setInternalVariantIndices;
+
   const [internalVariantIndex, setInternalVariantIndex] = useState(0);
-  const variantIndex = propVariantIndex !== undefined ? propVariantIndex : internalVariantIndex;
-  const setVariantIndex = propSetVariantIndex || setInternalVariantIndex;
+  const variantIndex = propPlatformVariantIndices
+    ? (propPlatformVariantIndices[activePlatform] ?? 0)
+    : (propVariantIndex !== undefined ? propVariantIndex : (internalVariantIndices[activePlatform] ?? internalVariantIndex));
+  const setVariantIndex = (idxOrUpdater: React.SetStateAction<number>) => {
+    const resolved = typeof idxOrUpdater === 'function' ? idxOrUpdater(variantIndex) : idxOrUpdater;
+    setPlatformVariantIndices(prev => ({ ...prev, [activePlatform]: resolved }));
+    if (propSetVariantIndex) propSetVariantIndex(resolved);
+    else setInternalVariantIndex(resolved);
+  };
 
   // Editor selectors (lifted to prop with local fallback)
   const [tone, setTone] = useState<'Professional' | 'Inspirational' | 'Casual' | 'Bold' | 'Technical' | 'Storytelling'>('Professional');
@@ -382,9 +458,12 @@ export default function PostsContentTab({
   }, [composerNotice]);
 
   const handleResetWrapper = () => {
+    closeAllDropdowns();
     setShowAiGeneratedBanner(false);
     setComposerNotice(null);
     setLastSubmittedDetails(null);
+    setActivePlatform('LINKEDIN');
+    setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
     if (onResetComposer) onResetComposer();
   };
 
@@ -493,13 +572,16 @@ export default function PostsContentTab({
       const currentCaption = caption;
       const currentSchedule = scheduledFor;
 
-      const inProgNotice = {
-        type: 'info' as const,
-        text: 'Submitting post draft to Approvals Queue for Client Review...'
-      };
-      setComposerNotice(inProgNotice);
-      if (setStatusMessage) {
-        setStatusMessage(inProgNotice);
+      // Check Governance Gate BEFORE setting notice or lastSubmittedDetails (Regression B)
+      const res: any = onSubmitForApproval ? await onSubmitForApproval() : null;
+      if (res?.gated) {
+        return;
+      }
+      if (res && res.success === false) {
+        const errNotice = res.notice || { type: 'error' as const, text: res.error || 'Failed to submit for approval.' };
+        setComposerNotice(errNotice);
+        if (setStatusMessage) setStatusMessage(errNotice);
+        return;
       }
 
       setLastSubmittedDetails({
@@ -507,14 +589,6 @@ export default function PostsContentTab({
         scheduledFor: currentSchedule,
         approvalPending: true
       });
-
-      const res: any = onSubmitForApproval ? await onSubmitForApproval() : null;
-      if (res && res.success === false) {
-        const errNotice = res.notice || { type: 'error' as const, text: res.error || 'Failed to submit for approval.' };
-        setComposerNotice(errNotice);
-        if (setStatusMessage) setStatusMessage(errNotice);
-        return;
-      }
 
       const formattedSchedule = currentSchedule ? (() => {
         try {
@@ -639,86 +713,6 @@ export default function PostsContentTab({
     { title: 'Aesthetic Clean Flatlay', url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80' }
   ];
 
-  // Platform-specific copies so switching platform preserves custom edits for each
-  const [platformCaptions, setPlatformCaptions] = useState<Record<string, string>>(() => {
-    if (typeof window !== 'undefined' && caption) {
-      try {
-        const saved = localStorage.getItem('omnisocial_platform_captions');
-        if (saved) return JSON.parse(saved);
-      } catch { }
-    }
-    return {
-      LINKEDIN: caption || '',
-      INSTAGRAM: caption || '',
-      FACEBOOK: caption || '',
-      TWITTER: caption || ''
-    };
-  });
-
-  // Re-sync platformCaptions whenever external caption changes
-  useEffect(() => {
-    if (!caption) {
-      setPlatformCaptions({
-        LINKEDIN: '',
-        INSTAGRAM: '',
-        FACEBOOK: '',
-        TWITTER: ''
-      });
-      return;
-    }
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('omnisocial_platform_captions');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === 'object') {
-            setPlatformCaptions(parsed);
-          }
-        }
-      } catch { }
-    }
-  }, [caption]);
-
-  const handleSwitchPlatform = (plat: 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'TWITTER') => {
-    closeAllDropdowns();
-    const updated = {
-      ...platformCaptions,
-      [activePlatform]: caption
-    };
-    setPlatformCaptions(updated);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch { }
-    }
-    setActivePlatform(plat);
-    const nextCopy = updated[plat];
-    if (nextCopy !== undefined && nextCopy !== null && nextCopy.trim() !== '') {
-      setCaption(nextCopy);
-    } else {
-      // Use fallback LinkedIn or caption without overwriting other platforms
-      const fallback = updated.LINKEDIN || caption || '';
-      setCaption(fallback);
-      setPlatformCaptions(prev => ({ ...prev, [plat]: fallback }));
-    }
-  };
-
-  const handleUpdatePlatformVersion = (plat: string, val: string) => {
-    const updated = {
-      ...platformCaptions,
-      [plat]: val
-    };
-    setPlatformCaptions(updated);
-    if (activePlatform === plat) {
-      setCaption(val);
-    }
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch { }
-    }
-  };
-
   const hasValidMedia = !!mediaUrl && mediaUrl !== '[]' && mediaUrl !== '{}' && (mediaUrl.startsWith('http') || mediaUrl.startsWith('data:') || mediaUrl.startsWith('/'));
 
   // Helper to retrieve authentic LLM angle variants from session
@@ -744,32 +738,129 @@ export default function PostsContentTab({
     return null;
   };
 
-  // 4 Post Variants stored in dedicated state (lifted to prop with local fallback)
-  const [internalVariantsBank, setInternalVariantsBank] = useState<PostVariantItem[]>(() => {
-    if (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
-      return generatedAngleVariants;
+  // Per-platform keyed 4-variant state (lifted to prop with local fallback)
+  const [internalPlatformVariants, setInternalPlatformVariants] = useState<PlatformVariantMap>(() => {
+    const seed = (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4)
+      ? generatedAngleVariants
+      : (getStoredAngleVariants() || generateVariantsForConcept(rawIdea || caption || '', caption, hashtags));
+    let savedPerPlat: Partial<Record<PlatformKey, string>> | undefined;
+    if (typeof window !== 'undefined' && caption) {
+      try {
+        const rawPc = localStorage.getItem('omnisocial_platform_captions');
+        if (rawPc) savedPerPlat = JSON.parse(rawPc);
+      } catch {}
     }
-    return getStoredAngleVariants() || generateVariantsForConcept(rawIdea || caption || '', caption, hashtags);
+    return buildPlatformVariantMap(seed, savedPerPlat, hashtags);
   });
-  const variantsBank = propVariantsBank || internalVariantsBank;
-  const setVariantsBank = propSetVariantsBank || setInternalVariantsBank;
 
-  // Sync when AI finishes generating angle variants
+  const platformVariants: PlatformVariantMap = propPlatformVariants || internalPlatformVariants;
+  const setPlatformVariants = propSetPlatformVariants || setInternalPlatformVariants;
+
+  const variantsBank: PostVariantItem[] =
+    (platformVariants && Array.isArray(platformVariants[activePlatform]) && platformVariants[activePlatform].length > 0)
+      ? platformVariants[activePlatform]
+      : (propVariantsBank && propVariantsBank.length > 0 ? propVariantsBank : generateVariantsForConcept(rawIdea || caption || '', caption, hashtags));
+
+  const setVariantsBank: React.Dispatch<React.SetStateAction<PostVariantItem[]>> = (updater) => {
+    setPlatformVariants(prev => {
+      const curList = (prev && prev[activePlatform]) ? prev[activePlatform] : variantsBank;
+      const nextList = typeof updater === 'function' ? updater(curList) : updater;
+      return { ...prev, [activePlatform]: nextList };
+    });
+    if (propSetVariantsBank) {
+      propSetVariantsBank(updater);
+    }
+  };
+
+  // Derived view of active per-platform copy (for Edit All modal and outbound persistence)
+  const platformCaptions: Record<PlatformKey, string> = {
+    LINKEDIN: activePlatform === 'LINKEDIN' ? caption : (platformVariants.LINKEDIN?.[platformVariantIndices.LINKEDIN ?? 0]?.copy ?? ''),
+    INSTAGRAM: activePlatform === 'INSTAGRAM' ? caption : (platformVariants.INSTAGRAM?.[platformVariantIndices.INSTAGRAM ?? 0]?.copy ?? ''),
+    FACEBOOK: activePlatform === 'FACEBOOK' ? caption : (platformVariants.FACEBOOK?.[platformVariantIndices.FACEBOOK ?? 0]?.copy ?? ''),
+    TWITTER: activePlatform === 'TWITTER' ? caption : (platformVariants.TWITTER?.[platformVariantIndices.TWITTER ?? 0]?.copy ?? '')
+  };
+
+  const persistPlatformCaptionsSnapshot = (map: PlatformVariantMap, indices: PlatformIndexMap, activePlat?: PlatformKey, activeCopy?: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const snap: Record<PlatformKey, string> = {
+        LINKEDIN: activePlat === 'LINKEDIN' && activeCopy !== undefined ? activeCopy : (map.LINKEDIN?.[indices.LINKEDIN ?? 0]?.copy ?? ''),
+        INSTAGRAM: activePlat === 'INSTAGRAM' && activeCopy !== undefined ? activeCopy : (map.INSTAGRAM?.[indices.INSTAGRAM ?? 0]?.copy ?? ''),
+        FACEBOOK: activePlat === 'FACEBOOK' && activeCopy !== undefined ? activeCopy : (map.FACEBOOK?.[indices.FACEBOOK ?? 0]?.copy ?? ''),
+        TWITTER: activePlat === 'TWITTER' && activeCopy !== undefined ? activeCopy : (map.TWITTER?.[indices.TWITTER ?? 0]?.copy ?? '')
+      };
+      localStorage.setItem('omnisocial_platform_captions', JSON.stringify(snap));
+    } catch {}
+  };
+
+  // Pure view-switching between independent per-platform variant banks (Issue A P0 fix)
+  const handleSwitchPlatform = (nextPlat: PlatformKey) => {
+    closeAllDropdowns();
+    if (nextPlat === activePlatform) return;
+
+    const curIdx = platformVariantIndices[activePlatform] ?? variantIndex ?? 0;
+    const nextIdx = platformVariantIndices[nextPlat] ?? 0;
+
+    // 1. Commit active platform's current variant copy/tags/cta/style strictly into its own bank
+    const updatedMap: PlatformVariantMap = {
+      ...platformVariants,
+      [activePlatform]: (platformVariants[activePlatform] || []).map((v, i) =>
+        i === curIdx ? { ...v, copy: caption, hashtags: [...hashtags], cta: selectedCta, style } : v
+      )
+    };
+    setPlatformVariants(updatedMap);
+    persistPlatformCaptionsSnapshot(updatedMap, platformVariantIndices);
+
+    // 2. Switch platform and load target platform's independent variant bank at target's own index
+    setActivePlatform(nextPlat);
+    const targetList = updatedMap[nextPlat] || [];
+    const target = targetList[nextIdx] || targetList[0];
+    if (propSetVariantIndex) propSetVariantIndex(nextIdx);
+    else setInternalVariantIndex(nextIdx);
+    if (propSetVariantsBank && targetList.length > 0) propSetVariantsBank(targetList);
+
+    if (target) {
+      setCaption(target.copy || '');
+      if (Array.isArray(target.hashtags) && target.hashtags.length > 0) {
+        setHashtags([...target.hashtags]);
+      }
+      if (target.cta) setSelectedCta(target.cta);
+      if (target.style) setStyle(target.style as any);
+    }
+  };
+
+  const handleUpdatePlatformVersion = (plat: PlatformKey, val: string) => {
+    const targetIdx = platformVariantIndices[plat] ?? 0;
+    const updatedMap: PlatformVariantMap = {
+      ...platformVariants,
+      [plat]: (platformVariants[plat] || []).map((v, i) => i === targetIdx ? { ...v, copy: val } : v)
+    };
+    setPlatformVariants(updatedMap);
+    if (activePlatform === plat) {
+      setCaption(val);
+    }
+    persistPlatformCaptionsSnapshot(updatedMap, platformVariantIndices, activePlatform, activePlatform === plat ? val : caption);
+  };
+
+  // Sync only when external generatedAngleVariants arrives AND parent did not provide pre-built platformVariants
   useEffect(() => {
-    if (generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
-      setVariantsBank(generatedAngleVariants);
-      setVariantIndex(0);
-      const first = generatedAngleVariants[0];
-      if (first.copy) setCaption(first.copy);
-      if (first.hashtags && Array.isArray(first.hashtags) && first.hashtags.length > 0) {
-        setHashtags(first.hashtags);
+    if (!propPlatformVariants && generatedAngleVariants && Array.isArray(generatedAngleVariants) && generatedAngleVariants.length >= 4) {
+      let savedPerPlat: Partial<Record<PlatformKey, string>> | undefined;
+      if (typeof window !== 'undefined') {
+        try {
+          const rawPc = localStorage.getItem('omnisocial_platform_captions');
+          if (rawPc) savedPerPlat = JSON.parse(rawPc);
+        } catch {}
       }
-      if (first.cta) {
-        setSelectedCta(first.cta);
-      }
-      if (first.style) {
-        setStyle(first.style as any);
-      }
+      const nextMap = buildPlatformVariantMap(generatedAngleVariants, savedPerPlat, hashtags);
+      setInternalPlatformVariants(nextMap);
+      setActivePlatform('LINKEDIN');
+      setPlatformVariantIndices({ LINKEDIN: 0, INSTAGRAM: 0, FACEBOOK: 0, TWITTER: 0 });
+      const first = nextMap.LINKEDIN[0];
+      if (first?.copy) setCaption(first.copy);
+      if (first?.hashtags?.length) setHashtags([...first.hashtags]);
+      if (first?.cta) setSelectedCta(first.cta);
+      if (first?.style) setStyle(first.style as any);
     }
   }, [generatedAngleVariants]);
 
@@ -790,17 +881,13 @@ export default function PostsContentTab({
 
   const handleCaptionChange = (val: string) => {
     setCaption(val);
-    setVariantsBank(prev => prev.map((v, i) => i === variantIndex ? { ...v, copy: val } : v));
-    const updated = {
-      ...platformCaptions,
-      [activePlatform]: val
+    const curIdx = platformVariantIndices[activePlatform] ?? variantIndex ?? 0;
+    const updatedMap: PlatformVariantMap = {
+      ...platformVariants,
+      [activePlatform]: (platformVariants[activePlatform] || []).map((v, i) => i === curIdx ? { ...v, copy: val } : v)
     };
-    setPlatformCaptions(updated);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('omnisocial_platform_captions', JSON.stringify(updated));
-      } catch { }
-    }
+    setPlatformVariants(updatedMap);
+    persistPlatformCaptionsSnapshot(updatedMap, platformVariantIndices, activePlatform, val);
   };
 
   // Local ISO datetime string helper (prevents UTC timezone shift bug)
@@ -820,49 +907,66 @@ export default function PostsContentTab({
     .filter(Boolean)
     .filter(t => !caption.toLowerCase().includes(t.toLowerCase()));
 
-  // Format caption and extra tags ensuring hashtags have proper space separation
-  const cleanCaptionForDisplay = (caption || '').replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ');
-  const cleanExtraTags = Array.from(new Set(extraTags))
-    .map(t => t.replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 '))
-    .join(' ')
-    .replace(/(#[a-zA-Z0-9_]+)(?=#)/g, '$1 ')
-    .trim();
+  // Unicode-aware hashtag spacing helper ensuring tags never concatenate without whitespace
+  const spaceAdjacentHashtags = (txt: string) =>
+    (txt || '')
+      .replace(/([^\s#\n])(#[A-Za-z0-9_\u00C0-\u024F]+)/g, '$1 $2')
+      .replace(/(#[A-Za-z0-9_\u00C0-\u024F]+)(?=#)/g, '$1 ');
 
-  // PURE INDEX NAVIGATION: never regenerate variants or mutate copy on navigation
+  // Format caption and extra tags ensuring hashtags always have clean space separation
+  const cleanCaptionForDisplay = spaceAdjacentHashtags(caption || '');
+  const cleanExtraTags = spaceAdjacentHashtags(
+    Array.from(new Set(extraTags))
+      .map(t => spaceAdjacentHashtags(t))
+      .join(' ')
+  ).trim();
+
+  // PURE INDEX NAVIGATION scoped strictly to activePlatform (never mutates other platforms)
   const handleSelectVariant = (idx: number) => {
     closeAllDropdowns();
-    const bank = variantsBank && variantsBank.length > 0
+    const curBank = variantsBank && variantsBank.length > 0
       ? variantsBank
       : generateVariantsForConcept(rawIdea || caption, caption, hashtags);
-    const total = bank.length;
+    const total = curBank.length;
     if (total === 0) return;
+    const curIdx = platformVariantIndices[activePlatform] ?? variantIndex ?? 0;
     const nextIdx = ((idx % total) + total) % total;
 
-    // 1. Commit active caption, hashtags, cta, style into current variant before switching
-    const updated = bank.map((v, i) => i === variantIndex ? {
+    // 1. Commit current copy/tags/cta/style ONLY into activePlatform[curIdx]
+    const updatedList = curBank.map((v, i) => i === curIdx ? {
       ...v,
       copy: caption,
-      hashtags: hashtags,
+      hashtags: [...hashtags],
       cta: selectedCta,
-      style: style
+      style
     } : v);
-    setVariantsBank(updated);
 
-    // 2. Advance index cleanly
-    setVariantIndex(nextIdx);
+    const updatedMap: PlatformVariantMap = {
+      ...platformVariants,
+      [activePlatform]: updatedList
+    };
+    const nextIndices: PlatformIndexMap = {
+      ...platformVariantIndices,
+      [activePlatform]: nextIdx
+    };
+    setPlatformVariants(updatedMap);
+    setPlatformVariantIndices(nextIndices);
+    if (propSetVariantIndex) propSetVariantIndex(nextIdx);
+    else setInternalVariantIndex(nextIdx);
+    if (propSetVariantsBank) propSetVariantsBank(updatedList);
 
-    // 3. Switch to next variant's properties
-    const target = updated[nextIdx];
-    if (target.copy) {
-      setCaption(target.copy);
-    }
-    if (target.hashtags && target.hashtags.length > 0) {
-      setHashtags(target.hashtags);
-    }
-    const nextCta = target.cta || 'Learn More';
-    setSelectedCta(nextCta);
-    if (target.style) {
-      setStyle(target.style as any);
+    // 2. Switch to activePlatform[nextIdx]
+    const target = updatedList[nextIdx];
+    if (target) {
+      setCaption(target.copy || '');
+      if (target.hashtags && target.hashtags.length > 0) {
+        setHashtags([...target.hashtags]);
+      }
+      setSelectedCta(target.cta || 'Learn More');
+      if (target.style) {
+        setStyle(target.style as any);
+      }
+      persistPlatformCaptionsSnapshot(updatedMap, nextIndices, activePlatform, target.copy || '');
     }
   };
 
@@ -2435,7 +2539,7 @@ export default function PostsContentTab({
                     {/* Likes and Caption */}
                     <div className="text-xs text-slate-800 space-y-1">
                       <p className="font-bold">482 likes</p>
-                      <p className="line-clamp-3">
+                      <p className="line-clamp-3 whitespace-pre-line">
                         <span className="font-bold mr-1.5">{selectedBrand.name?.toLowerCase().replace(/\s+/g, '_') || 'uprole_official'}</span>
                         {renderPreviewCopy(cleanCaptionForDisplay)}
                       </p>
