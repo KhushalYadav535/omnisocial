@@ -84,22 +84,45 @@ function DashboardContent() {
     setLoading(true);
     try {
       const query = brandId ? `?brandId=${brandId}` : '';
-      const [analyticsRes, inboxRes, calendarRes, accountsRes] = await Promise.all([
+      const [analyticsSettled, inboxSettled, calendarSettled, accountsSettled] = await Promise.allSettled([
         apiRequest(`/analytics/dashboard${query}`),
         apiRequest(`/inbox${query}`),
         apiRequest(`/calendar${query}`),
         apiRequest(`/social-accounts${query}`)
       ]);
 
-      const queuedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'QUEUED');
-      const missedEvents = (calendarRes.events || []).filter((e: any) => e.status === 'MISSED');
-      const activePlatforms = Array.from(new Set((accountsRes.accounts || []).filter((a: any) => a.isConnected !== false).map((a: any) => a.platform?.toUpperCase()))).filter(Boolean) as string[];
+      const analyticsRes = analyticsSettled.status === 'fulfilled' ? analyticsSettled.value : null;
+      const inboxRes = inboxSettled.status === 'fulfilled' ? inboxSettled.value : null;
+      const calendarRes = calendarSettled.status === 'fulfilled' ? calendarSettled.value : null;
+      const accountsRes = accountsSettled.status === 'fulfilled' ? accountsSettled.value : null;
+
+      if (analyticsSettled.status === 'rejected') {
+        console.warn('Analytics dashboard fetch degraded:', analyticsSettled.reason);
+      }
+
+      const calEvents = calendarRes?.events || [];
+      const queuedEvents = calEvents.filter((e: any) => e.status === 'QUEUED');
+      const missedEvents = calEvents.filter((e: any) => e.status === 'MISSED');
+      const publishedCalEvents = calEvents.filter((e: any) => e.status === 'PUBLISHED');
+      const accountsList = accountsRes?.accounts || [];
+      const activePlatforms = Array.from(new Set(accountsList.filter((a: any) => a.isConnected !== false).map((a: any) => a.platform?.toUpperCase()))).filter(Boolean) as string[];
+
+      // Fallback telemetry synthesis if analytics endpoint is unavailable
+      const fallbackAnalytics = analyticsRes || {
+        kpis: {
+          totalPublishedPosts: publishedCalEvents.length,
+          totalQueuedPosts: queuedEvents.length,
+          totalFailedPosts: 0,
+          totalMissedPosts: missedEvents.length,
+          totalInteractions: (inboxRes?.interactions || []).length
+        }
+      };
 
       setData({
-        analytics: analyticsRes,
-        recentInteractions: (inboxRes.interactions || []).slice(0, 5),
+        analytics: fallbackAnalytics,
+        recentInteractions: (inboxRes?.interactions || []).slice(0, 5),
         upcomingPosts: (queuedEvents.length > 0 ? queuedEvents : missedEvents).slice(0, 3),
-        accounts: accountsRes.accounts || [],
+        accounts: accountsList,
         queuedEventsCount: queuedEvents.length,
         missedEventsCount: missedEvents.length
       });

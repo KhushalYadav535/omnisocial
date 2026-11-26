@@ -585,7 +585,7 @@ export default function CalendarPage() {
               setBrands(bRes.brands);
               resolvedBrandId = bRes.brands[0].id;
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -686,7 +686,7 @@ export default function CalendarPage() {
       if (stored) {
         setIdeas(JSON.parse(stored));
       }
-    } catch {}
+    } catch { }
   }, []);
 
   const handleSaveNewIdea = () => {
@@ -702,7 +702,7 @@ export default function CalendarPage() {
     setIdeas(updated);
     try {
       localStorage.setItem('omnisocial_saved_ideas', JSON.stringify(updated));
-    } catch {}
+    } catch { }
     setNewIdeaTitle('');
     setNewIdeaHook('');
     setNotice({ type: 'success', text: `Captured idea: "${newIdea.title}"!` });
@@ -713,7 +713,7 @@ export default function CalendarPage() {
     setIdeas(updated);
     try {
       localStorage.setItem('omnisocial_saved_ideas', JSON.stringify(updated));
-    } catch {}
+    } catch { }
   };
 
   const handleConvertIdeaToPost = (idea: ContentIdea) => {
@@ -1127,7 +1127,7 @@ export default function CalendarPage() {
     const cleanHook = newHookText.replace(/^(Curiosity|Statistical|Story|Question|Direct Proof):\s*/i, '');
     const updated = [...generatedRoadmap.posts];
     const oldPost = updated[postIdx];
-    
+
     // Replace the first line of caption with the new hook
     const lines = (oldPost.caption || '').split('\n');
     lines[0] = cleanHook;
@@ -1188,7 +1188,7 @@ export default function CalendarPage() {
     const post = updated[idx];
     const isReel = newFormat === 'REEL';
     const ar = isReel ? '9:16' : '1:1';
-    
+
     // Update scheduled slot time intelligently
     const dateObj = new Date(post.scheduledDate);
     if (isReel) {
@@ -1254,19 +1254,19 @@ export default function CalendarPage() {
   const getPlatformOptimizedCaption = (post: any, targetPlat: 'INSTAGRAM' | 'LINKEDIN' | 'TWITTER' | 'FACEBOOK') => {
     const rawCaption = post.caption || '';
     const utmParam = enableUtmTracking ? `?utm_source=${targetPlat.toLowerCase()}&utm_medium=social&utm_campaign=launch_sprint&utm_content=day_${post.dayNumber}` : '';
-    
+
     if (targetPlat === 'LINKEDIN') {
       const lines = rawCaption.split('\n');
       const hookLine = lines[0] || post.hook;
       const bodyLines = lines.slice(1).filter((l: string) => !l.startsWith('#')).join('\n\n');
       return `📌 ${hookLine}\n\n${bodyLines}\n\n---\n💬 What are your thoughts on this? Share below.\n\n#Leadership #Innovation #SocialGrowth`;
     }
-    
+
     if (targetPlat === 'TWITTER') {
       const hookLine = post.hook;
       return `1/3 🧵 ${hookLine}\n\nHere is what you need to know:\n\n2/3 💡 ${rawCaption.slice(0, 180).replace(/\n/g, ' ')}...\n\n3/3 🎯 Comment "${post.ctaKeyword || 'GO'}" below for the complete link ${utmParam}!`;
     }
-    
+
     if (targetPlat === 'FACEBOOK') {
       return `${rawCaption}\n\n👉 Direct Link: https://yourbrand.com/offer${utmParam}\n\nDrop a comment below if you have any questions!`;
     }
@@ -1478,28 +1478,6 @@ export default function CalendarPage() {
   };
 
   const isVideoAssetUrl = (url?: string | null) => Boolean(url && /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url));
-
-  const renderInspectorFeedMedia = (url: string, heightClass: string, fallbackUrl: string) => (
-    <div className="rounded-xl overflow-hidden border border-neutral-200">
-      {isVideoAssetUrl(url) ? (
-        <video
-          src={url}
-          controls
-          playsInline
-          className={`w-full ${heightClass} object-cover bg-black`}
-        />
-      ) : (
-        <img
-          src={url}
-          alt=""
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = fallbackUrl;
-          }}
-          className={`w-full ${heightClass} object-cover`}
-        />
-      )}
-    </div>
-  );
 
   const runOpenRouterMp4ReelJob = async (
     promptText: string,
@@ -1794,7 +1772,7 @@ export default function CalendarPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchCalendar = async () => {
@@ -1895,10 +1873,27 @@ export default function CalendarPage() {
     }
   };
 
+  const parseLocalDateTimeSlot = (val?: string | null): Date | null => {
+    if (!val || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(val.trim())) return null;
+    const [dateSegment] = val.trim().split('T');
+    const [y, m, d] = dateSegment.split('-').map(Number);
+    const dt = new Date(val.trim());
+    if (isNaN(dt.getTime()) || dt.getFullYear() !== y || dt.getMonth() + 1 !== m || dt.getDate() !== d) {
+      return null;
+    }
+    return dt;
+  };
+
+  const toSafeIsoString = (val?: string | Date | null): string | null => {
+    if (!val) return null;
+    const d = val instanceof Date ? val : new Date(val);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  };
+
   const handleSaveModalReschedule = async () => {
     if (!selectedEvent || !rescheduleDate) return;
-    const parsedReschedule = new Date(rescheduleDate);
-    if (isNaN(parsedReschedule.getTime())) {
+    const parsedReschedule = parseLocalDateTimeSlot(rescheduleDate);
+    if (!parsedReschedule) {
       setNotice({ type: 'error', text: 'Please enter a valid date (YYYY-MM-DD) and time (HH:MM).' });
       return;
     }
@@ -1971,13 +1966,14 @@ export default function CalendarPage() {
   const handleSaveContentEdit = async () => {
     if (!selectedEvent) return;
 
-    const parsedReschedule = rescheduleDate ? new Date(rescheduleDate) : null;
-    const hasValidReschedule = !!(parsedReschedule && !isNaN(parsedReschedule.getTime()));
+    const parsedReschedule = parseLocalDateTimeSlot(rescheduleDate);
+    const newIso = parsedReschedule ? parsedReschedule.toISOString() : null;
+    const existingIso = toSafeIsoString(selectedEvent.scheduledFor);
 
     // Strict guard: verify if any fields actually changed before saving
     const titleChanged = editTitle.trim() !== (selectedEvent.title || '').trim();
     const captionChanged = editCaption.trim() !== (selectedEvent.caption || '').trim();
-    const dateChanged = !!(hasValidReschedule && selectedEvent.status !== 'PUBLISHED' && parsedReschedule!.toISOString() !== new Date(selectedEvent.scheduledFor).toISOString());
+    const dateChanged = !!(newIso && selectedEvent.status !== 'PUBLISHED' && newIso !== existingIso);
 
     if (!titleChanged && !captionChanged && !dateChanged) {
       // Nothing was edited — close modal cleanly without unnecessary API write or false auto-save notice
@@ -1998,23 +1994,20 @@ export default function CalendarPage() {
       });
 
       // If rescheduleDate was changed and post is not published, also save new schedule date
-      if (hasValidReschedule && selectedEvent.status !== 'PUBLISHED') {
-        const newIso = parsedReschedule!.toISOString();
-        if (newIso !== new Date(selectedEvent.scheduledFor).toISOString()) {
-          await apiRequest('/calendar/reschedule', {
-            method: 'POST',
-            body: JSON.stringify({
-              publicationId: selectedEvent.publicationId,
-              newDate: newIso
-            })
-          });
-        }
+      if (newIso && selectedEvent.status !== 'PUBLISHED' && newIso !== existingIso) {
+        await apiRequest('/calendar/reschedule', {
+          method: 'POST',
+          body: JSON.stringify({
+            publicationId: selectedEvent.publicationId,
+            newDate: newIso
+          })
+        });
       }
 
       // Optimistic update of local events list immediately so title reflects without reload
       setEvents(prev => prev.map(ev =>
         (ev.id === selectedEvent.id || ev.publicationId === selectedEvent.publicationId)
-          ? { ...ev, title: editTitle, caption: editCaption, scheduledFor: hasValidReschedule ? parsedReschedule!.toISOString() : ev.scheduledFor }
+          ? { ...ev, title: editTitle, caption: editCaption, scheduledFor: newIso || ev.scheduledFor }
           : ev
       ));
 
@@ -2270,12 +2263,12 @@ export default function CalendarPage() {
 
   const parseCalendarCardTitle = (rawTitle: string) => {
     if (!rawTitle) return { badge: null, fullBadge: null, cleanTitle: 'Untitled Drop', badgeStyle: '' };
-    
+
     const match = rawTitle.match(/^\[(.*?)\]\s*(.*)$/);
     if (match) {
       const rawBadge = match[1].trim();
       const cleanTitle = match[2].trim() || rawBadge;
-      
+
       let shortBadge = rawBadge;
       let badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200/80';
 
@@ -2301,7 +2294,7 @@ export default function CalendarPage() {
         badgeStyle
       };
     }
-    
+
     return { badge: null, fullBadge: null, cleanTitle: rawTitle, badgeStyle: '' };
   };
 
@@ -2475,8 +2468,8 @@ export default function CalendarPage() {
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-3.5 py-1 rounded-full transition-all cursor-pointer flex items-center space-x-1.5 ${viewMode === mode
-                    ? 'bg-white text-neutral-950 font-black shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
-                    : 'hover:text-neutral-900 font-medium'
+                  ? 'bg-white text-neutral-950 font-black shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                  : 'hover:text-neutral-900 font-medium'
                   }`}
               >
                 {mode === 'GRID' && <Instagram className="w-3 h-3 text-pink-600 shrink-0" />}
@@ -2558,13 +2551,12 @@ export default function CalendarPage() {
         {/* ===================================================================== */}
         {/* CONTENT PILLARS & 80/20 BALANCE AUDITOR GAUGE (SPRINT 3)             */}
         {/* ===================================================================== */}
-        <div className={`p-4 rounded-2xl border backdrop-blur-md transition-all space-y-2.5 shadow-2xs ${
-          pillarStats.status === 'FATIGUE'
+        <div className={`p-4 rounded-2xl border backdrop-blur-md transition-all space-y-2.5 shadow-2xs ${pillarStats.status === 'FATIGUE'
             ? 'bg-rose-50/70 border-rose-200 text-rose-900'
             : pillarStats.status === 'MODERATE'
-            ? 'bg-amber-50/70 border-amber-200 text-amber-900'
-            : 'bg-emerald-50/50 border-emerald-200/80 text-emerald-950'
-        }`}>
+              ? 'bg-amber-50/70 border-amber-200 text-amber-900'
+              : 'bg-emerald-50/50 border-emerald-200/80 text-emerald-950'
+          }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center space-x-2.5">
               <span className="text-xl">⚖️</span>
@@ -2573,15 +2565,14 @@ export default function CalendarPage() {
                   <span className="text-xs font-black tracking-tight">
                     Content Pillar Auditor: {loading ? '…' : `${pillarStats.valuePercent}% Value & Proof vs ${pillarStats.promoPercent}% Promo`}
                   </span>
-                  <span className={`text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded-full ${
-                    loading
+                  <span className={`text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded-full ${loading
                       ? 'bg-neutral-200 text-neutral-600'
                       : pillarStats.status === 'FATIGUE'
-                      ? 'bg-rose-200 text-rose-800'
-                      : pillarStats.status === 'MODERATE'
-                      ? 'bg-amber-200 text-amber-900'
-                      : 'bg-emerald-200 text-emerald-800'
-                  }`}>
+                        ? 'bg-rose-200 text-rose-800'
+                        : pillarStats.status === 'MODERATE'
+                          ? 'bg-amber-200 text-amber-900'
+                          : 'bg-emerald-200 text-emerald-800'
+                    }`}>
                     {loading ? '…' : pillarStats.statusLabel}
                   </span>
                 </div>
@@ -2589,10 +2580,10 @@ export default function CalendarPage() {
                   {pillarStats.status === 'FATIGUE'
                     ? 'Audience fatigue warning! When promo exceeds 40%, followers disengage and unfollow. Balance with educational drops or transformation stories.'
                     : pillarStats.status === 'MODERATE'
-                    ? '80/20 Rule: 80% of your calendar should provide value & build trust; 20% should make offers.'
-                    : pillarStats.promoPercent === 0
-                    ? 'Your current calendar has 100% Value and Proof drops. Schedule an offer or product post to capture conversions.'
-                    : 'Cadra Algorithm Health: Excellent balance between educational value, customer proof, and promotional offers.'}
+                      ? '80/20 Rule: 80% of your calendar should provide value & build trust; 20% should make offers.'
+                      : pillarStats.promoPercent === 0
+                        ? 'Your current calendar has 100% Value and Proof drops. Schedule an offer or product post to capture conversions.'
+                        : 'Cadra Algorithm Health: Excellent balance between educational value, customer proof, and promotional offers.'}
                 </p>
               </div>
             </div>
@@ -2723,8 +2714,8 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => setFilterPlatform(p.id)}
                 className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer flex items-center space-x-1.5 border ${filterPlatform === p.id
-                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
-                    : 'bg-white text-neutral-600 border-neutral-200/80 hover:bg-neutral-50'
+                  ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                  : 'bg-white text-neutral-600 border-neutral-200/80 hover:bg-neutral-50'
                   }`}
               >
                 <span>{p.label}</span>
@@ -2749,8 +2740,8 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => setFilterStatus(s.id)}
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all cursor-pointer border ${filterStatus === s.id
-                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
-                    : 'bg-white text-neutral-500 border-neutral-200/80 hover:bg-neutral-50'
+                  ? 'bg-neutral-900 text-white border-neutral-900 shadow-xs'
+                  : 'bg-white text-neutral-500 border-neutral-200/80 hover:bg-neutral-50'
                   }`}
               >
                 {s.label}
@@ -2760,9 +2751,8 @@ export default function CalendarPage() {
         </div>
 
         {notice && (
-          <div className={`fixed top-6 right-6 z-[100] p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 max-w-md ${
-            notice.type === 'success' ? 'bg-emerald-50/95 border-emerald-300 text-emerald-900' : 'bg-rose-50/95 border-rose-300 text-rose-900'
-          }`}>
+          <div className={`fixed top-6 right-6 z-[100] p-4 rounded-2xl border text-xs flex items-center space-x-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 max-w-md ${notice.type === 'success' ? 'bg-emerald-50/95 border-emerald-300 text-emerald-900' : 'bg-rose-50/95 border-rose-300 text-rose-900'
+            }`}>
             {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
             <span className="font-semibold">{notice.text}</span>
             <button type="button" onClick={() => setNotice(null)} className="ml-auto text-neutral-400 hover:text-neutral-700 pl-2 cursor-pointer">✕</button>
@@ -2797,13 +2787,12 @@ export default function CalendarPage() {
                         key={idx}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
-                        className={`p-2 sm:p-2.5 flex flex-col justify-between transition-all min-h-[160px] sm:min-h-[175px] relative group/cell ${
-                          dayItem.isCurrentMonth
+                        className={`p-2 sm:p-2.5 flex flex-col justify-between transition-all min-h-[160px] sm:min-h-[175px] relative group/cell ${dayItem.isCurrentMonth
                             ? isToday
                               ? 'bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-inset ring-indigo-500/20'
                               : 'bg-white hover:bg-neutral-50/50'
                             : 'bg-neutral-50/40 text-neutral-300'
-                        }`}
+                          }`}
                       >
                         {/* Day Cell Header */}
                         <div>
@@ -2820,11 +2809,10 @@ export default function CalendarPage() {
                                 </div>
                               ) : (
                                 <span
-                                  className={`text-xs font-bold font-mono w-6 h-6 flex items-center justify-center rounded-full transition-colors ${
-                                    dayItem.isCurrentMonth
+                                  className={`text-xs font-bold font-mono w-6 h-6 flex items-center justify-center rounded-full transition-colors ${dayItem.isCurrentMonth
                                       ? 'text-neutral-700 group-hover/cell:text-neutral-950 group-hover/cell:bg-neutral-100'
                                       : 'text-neutral-300'
-                                  }`}
+                                    }`}
                                 >
                                   {dayItem.date.getDate()}
                                 </span>
@@ -2896,9 +2884,8 @@ export default function CalendarPage() {
                                 draggable={isDraggable}
                                 onDragStart={(e) => handleDragStart(e, ev)}
                                 onClick={() => handleOpenPostInspector(ev)}
-                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md hover:-translate-y-0.5 ${
-                                  isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-                                }`}
+                                className={`w-full text-left p-1.5 rounded-xl text-[10px] transition-all relative overflow-hidden group/card border bg-white hover:bg-neutral-50/90 text-neutral-900 border-neutral-200/90 hover:border-neutral-300 shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md hover:-translate-y-0.5 ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                                  }`}
                               >
                                 {/* Left colored accent bar */}
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.barColor} rounded-l-xl`} />
@@ -3522,11 +3509,10 @@ export default function CalendarPage() {
                           key={p.id}
                           type="button"
                           onClick={() => setPreviewModalPlatform(p.id)}
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${
-                            previewModalPlatform === p.id
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${previewModalPlatform === p.id
                               ? 'bg-white text-neutral-900 shadow-xs'
                               : 'text-neutral-500 hover:text-neutral-800'
-                          }`}
+                            }`}
                         >
                           {p.icon}
                           <span className="hidden sm:inline">{p.label}</span>
@@ -3534,15 +3520,14 @@ export default function CalendarPage() {
                       ))}
                     </div>
 
-                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                      selectedEvent.status === 'PUBLISHED'
+                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${selectedEvent.status === 'PUBLISHED'
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : selectedEvent.status === 'MISSED' || (selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now())
                           ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : selectedEvent.status === 'QUEUED'
                             ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                             : 'bg-rose-50 text-rose-700 border border-rose-200'
-                    }`}>
+                      }`}>
                       {selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now() ? 'MISSED' : selectedEvent.status}
                     </span>
                   </div>
@@ -3553,18 +3538,16 @@ export default function CalendarPage() {
                       <button
                         type="button"
                         onClick={() => setPreviewModalTab('PREVIEW')}
-                        className={`px-2.5 py-1 rounded-lg transition-all ${
-                          previewModalTab === 'PREVIEW' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg transition-all ${previewModalTab === 'PREVIEW' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
+                          }`}
                       >
                         📱 Feed Mockup
                       </button>
                       <button
                         type="button"
                         onClick={() => setPreviewModalTab('SETTINGS')}
-                        className={`px-2.5 py-1 rounded-lg transition-all ${
-                          previewModalTab === 'SETTINGS' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg transition-all ${previewModalTab === 'SETTINGS' ? 'bg-white text-neutral-900 shadow-xs' : 'text-neutral-500'
+                          }`}
                       >
                         ⚙️ Controls
                       </button>
@@ -3597,9 +3580,8 @@ export default function CalendarPage() {
                     {/* =============================================================== */}
                     {/* LEFT COLUMN: LIVE SOCIAL FEED MOCKUP (POST KAISA DIKHEGA)        */}
                     {/* =============================================================== */}
-                    <div className={`md:col-span-5 space-y-3 ${
-                      previewModalTab === 'PREVIEW' ? 'block' : 'hidden md:block'
-                    }`}>
+                    <div className={`md:col-span-5 space-y-3 ${previewModalTab === 'PREVIEW' ? 'block' : 'hidden md:block'
+                      }`}>
                       <div className="flex items-center justify-between pb-0.5">
                         <span className="text-xs font-extrabold text-neutral-800 uppercase tracking-wider flex items-center space-x-1.5">
                           <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
@@ -3636,7 +3618,7 @@ export default function CalendarPage() {
 
                             {/* Media Frame */}
                             <div className="relative bg-neutral-950 overflow-hidden group/media">
-                                {mediaUrl ? (
+                              {mediaUrl ? (
                                 <div className="relative">
                                   {isVideoAssetUrl(mediaUrl) ? (
                                     <video
@@ -3778,7 +3760,18 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-44', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-44 object-cover"
+                                />
+                              </div>
+                            )}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
                               <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
@@ -3809,7 +3802,18 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-40', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-40 object-cover"
+                                />
+                              </div>
+                            )}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
                               <span className="flex items-center space-x-1"><MessageCircle className="w-3.5 h-3.5" /><span>18</span></span>
@@ -3837,7 +3841,18 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-44', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
+                            {mediaUrl && (
+                              <div className="rounded-xl overflow-hidden border border-neutral-200">
+                                <img
+                                  src={mediaUrl}
+                                  alt=""
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
+                                  }}
+                                  className="w-full h-44 object-cover"
+                                />
+                              </div>
+                            )}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
                               <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
@@ -3852,9 +3867,8 @@ export default function CalendarPage() {
                     {/* =============================================================== */}
                     {/* RIGHT COLUMN: CONTENT EDITOR, AI VIRALITY & SLOTS                 */}
                     {/* =============================================================== */}
-                    <div className={`md:col-span-7 space-y-3.5 ${
-                      previewModalTab === 'SETTINGS' ? 'block' : 'hidden md:block'
-                    }`}>
+                    <div className={`md:col-span-7 space-y-3.5 ${previewModalTab === 'SETTINGS' ? 'block' : 'hidden md:block'
+                      }`}>
                       {/* Post Title & Content Pillar */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -3903,13 +3917,12 @@ export default function CalendarPage() {
                             <span>AI Pre-Publish Quality Coach</span>
                           </div>
                           {aiScoreAnalysis ? (
-                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${
-                              aiScoreAnalysis.score >= 85
+                            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${aiScoreAnalysis.score >= 85
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : aiScoreAnalysis.score >= 65
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
-                            }`}>
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}>
                               Score: {aiScoreAnalysis.score}/100 ({aiScoreAnalysis.grade})
                             </span>
                           ) : (
@@ -4114,7 +4127,9 @@ export default function CalendarPage() {
                                 key={sIdx}
                                 type="button"
                                 onClick={() => {
-                                  const baseDate = rescheduleDate ? new Date(rescheduleDate) : new Date(selectedEvent.scheduledFor);
+                                  const validCurrent = parseLocalDateTimeSlot(rescheduleDate);
+                                  const candidate = validCurrent || (selectedEvent.scheduledFor ? new Date(selectedEvent.scheduledFor) : new Date());
+                                  const baseDate = isNaN(candidate.getTime()) ? new Date() : candidate;
                                   baseDate.setHours(slot.hours, slot.mins, 0, 0);
                                   const year = baseDate.getFullYear();
                                   const month = String(baseDate.getMonth() + 1).padStart(2, '0');
@@ -4133,8 +4148,9 @@ export default function CalendarPage() {
                           </div>
 
                           {(() => {
-                            const [dPart = '', tRaw = ''] = rescheduleDate ? rescheduleDate.split('T') : ['', ''];
-                            const tPart = tRaw.slice(0, 5);
+                            const tSepIdx = rescheduleDate ? rescheduleDate.indexOf('T') : -1;
+                            const dPart = tSepIdx >= 0 ? rescheduleDate.slice(0, tSepIdx) : (rescheduleDate || '');
+                            const tPart = tSepIdx >= 0 ? rescheduleDate.slice(tSepIdx + 1, tSepIdx + 6) : '';
                             const updateDatePart = (nextDate: string) => {
                               setRescheduleDate(`${nextDate}T${tPart || '09:00'}`);
                             };
@@ -4142,7 +4158,7 @@ export default function CalendarPage() {
                               const fallbackDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
                               setRescheduleDate(`${dPart || fallbackDate}T${nextTime}`);
                             };
-                            const isValidDateAndTime = /^\d{4}-\d{2}-\d{2}$/.test(dPart) && /^\d{2}:\d{2}$/.test(tPart);
+                            const isValidDateAndTime = Boolean(parseLocalDateTimeSlot(`${dPart}T${tPart}`));
 
                             return (
                               <div className="space-y-1.5">
@@ -4219,11 +4235,10 @@ export default function CalendarPage() {
                               setSelectedEventIsEvergreen(nextState);
                               handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
                             }}
-                            className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${
-                              selectedEventIsEvergreen
+                            className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${selectedEventIsEvergreen
                                 ? 'bg-emerald-600 text-white shadow-xs'
                                 : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
-                            }`}
+                              }`}
                           >
                             {selectedEventIsEvergreen ? 'Active ♻️' : 'Turn On'}
                           </button>
@@ -4255,20 +4270,21 @@ export default function CalendarPage() {
 
                   <div className="flex items-center space-x-2 ml-auto">
                     {(() => {
+                      const parsedReschedIso = toSafeIsoString(parseLocalDateTimeSlot(rescheduleDate));
+                      const parsedEventIso = toSafeIsoString(selectedEvent.scheduledFor);
                       const hasModifications = editTitle.trim() !== (selectedEvent.title || '').trim() ||
                         editCaption.trim() !== (selectedEvent.caption || '').trim() ||
-                        !!(rescheduleDate && selectedEvent.status !== 'PUBLISHED' && new Date(rescheduleDate).toISOString() !== new Date(selectedEvent.scheduledFor).toISOString());
+                        !!(parsedReschedIso && selectedEvent.status !== 'PUBLISHED' && parsedReschedIso !== parsedEventIso);
 
                       return (
                         <button
                           type="button"
                           onClick={handleSaveContentEdit}
                           disabled={saving || !hasModifications}
-                          className={`px-5 py-2 text-xs font-semibold rounded-full transition-all flex items-center space-x-1.5 ${
-                            hasModifications
+                          className={`px-5 py-2 text-xs font-semibold rounded-full transition-all flex items-center space-x-1.5 ${hasModifications
                               ? 'text-white bg-[#111215] hover:bg-neutral-800 cursor-pointer shadow-md'
                               : 'text-neutral-400 bg-neutral-100 border border-neutral-200 cursor-default opacity-60'
-                          }`}
+                            }`}
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -4478,8 +4494,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setInstantPostType(fmt.id as any)}
                             className={`p-3 text-left rounded-xl border transition-all cursor-pointer ${instantPostType === fmt.id
-                                ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-400/20 shadow-xs'
-                                : 'bg-white border-slate-200 hover:bg-slate-50'
+                              ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-400/20 shadow-xs'
+                              : 'bg-white border-slate-200 hover:bg-slate-50'
                               }`}
                           >
                             <span className="text-base">{fmt.icon}</span>
@@ -4507,8 +4523,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setInstantPreset(pre.id)}
                             className={`p-2.5 text-left rounded-xl border transition-all text-xs cursor-pointer ${instantPreset === pre.id
-                                ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs'
-                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                              ? 'bg-slate-900 text-white border-slate-900 font-bold shadow-xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                               }`}
                           >
                             <div className="text-sm mb-1">{pre.icon}</div>
@@ -4637,11 +4653,10 @@ export default function CalendarPage() {
                             key={sIdx}
                             type="button"
                             onClick={() => setInstantScheduledTime(slot.time)}
-                            className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
-                              instantScheduledTime === slot.time
+                            className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${instantScheduledTime === slot.time
                                 ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold ring-2 ring-amber-400/20 shadow-xs'
                                 : 'bg-white border-slate-200 hover:border-amber-300 text-slate-700'
-                            }`}
+                              }`}
                           >
                             <div className="text-[11px] font-bold">{slot.label}</div>
                             <div className="text-[9px] text-slate-500 mt-0.5">{slot.note}</div>
@@ -4746,13 +4761,12 @@ export default function CalendarPage() {
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center space-y-2.5">
                         <div className="w-full flex items-center justify-between gap-2">
                           <span className="text-[10px] font-extrabold uppercase text-slate-500">Visual Asset Preview</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                            generatedInstantPost.mediaSource === 'OPENROUTER_AI'
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${generatedInstantPost.mediaSource === 'OPENROUTER_AI'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : generatedInstantPost.mediaSource === 'USER_SELECTED'
                                 ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
                                 : 'bg-amber-50 text-amber-800 border-amber-200'
-                          }`}>
+                            }`}>
                             {isVideoAssetUrl(generatedInstantPost.mediaUrl)
                               ? '🎬 Real MP4 Video (AI)'
                               : generatedInstantPost.mediaSource === 'OPENROUTER_AI'
@@ -4862,11 +4876,10 @@ export default function CalendarPage() {
                                   mediaSource: 'USER_SELECTED',
                                   imageModelUsed: undefined
                                 }))}
-                                className={`px-1.5 py-1 rounded-md text-[9px] font-bold border transition-all text-center truncate cursor-pointer ${
-                                  generatedInstantPost.mediaUrl === preset.url
+                                className={`px-1.5 py-1 rounded-md text-[9px] font-bold border transition-all text-center truncate cursor-pointer ${generatedInstantPost.mediaUrl === preset.url
                                     ? 'bg-indigo-50 border-indigo-400 text-indigo-800 font-extrabold'
                                     : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                                }`}
+                                  }`}
                                 title={`Switch to ${preset.label}`}
                               >
                                 {preset.label}
@@ -4936,8 +4949,8 @@ export default function CalendarPage() {
                                   type="button"
                                   onClick={() => setInstantActivePromptTab(tab.id as any)}
                                   className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 cursor-pointer ${instantActivePromptTab === tab.id
-                                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                                     }`}
                                 >
                                   <span>{tab.label}</span>
@@ -5047,13 +5060,12 @@ export default function CalendarPage() {
                   ].map(s => (
                     <div
                       key={s.step}
-                      className={`flex-1 py-1.5 px-2 rounded-full text-center text-xs font-semibold transition-all ${
-                        wizardStep === s.step
+                      className={`flex-1 py-1.5 px-2 rounded-full text-center text-xs font-semibold transition-all ${wizardStep === s.step
                           ? 'bg-white text-neutral-900 shadow-sm font-bold'
                           : wizardStep > s.step
                             ? 'text-white'
                             : 'text-neutral-400'
-                      }`}
+                        }`}
                     >
                       {s.label}
                     </div>
@@ -5110,8 +5122,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setSelectedTemplateCategory(cat.id)}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${selectedTemplateCategory === cat.id
-                                ? 'bg-indigo-600 text-white shadow-sm font-bold scale-[1.02]'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              ? 'bg-indigo-600 text-white shadow-sm font-bold scale-[1.02]'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                               }`}
                           >
                             {cat.label}
@@ -5131,8 +5143,8 @@ export default function CalendarPage() {
                                 type="button"
                                 onClick={() => handleApplyIndustryTemplate(tpl)}
                                 className={`p-3 text-left rounded-xl border transition-all relative flex flex-col justify-between ${isCurrent
-                                    ? 'bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-400/30 shadow-sm'
-                                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
+                                  ? 'bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-400/30 shadow-sm'
+                                  : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30'
                                   }`}
                               >
                                 <div>
@@ -5296,8 +5308,8 @@ export default function CalendarPage() {
                               type="button"
                               onClick={() => setArchitectBusinessType(model.id as any)}
                               className={`p-4 text-left rounded-2xl border transition-all flex items-start space-x-3 ${isSelected
-                                  ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
-                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                             >
                               <div className={`p-2 rounded-xl shrink-0 ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
@@ -5348,8 +5360,8 @@ export default function CalendarPage() {
                               type="button"
                               onClick={() => setArchitectGoal(goal.id as any)}
                               className={`p-3.5 text-left rounded-2xl border transition-all ${isSelected
-                                  ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
-                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                             >
                               <GoalIcon className={`w-4 h-4 mb-1.5 ${goal.color}`} />
@@ -5380,11 +5392,10 @@ export default function CalendarPage() {
                               key={t.id}
                               type="button"
                               onClick={() => setArchitectTone(t.id as any)}
-                              className={`p-3 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                                isSelected
+                              className={`p-3 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
                                   ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
                                   : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <span className="text-xs font-bold text-slate-900">{t.label}</span>
                               <span className="text-[10px] text-slate-500 mt-1 leading-snug">{t.desc}</span>
@@ -5440,11 +5451,10 @@ export default function CalendarPage() {
                               key={l.id}
                               type="button"
                               onClick={() => setArchitectLanguage(l.id as any)}
-                              className={`p-2.5 text-center rounded-2xl border transition-all cursor-pointer ${
-                                architectLanguage === l.id
+                              className={`p-2.5 text-center rounded-2xl border transition-all cursor-pointer ${architectLanguage === l.id
                                   ? 'bg-[#101014] text-white border-black shadow-xs font-bold'
                                   : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                              }`}
+                                }`}
                             >
                               <span className="text-xs font-bold block">{l.label}</span>
                               <span className={`text-[9px] block mt-0.5 ${architectLanguage === l.id ? 'text-neutral-300' : 'text-neutral-400'}`}>{l.sub}</span>
@@ -5511,8 +5521,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setArchitectDuration(sprint.days as any)}
                             className={`p-4 text-left rounded-2xl border transition-all relative ${isSelected
-                                ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
-                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                              ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                               }`}
                           >
                             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-900 text-white mb-2 inline-block">
@@ -5546,8 +5556,8 @@ export default function CalendarPage() {
                                 }
                               }}
                               className={`px-4 py-2 rounded-full text-xs font-bold border transition-all flex items-center space-x-1.5 ${isChecked
-                                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
                                 }`}
                             >
                               <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
@@ -5685,11 +5695,10 @@ export default function CalendarPage() {
                           <button
                             type="button"
                             onClick={() => setEnableUtmTracking(!enableUtmTracking)}
-                            className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer ${
-                              enableUtmTracking
+                            className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer ${enableUtmTracking
                                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-xs'
                                 : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
-                            }`}
+                              }`}
                           >
                             <span>{enableUtmTracking ? '✓ UTM Active' : 'UTM Tracking Off'}</span>
                           </button>
@@ -5813,11 +5822,10 @@ export default function CalendarPage() {
                               key={tab.id}
                               type="button"
                               onClick={() => setRoadmapPhaseFilter(tab.id)}
-                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                                roadmapPhaseFilter === tab.id
+                              className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${roadmapPhaseFilter === tab.id
                                   ? 'bg-slate-900 text-white shadow-xs'
                                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                              }`}
+                                }`}
                             >
                               {tab.label}
                             </button>
@@ -5846,11 +5854,10 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={currentIdx}
-                              className={`rounded-2xl border transition-all overflow-hidden ${
-                                isExpanded
+                              className={`rounded-2xl border transition-all overflow-hidden ${isExpanded
                                   ? 'border-indigo-400 bg-white shadow-md ring-1 ring-indigo-500/20'
                                   : 'border-slate-200 bg-white hover:border-slate-300 shadow-2xs'
-                              }`}
+                                }`}
                             >
                               {/* Card Accordion Header */}
                               <div
@@ -5895,27 +5902,24 @@ export default function CalendarPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleTogglePostFormat(currentIdx, 'REEL')}
-                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                                        post.format === 'REEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                                      }`}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${post.format === 'REEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                        }`}
                                     >
                                       🎬 Reel
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleTogglePostFormat(currentIdx, 'CAROUSEL')}
-                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                                        post.format === 'CAROUSEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                                      }`}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${post.format === 'CAROUSEL' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                        }`}
                                     >
                                       📑 Carousel
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleTogglePostFormat(currentIdx, 'SINGLE_IMAGE')}
-                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                                        post.format === 'SINGLE_IMAGE' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                                      }`}
+                                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${post.format === 'SINGLE_IMAGE' ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                        }`}
                                     >
                                       📸 Photo
                                     </button>
@@ -5932,11 +5936,10 @@ export default function CalendarPage() {
                                         handleStartInlineEditPost(currentIdx, post);
                                       }
                                     }}
-                                    className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${
-                                      editingPostIndex === currentIdx
+                                    className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${editingPostIndex === currentIdx
                                         ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
                                         : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                                    }`}
+                                      }`}
                                   >
                                     {editingPostIndex === currentIdx ? '✓ Save' : '✏️ Edit'}
                                   </button>
@@ -5987,11 +5990,10 @@ export default function CalendarPage() {
                                               key={hIdx}
                                               type="button"
                                               onClick={() => handleSwapHookVariation(currentIdx, hIdx, hVar)}
-                                              className={`p-2.5 text-left rounded-xl text-[11px] border transition-all cursor-pointer flex flex-col justify-between ${
-                                                isActive
+                                              className={`p-2.5 text-left rounded-xl text-[11px] border transition-all cursor-pointer flex flex-col justify-between ${isActive
                                                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs font-medium'
                                                   : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                                              }`}
+                                                }`}
                                             >
                                               <span className={`text-[9px] font-extrabold uppercase tracking-wider mb-1 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>
                                                 {label}
@@ -6186,8 +6188,8 @@ export default function CalendarPage() {
                                                 type="button"
                                                 onClick={() => setTab(tab.id as any)}
                                                 className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all flex items-center space-x-1.5 ${currentTab === tab.id
-                                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                                                   }`}
                                               >
                                                 <span>{tab.label}</span>
@@ -6318,11 +6320,10 @@ export default function CalendarPage() {
 
                                         <div className="space-y-1.5 flex-1 text-left">
                                           <div className="flex flex-wrap items-center gap-2">
-                                            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border flex items-center space-x-1 ${
-                                              isVideoAssetUrl(post.mediaUrl) || post.mediaSource !== 'STOCK_FALLBACK'
+                                            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border flex items-center space-x-1 ${isVideoAssetUrl(post.mediaUrl) || post.mediaSource !== 'STOCK_FALLBACK'
                                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                                 : 'bg-amber-50 text-amber-800 border-amber-200'
-                                            }`}>
+                                              }`}>
                                               <Check className="w-3 h-3" />
                                               <span>
                                                 {isVideoAssetUrl(post.mediaUrl)
@@ -6421,9 +6422,8 @@ export default function CalendarPage() {
                                               key={plat.id}
                                               type="button"
                                               onClick={() => setCardActivePlatformPreview(prev => ({ ...prev, [currentIdx]: plat.id as any }))}
-                                              className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                                                currentPlat === plat.id ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                                              }`}
+                                              className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer ${currentPlat === plat.id ? 'bg-[#101014] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                                }`}
                                             >
                                               {plat.label}
                                             </button>
@@ -6743,11 +6743,10 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setLibraryTab('HASHTAGS')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    libraryTab === 'HASHTAGS'
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'HASHTAGS'
                       ? 'bg-neutral-900 text-white shadow-xs'
                       : 'text-neutral-600 hover:bg-neutral-100'
-                  }`}
+                    }`}
                 >
                   <Hash className="w-3.5 h-3.5" />
                   <span>Viral Hashtag Packs ({VIRAL_HASHTAG_PACKS.length})</span>
@@ -6756,11 +6755,10 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setLibraryTab('SNIPPETS')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    libraryTab === 'SNIPPETS'
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'SNIPPETS'
                       ? 'bg-neutral-900 text-white shadow-xs'
                       : 'text-neutral-600 hover:bg-neutral-100'
-                  }`}
+                    }`}
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>Quick Snippets ({DEFAULT_QUICK_SNIPPETS.length})</span>
@@ -6769,11 +6767,10 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setLibraryTab('IDEAS')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                    libraryTab === 'IDEAS'
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'IDEAS'
                       ? 'bg-neutral-900 text-white shadow-xs'
                       : 'text-neutral-600 hover:bg-neutral-100'
-                  }`}
+                    }`}
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
                   <span>Ideas Board ({ideas.length})</span>
@@ -6797,7 +6794,7 @@ export default function CalendarPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-neutral-500 leading-snug">{pack.description}</p>
-                        
+
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {pack.tags.map((tag, tIdx) => (
                             <span key={tIdx} className="text-[10px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-md font-mono">
