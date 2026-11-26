@@ -1024,6 +1024,10 @@ export default function CalendarPage() {
   const [isGeneratingInstant, setIsGeneratingInstant] = useState(false);
   const [generatedInstantPost, setGeneratedInstantPost] = useState<any | null>(null);
   const [isDeployingInstant, setIsDeployingInstant] = useState(false);
+  const [isGeneratingInstantVisual, setIsGeneratingInstantVisual] = useState(false);
+  const [instantVideoStage, setInstantVideoStage] = useState<string>('');
+  const [roadmapVideoGeneratingIdx, setRoadmapVideoGeneratingIdx] = useState<number | null>(null);
+  const [deployGateTarget, setDeployGateTarget] = useState<'INSTANT' | 'CAMPAIGN' | null>(null);
   const [instantActivePromptTab, setInstantActivePromptTab] = useState<'MIDJOURNEY' | 'RUNWAY' | 'CAPCUT' | 'CANVA'>('MIDJOURNEY');
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
 
@@ -1329,13 +1333,20 @@ export default function CalendarPage() {
           ...updatedPosts[idx],
           mediaUrl: res.media.mediaUrl,
           mediaType: res.media.mediaType,
+          mediaSource: res.media.source || 'OPENROUTER_AI',
+          imageModelUsed: res.media.modelUsed,
           aspectRatio: res.media.aspectRatio
         };
         setGeneratedRoadmap({
           ...generatedRoadmap,
           posts: updatedPosts
         });
-        setNotice({ type: 'success', text: `Generated ${targetType} asset for Day ${idx + 1}!` });
+        setNotice({
+          type: 'success',
+          text: res.media.source === 'OPENROUTER_AI'
+            ? `Generated AI ${targetType} cover visual (${res.media.modelUsed || 'OpenRouter'}) for Day ${idx + 1}!`
+            : `OpenRouter AI unavailable — attached Unsplash stock fallback for Day ${idx + 1}.`
+        });
       } else {
         throw new Error(res.message || 'Media generation failed');
       }
@@ -1371,6 +1382,8 @@ export default function CalendarPage() {
             ...updatedPosts[i],
             mediaUrl: res.media.mediaUrl,
             mediaType: res.media.mediaType,
+            mediaSource: res.media.source || 'OPENROUTER_AI',
+            imageModelUsed: res.media.modelUsed,
             aspectRatio: res.media.aspectRatio
           };
         }
@@ -1423,36 +1436,9 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDeployCampaign = async () => {
-    if (!generatedRoadmap || !generatedRoadmap.posts) return;
-    setIsDeployingCampaign(true);
-    setNotice(null);
-    try {
-      const res = await apiRequest('/ai/deploy-campaign', {
-        method: 'POST',
-        body: JSON.stringify({
-          brandId: activeBrandId || undefined,
-          campaignName: generatedRoadmap.campaignSummary?.name,
-          posts: generatedRoadmap.posts
-        })
-      });
-
-      if (res.success) {
-        setNotice({ type: 'success', text: `🚀 Successfully deployed ${res.result?.scheduledCount || 'campaign'} posts into your Content Calendar!` });
-        setDeploySuccessModal(res.result);
-        setShowArchitectModal(false);
-        setGeneratedRoadmap(null);
-        setWizardStep(1);
-        await fetchCalendar();
-        setTimeout(() => fetchCalendar(), 800);
-      } else {
-        throw new Error(res.message || 'Campaign deployment failed');
-      }
-    } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Campaign deployment failed' });
-    } finally {
-      setIsDeployingCampaign(false);
-    }
+  const handleDeployCampaign = () => {
+    if (isDeployingCampaign || !generatedRoadmap || !generatedRoadmap.posts) return;
+    setDeployGateTarget('CAMPAIGN');
   };
 
   const handleGenerateInstantPost = async () => {
@@ -1491,33 +1477,242 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDeployInstantPost = async () => {
-    if (isDeployingInstant || !generatedInstantPost) return;
-    setIsDeployingInstant(true);
+  const isVideoAssetUrl = (url?: string | null) => Boolean(url && /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url));
+
+  const renderInspectorFeedMedia = (url: string, heightClass: string, fallbackUrl: string) => (
+    <div className="rounded-xl overflow-hidden border border-neutral-200">
+      {isVideoAssetUrl(url) ? (
+        <video
+          src={url}
+          controls
+          playsInline
+          className={`w-full ${heightClass} object-cover bg-black`}
+        />
+      ) : (
+        <img
+          src={url}
+          alt=""
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = fallbackUrl;
+          }}
+          className={`w-full ${heightClass} object-cover`}
+        />
+      )}
+    </div>
+  );
+
+  const runOpenRouterMp4ReelJob = async (
+    promptText: string,
+    onStage?: (stage: string) => void
+  ): Promise<string> => {
+    onStage?.('Submitting 9:16 MP4 job to OpenRouter...');
+    const submitRes = await apiRequest('/ai/generate-video', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: promptText,
+        model: 'google/veo-3.1-fast',
+        aspectRatio: '9:16',
+        duration: 4,
+        resolution: '720p',
+        generateAudio: true
+      })
+    });
+    if (!submitRes?.jobId) {
+      throw new Error(submitRes?.error || 'Failed to start AI video generation');
+    }
+
+    const jobId = submitRes.jobId;
+    for (let attempt = 1; attempt <= 45; attempt++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      onStage?.(`Rendering 9:16 MP4 Reel frames... (${attempt * 4}s)`);
+      const pollRes = await apiRequest(`/ai/video-status/${jobId}`);
+      if (pollRes.status === 'completed' && pollRes.videoUrl) {
+        return pollRes.videoUrl;
+      }
+      if (pollRes.status === 'failed') {
+        throw new Error(pollRes.error || 'Video provider reported job failure');
+      }
+    }
+    throw new Error('MP4 rendering is taking longer than expected. Try again shortly.');
+  };
+
+  const handleRegenerateInstantVisual = async () => {
+    if (!generatedInstantPost || isGeneratingInstantVisual) return;
+    setIsGeneratingInstantVisual(true);
     setNotice(null);
     try {
-      const res = await apiRequest('/ai/deploy-campaign', {
+      const targetType = generatedInstantPost.format === 'REEL' ? 'REEL' : 'IMAGE';
+      const res = await apiRequest('/ai/generate-campaign-media', {
         method: 'POST',
         body: JSON.stringify({
-          brandId: activeBrandId || undefined,
-          campaignName: `Quick 1-Click: ${generatedInstantPost.title}`,
-          posts: [generatedInstantPost]
+          prompt: generatedInstantPost.aiImagePrompt || generatedInstantPost.title,
+          mediaType: targetType,
+          productDescription: instantTopic || generatedInstantPost.title,
+          phase: generatedInstantPost.phase,
+          dayNumber: 1
         })
       });
-      if (res.success) {
-        setNotice({ type: 'success', text: '🚀 Post successfully scheduled into your Content Calendar!' });
-        setShowInstantModal(false);
-        setGeneratedInstantPost(null);
-        setInstantTopic('');
-        await fetchCalendar();
-        setTimeout(() => fetchCalendar(), 800);
-      } else {
-        throw new Error(res.message || 'Failed to deploy post');
+      if (res.success && res.media?.mediaUrl) {
+        setGeneratedInstantPost((prev: any) => ({
+          ...prev,
+          mediaUrl: res.media.mediaUrl,
+          mediaSource: res.media.source || 'OPENROUTER_AI',
+          imageModelUsed: res.media.modelUsed,
+          aspectRatio: res.media.aspectRatio
+        }));
+        setNotice({
+          type: 'success',
+          text: res.media.source === 'OPENROUTER_AI'
+            ? `✨ Generated new in-app AI image (${res.media.modelUsed || 'OpenRouter'})!`
+            : 'OpenRouter AI unavailable — attached Unsplash stock fallback.'
+        });
       }
     } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Deployment failed' });
+      setNotice({ type: 'error', text: err.message || 'Visual regeneration failed' });
     } finally {
-      setIsDeployingInstant(false);
+      setIsGeneratingInstantVisual(false);
+    }
+  };
+
+  const handleGenerateInstantMp4Video = async () => {
+    if (!generatedInstantPost || isGeneratingInstantVisual) return;
+    setIsGeneratingInstantVisual(true);
+    setInstantVideoStage('Initializing OpenRouter AI Video...');
+    setNotice(null);
+    try {
+      const promptToUse = generatedInstantPost.videoPrompt || generatedInstantPost.aiImagePrompt || instantTopic || generatedInstantPost.title;
+      const videoUrl = await runOpenRouterMp4ReelJob(promptToUse, setInstantVideoStage);
+      setGeneratedInstantPost((prev: any) => ({
+        ...prev,
+        mediaUrl: videoUrl,
+        mediaSource: 'OPENROUTER_AI',
+        imageModelUsed: 'google/veo-3.1-fast (MP4)',
+        mediaType: 'REEL'
+      }));
+      setNotice({ type: 'success', text: '🎬 Real 9:16 MP4 Reel video generated and attached!' });
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Real MP4 generation failed' });
+    } finally {
+      setIsGeneratingInstantVisual(false);
+      setInstantVideoStage('');
+    }
+  };
+
+  const handleGenerateRoadmapMp4Video = async (idx: number) => {
+    if (!generatedRoadmap || roadmapVideoGeneratingIdx !== null) return;
+    const post = generatedRoadmap.posts[idx];
+    if (!post) return;
+    setRoadmapVideoGeneratingIdx(idx);
+    setNotice(null);
+    try {
+      const promptToUse = post.videoPrompt || post.aiImagePrompt || post.title;
+      const videoUrl = await runOpenRouterMp4ReelJob(promptToUse);
+      const updatedPosts = [...generatedRoadmap.posts];
+      updatedPosts[idx] = {
+        ...updatedPosts[idx],
+        mediaUrl: videoUrl,
+        mediaSource: 'OPENROUTER_AI',
+        imageModelUsed: 'google/veo-3.1-fast (MP4)',
+        mediaType: 'REEL'
+      };
+      setGeneratedRoadmap({ ...generatedRoadmap, posts: updatedPosts });
+      setNotice({ type: 'success', text: `🎬 Real 9:16 MP4 Reel generated for Day ${idx + 1}!` });
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'MP4 video generation failed' });
+    } finally {
+      setRoadmapVideoGeneratingIdx(null);
+    }
+  };
+
+  const handleDeployInstantPost = () => {
+    if (isDeployingInstant || !generatedInstantPost) return;
+    setDeployGateTarget('INSTANT');
+  };
+
+  const executeGovernedDeploy = async (approvalMode: 'PENDING' | 'APPROVED') => {
+    const target = deployGateTarget;
+    if (!target) return;
+    setDeployGateTarget(null);
+    setNotice(null);
+
+    if (target === 'CAMPAIGN') {
+      if (!generatedRoadmap || !generatedRoadmap.posts) return;
+      setIsDeployingCampaign(true);
+      try {
+        const res = await apiRequest('/ai/deploy-campaign', {
+          method: 'POST',
+          body: JSON.stringify({
+            brandId: activeBrandId || undefined,
+            campaignName: generatedRoadmap.campaignSummary?.name,
+            posts: generatedRoadmap.posts,
+            approvalMode,
+            bypassGate: approvalMode === 'APPROVED'
+          })
+        });
+
+        if (res.success) {
+          if (approvalMode === 'PENDING') {
+            setNotice({
+              type: 'success',
+              text: `✅ Submitted ${res.result?.scheduledCount || generatedRoadmap.posts.length} campaign drops to Content Studio → Approvals (PENDING) for client sign-off.`
+            });
+          } else {
+            setNotice({
+              type: 'success',
+              text: `🚀 Governance gate bypassed — scheduled ${res.result?.scheduledCount || 'campaign'} posts directly to Content Calendar.`
+            });
+            setDeploySuccessModal(res.result);
+          }
+          setShowArchitectModal(false);
+          setGeneratedRoadmap(null);
+          setWizardStep(1);
+          await fetchCalendar();
+          setTimeout(() => fetchCalendar(), 800);
+        } else {
+          throw new Error(res.message || 'Campaign deployment failed');
+        }
+      } catch (err: any) {
+        setNotice({ type: 'error', text: err.message || 'Campaign deployment failed' });
+      } finally {
+        setIsDeployingCampaign(false);
+      }
+      return;
+    }
+
+    if (target === 'INSTANT') {
+      if (!generatedInstantPost) return;
+      setIsDeployingInstant(true);
+      try {
+        const res = await apiRequest('/ai/deploy-campaign', {
+          method: 'POST',
+          body: JSON.stringify({
+            brandId: activeBrandId || undefined,
+            campaignName: `Quick 1-Click: ${generatedInstantPost.title}`,
+            posts: [generatedInstantPost],
+            approvalMode,
+            bypassGate: approvalMode === 'APPROVED'
+          })
+        });
+        if (res.success) {
+          setNotice({
+            type: 'success',
+            text: approvalMode === 'PENDING'
+              ? '✅ Post submitted to Content Studio → Approvals (PENDING) for client sign-off before Calendar release.'
+              : '🚀 Governance gate bypassed — post scheduled directly into Content Calendar.'
+          });
+          setShowInstantModal(false);
+          setGeneratedInstantPost(null);
+          setInstantTopic('');
+          await fetchCalendar();
+          setTimeout(() => fetchCalendar(), 800);
+        } else {
+          throw new Error(res.message || 'Failed to deploy post');
+        }
+      } catch (err: any) {
+        setNotice({ type: 'error', text: err.message || 'Deployment failed' });
+      } finally {
+        setIsDeployingInstant(false);
+      }
     }
   };
 
@@ -1702,6 +1897,11 @@ export default function CalendarPage() {
 
   const handleSaveModalReschedule = async () => {
     if (!selectedEvent || !rescheduleDate) return;
+    const parsedReschedule = new Date(rescheduleDate);
+    if (isNaN(parsedReschedule.getTime())) {
+      setNotice({ type: 'error', text: 'Please enter a valid date (YYYY-MM-DD) and time (HH:MM).' });
+      return;
+    }
     setSaving(true);
     setNotice(null);
     try {
@@ -1709,7 +1909,7 @@ export default function CalendarPage() {
         method: 'POST',
         body: JSON.stringify({
           publicationId: selectedEvent.publicationId,
-          newDate: new Date(rescheduleDate).toISOString()
+          newDate: parsedReschedule.toISOString()
         })
       });
 
@@ -1771,10 +1971,13 @@ export default function CalendarPage() {
   const handleSaveContentEdit = async () => {
     if (!selectedEvent) return;
 
+    const parsedReschedule = rescheduleDate ? new Date(rescheduleDate) : null;
+    const hasValidReschedule = !!(parsedReschedule && !isNaN(parsedReschedule.getTime()));
+
     // Strict guard: verify if any fields actually changed before saving
     const titleChanged = editTitle.trim() !== (selectedEvent.title || '').trim();
     const captionChanged = editCaption.trim() !== (selectedEvent.caption || '').trim();
-    const dateChanged = !!(rescheduleDate && selectedEvent.status !== 'PUBLISHED' && new Date(rescheduleDate).toISOString() !== new Date(selectedEvent.scheduledFor).toISOString());
+    const dateChanged = !!(hasValidReschedule && selectedEvent.status !== 'PUBLISHED' && parsedReschedule!.toISOString() !== new Date(selectedEvent.scheduledFor).toISOString());
 
     if (!titleChanged && !captionChanged && !dateChanged) {
       // Nothing was edited — close modal cleanly without unnecessary API write or false auto-save notice
@@ -1795,8 +1998,8 @@ export default function CalendarPage() {
       });
 
       // If rescheduleDate was changed and post is not published, also save new schedule date
-      if (rescheduleDate && selectedEvent.status !== 'PUBLISHED') {
-        const newIso = new Date(rescheduleDate).toISOString();
+      if (hasValidReschedule && selectedEvent.status !== 'PUBLISHED') {
+        const newIso = parsedReschedule!.toISOString();
         if (newIso !== new Date(selectedEvent.scheduledFor).toISOString()) {
           await apiRequest('/calendar/reschedule', {
             method: 'POST',
@@ -1809,9 +2012,9 @@ export default function CalendarPage() {
       }
 
       // Optimistic update of local events list immediately so title reflects without reload
-      setEvents(prev => prev.map(ev => 
+      setEvents(prev => prev.map(ev =>
         (ev.id === selectedEvent.id || ev.publicationId === selectedEvent.publicationId)
-          ? { ...ev, title: editTitle, caption: editCaption, scheduledFor: rescheduleDate ? new Date(rescheduleDate).toISOString() : ev.scheduledFor }
+          ? { ...ev, title: editTitle, caption: editCaption, scheduledFor: hasValidReschedule ? parsedReschedule!.toISOString() : ev.scheduledFor }
           : ev
       ));
 
@@ -3433,17 +3636,30 @@ export default function CalendarPage() {
 
                             {/* Media Frame */}
                             <div className="relative bg-neutral-950 overflow-hidden group/media">
-                              {mediaUrl ? (
+                                {mediaUrl ? (
                                 <div className="relative">
-                                  <img
-                                    src={mediaUrl}
-                                    alt="Post preview"
-                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop'; }}
-                                    className="w-full aspect-square object-cover"
-                                  />
+                                  {isVideoAssetUrl(mediaUrl) ? (
+                                    <video
+                                      src={mediaUrl}
+                                      controls
+                                      playsInline
+                                      className="w-full aspect-square object-cover bg-black"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={mediaUrl}
+                                      alt="Post preview"
+                                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop'; }}
+                                      className="w-full aspect-square object-cover"
+                                    />
+                                  )}
                                   <div className="absolute top-2 right-2 flex items-center space-x-1">
                                     <span className="bg-black/60 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">
-                                      {selectedEvent.format === 'REEL' ? '🎬 Reel' : '📸 Photo'}
+                                      {isVideoAssetUrl(mediaUrl)
+                                        ? '🎬 MP4 Reel'
+                                        : selectedEvent.format === 'REEL'
+                                          ? '🖼️ 9:16 Cover Frame'
+                                          : '📸 Photo'}
                                     </span>
                                     <button
                                       type="button"
@@ -3562,18 +3778,7 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && (
-                              <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img
-                                  src={mediaUrl}
-                                  alt=""
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
-                                  }}
-                                  className="w-full h-44 object-cover"
-                                />
-                              </div>
-                            )}
+                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-44', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
                               <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
@@ -3604,18 +3809,7 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && (
-                              <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img
-                                  src={mediaUrl}
-                                  alt=""
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
-                                  }}
-                                  className="w-full h-40 object-cover"
-                                />
-                              </div>
-                            )}
+                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-40', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
                               <span className="flex items-center space-x-1"><MessageCircle className="w-3.5 h-3.5" /><span>18</span></span>
@@ -3643,18 +3837,7 @@ export default function CalendarPage() {
                               {editCaption || selectedEvent.caption}
                             </p>
 
-                            {mediaUrl && (
-                              <div className="rounded-xl overflow-hidden border border-neutral-200">
-                                <img
-                                  src={mediaUrl}
-                                  alt=""
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop';
-                                  }}
-                                  className="w-full h-44 object-cover"
-                                />
-                              </div>
-                            )}
+                            {mediaUrl && renderInspectorFeedMedia(mediaUrl, 'h-44', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop')}
 
                             <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-600 font-semibold">
                               <span className="flex items-center space-x-1"><ThumbsUp className="w-3.5 h-3.5 text-blue-600" /><span>Like</span></span>
@@ -3853,7 +4036,9 @@ export default function CalendarPage() {
 
                               if (!liveUrl && selectedEvent.platformPostId) {
                                 if (activePlat === 'INSTAGRAM') {
-                                  liveUrl = `https://www.instagram.com/p/${selectedEvent.platformPostId}`;
+                                  liveUrl = selectedEvent.format === 'REEL'
+                                    ? `https://www.instagram.com/reel/${selectedEvent.platformPostId}/`
+                                    : `https://www.instagram.com/p/${selectedEvent.platformPostId}/`;
                                 } else if (activePlat === 'FACEBOOK') {
                                   const pid = selectedEvent.platformPostId;
                                   liveUrl = `https://www.facebook.com/${pid.includes('_') ? pid : `1485024198017475_${pid}`}`;
@@ -3862,17 +4047,14 @@ export default function CalendarPage() {
                                 }
                               }
 
-                              // Fallback for earlier published drops ensuring unique per-drop live URLs
+                              // Legacy QA baseline permalink resolution only for known baseline records
                               if (!liveUrl && (selectedEvent.status === 'PUBLISHED' || selectedEvent.publishedAt)) {
                                 const evTitle = (selectedEvent.title || '').toLowerCase();
-                                const rawSeed = String(selectedEvent.publicationId || selectedEvent.id || 'live').replace(/[^a-zA-Z0-9]/g, '');
                                 if (activePlat === 'INSTAGRAM') {
                                   if (evTitle.includes('qa t26')) {
                                     liveUrl = 'https://www.instagram.com/p/18117287411';
                                   } else if (evTitle.includes('qa t25')) {
                                     liveUrl = 'https://www.instagram.com/p/18117305690';
-                                  } else {
-                                    liveUrl = `https://www.instagram.com/p/${rawSeed.slice(0, 11) || '18117292559'}`;
                                   }
                                 } else if (activePlat === 'FACEBOOK') {
                                   if (evTitle.includes('qa t26')) {
@@ -3881,16 +4063,18 @@ export default function CalendarPage() {
                                     liveUrl = 'https://www.facebook.com/1485024198017475_122113056903533998';
                                   } else if (evTitle.includes('slow morning')) {
                                     liveUrl = 'https://www.facebook.com/1485024198017475_122112569337533998';
-                                  } else {
-                                    liveUrl = `https://www.facebook.com/1485024198017475_${rawSeed || '122113110000000000'}`;
                                   }
-                                } else if (activePlat === 'LINKEDIN') {
-                                  liveUrl = `https://www.linkedin.com/feed/update/urn:li:share:${rawSeed || '72648291048291'}`;
                                 }
                               }
 
-                              // Strict governance: fall back to null rather than generic /apexdigital profile URL
-                              if (!liveUrl) return null;
+                              // Strict governance: never fabricate pub.id hash URLs when platform permalink is absent
+                              if (!liveUrl) {
+                                return (
+                                  <span className="text-[11px] font-medium text-emerald-700/80 shrink-0 ml-2">
+                                    Meta permalink unavailable
+                                  </span>
+                                );
+                              }
 
                               return (
                                 <a
@@ -3948,22 +4132,56 @@ export default function CalendarPage() {
                             ))}
                           </div>
 
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="datetime-local"
-                              value={rescheduleDate ? (rescheduleDate.includes('T') ? rescheduleDate.slice(0, 16) : rescheduleDate) : ''}
-                              onChange={(e) => setRescheduleDate(e.target.value)}
-                              className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-neutral-900 font-mono bg-white"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleSaveModalReschedule}
-                              disabled={saving || !rescheduleDate}
-                              className="px-4 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
-                            >
-                              Save Date
-                            </button>
-                          </div>
+                          {(() => {
+                            const [dPart = '', tRaw = ''] = rescheduleDate ? rescheduleDate.split('T') : ['', ''];
+                            const tPart = tRaw.slice(0, 5);
+                            const updateDatePart = (nextDate: string) => {
+                              setRescheduleDate(`${nextDate}T${tPart || '09:00'}`);
+                            };
+                            const updateTimePart = (nextTime: string) => {
+                              const fallbackDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                              setRescheduleDate(`${dPart || fallbackDate}T${nextTime}`);
+                            };
+                            const isValidDateAndTime = /^\d{4}-\d{2}-\d{2}$/.test(dPart) && /^\d{2}:\d{2}$/.test(tPart);
+
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                  <div className="flex-1 grid grid-cols-2 gap-2">
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      aria-label="Scheduled date (YYYY-MM-DD)"
+                                      placeholder="YYYY-MM-DD"
+                                      value={dPart}
+                                      onChange={(e) => updateDatePart(e.target.value)}
+                                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-neutral-900 font-mono bg-white"
+                                    />
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      aria-label="Scheduled time (HH:MM)"
+                                      placeholder="HH:MM"
+                                      value={tPart}
+                                      onChange={(e) => updateTimePart(e.target.value)}
+                                      className="w-full text-xs border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-neutral-900 font-mono bg-white"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveModalReschedule}
+                                    disabled={saving || !isValidDateAndTime}
+                                    className="px-4 py-2.5 text-xs font-semibold text-white bg-[#111215] hover:bg-neutral-800 rounded-xl shrink-0 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
+                                  >
+                                    Save Date
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-neutral-400 font-mono">
+                                  Type Date (YYYY-MM-DD) &amp; 24h Time (HH:MM), or click an AI Peak Window above.
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
@@ -4525,23 +4743,48 @@ export default function CalendarPage() {
                     {/* Visual Media Mockup & Caption Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Left: Visual Asset */}
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center space-y-2">
-                        <span className="text-[10px] font-extrabold uppercase text-slate-500">Visual Asset Preview</span>
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center space-y-2.5">
+                        <div className="w-full flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-extrabold uppercase text-slate-500">Visual Asset Preview</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                            generatedInstantPost.mediaSource === 'OPENROUTER_AI'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : generatedInstantPost.mediaSource === 'USER_SELECTED'
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}>
+                            {isVideoAssetUrl(generatedInstantPost.mediaUrl)
+                              ? '🎬 Real MP4 Video (AI)'
+                              : generatedInstantPost.mediaSource === 'OPENROUTER_AI'
+                                ? `✨ In-App AI (${(generatedInstantPost.imageModelUsed || 'FLUX 3').split('/').pop()})`
+                                : generatedInstantPost.mediaSource === 'USER_SELECTED'
+                                  ? '🖼️ Selected Stock Preset'
+                                  : '🖼️ Stock Fallback (AI Unavailable)'}
+                          </span>
+                        </div>
+
                         {generatedInstantPost.mediaUrl ? (
-                          generatedInstantPost.format === 'REEL' ? (
-                            <div className="relative w-32 h-52 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-md bg-slate-900 group">
+                          isVideoAssetUrl(generatedInstantPost.mediaUrl) ? (
+                            <div className="relative w-36 h-60 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-md bg-black">
+                              <video
+                                src={generatedInstantPost.mediaUrl}
+                                controls
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                              <span className="absolute top-1.5 left-1.5 bg-purple-700/90 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
+                                9:16 MP4 Reel
+                              </span>
+                            </div>
+                          ) : generatedInstantPost.format === 'REEL' ? (
+                            <div className="relative w-32 h-52 rounded-2xl overflow-hidden border-2 border-purple-400 shadow-md bg-slate-900 group">
                               <img
                                 src={generatedInstantPost.mediaUrl}
-                                alt="Reel visual preview"
+                                alt="9:16 Reel cover frame"
                                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                               />
-                              <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                <div className="w-10 h-10 rounded-full bg-white/90 text-purple-700 flex items-center justify-center shadow-lg">
-                                  <Play className="w-4 h-4 ml-0.5" />
-                                </div>
-                              </div>
                               <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
-                                9:16 Reel
+                                9:16 Cover Frame
                               </span>
                             </div>
                           ) : (
@@ -4552,20 +4795,52 @@ export default function CalendarPage() {
                                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                               />
                               <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
-                                1:1 Photo
+                                1:1 AI Photo
                               </span>
                             </div>
                           )
                         ) : (
                           <div className="p-4 text-xs text-slate-400">No image generated yet.</div>
                         )}
-                        <p className="text-[10px] text-slate-500">Asset will be automatically attached when deployed.</p>
 
-                        {/* 1-Tap Royalty-Free Stock Media Selector */}
+                        {generatedInstantPost.format === 'REEL' && !isVideoAssetUrl(generatedInstantPost.mediaUrl) && (
+                          <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-snug">
+                            Preview shows a static 9:16 cover image. Click <strong>Generate Real MP4 Reel</strong> below for an actual playable `.mp4` video stream.
+                          </p>
+                        )}
+
+                        {instantVideoStage && (
+                          <p className="text-[10px] font-semibold text-purple-700 animate-pulse">{instantVideoStage}</p>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 w-full">
+                          <button
+                            type="button"
+                            onClick={handleRegenerateInstantVisual}
+                            disabled={isGeneratingInstantVisual}
+                            className="px-2.5 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg flex items-center space-x-1 transition cursor-pointer disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isGeneratingInstantVisual && !instantVideoStage ? 'animate-spin' : ''}`} />
+                            <span>✨ Regenerate AI Image</span>
+                          </button>
+                          {generatedInstantPost.format === 'REEL' && (
+                            <button
+                              type="button"
+                              onClick={handleGenerateInstantMp4Video}
+                              disabled={isGeneratingInstantVisual}
+                              className="px-2.5 py-1 text-[10px] font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg flex items-center space-x-1 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <Video className="w-3 h-3" />
+                              <span>🎬 Generate Real MP4 Reel</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Secondary Optional Royalty-Free Stock Media Selector */}
                         <div className="w-full pt-1.5 space-y-1 text-left border-t border-slate-200">
                           <div className="flex items-center justify-between text-[10px]">
-                            <span className="font-bold text-slate-700 uppercase flex items-center space-x-1">
-                              <span>🖼️ Royalty-Free Stock Presets</span>
+                            <span className="font-bold text-slate-600 uppercase flex items-center space-x-1">
+                              <span>Optional Stock Presets</span>
                             </span>
                             <span className="text-[9px] text-slate-400">Unsplash CC0</span>
                           </div>
@@ -4581,7 +4856,12 @@ export default function CalendarPage() {
                               <button
                                 key={pIdx}
                                 type="button"
-                                onClick={() => setGeneratedInstantPost((prev: any) => ({ ...prev, mediaUrl: preset.url }))}
+                                onClick={() => setGeneratedInstantPost((prev: any) => ({
+                                  ...prev,
+                                  mediaUrl: preset.url,
+                                  mediaSource: 'USER_SELECTED',
+                                  imageModelUsed: undefined
+                                }))}
                                 className={`px-1.5 py-1 rounded-md text-[9px] font-bold border transition-all text-center truncate cursor-pointer ${
                                   generatedInstantPost.mediaUrl === preset.url
                                     ? 'bg-indigo-50 border-indigo-400 text-indigo-800 font-extrabold'
@@ -6000,20 +6280,27 @@ export default function CalendarPage() {
                                     {/* Live Visual Preview Container */}
                                     {post.mediaUrl ? (
                                       <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-4">
-                                        {post.format === 'REEL' || post.aspectRatio === '9:16' ? (
-                                          <div className="relative w-28 h-44 rounded-xl overflow-hidden border-2 border-purple-500 shadow-md shrink-0 group bg-slate-900">
+                                        {isVideoAssetUrl(post.mediaUrl) ? (
+                                          <div className="relative w-28 h-48 rounded-xl overflow-hidden border-2 border-purple-500 shadow-md shrink-0 bg-black">
+                                            <video
+                                              src={post.mediaUrl}
+                                              controls
+                                              playsInline
+                                              className="w-full h-full object-cover"
+                                            />
+                                            <span className="absolute top-1.5 left-1.5 bg-purple-700/90 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
+                                              9:16 MP4
+                                            </span>
+                                          </div>
+                                        ) : post.format === 'REEL' || post.aspectRatio === '9:16' ? (
+                                          <div className="relative w-28 h-44 rounded-xl overflow-hidden border-2 border-purple-400 shadow-md shrink-0 group bg-slate-900">
                                             <img
                                               src={post.mediaUrl}
-                                              alt="Reel visual preview"
+                                              alt="9:16 Reel cover frame"
                                               className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                              <div className="w-9 h-9 rounded-full bg-white/90 text-purple-700 flex items-center justify-center shadow-lg">
-                                                <Play className="w-4 h-4 ml-0.5" />
-                                              </div>
-                                            </div>
                                             <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded-full uppercase">
-                                              9:16 Reel
+                                              9:16 Cover
                                             </span>
                                           </div>
                                         ) : (
@@ -6030,28 +6317,60 @@ export default function CalendarPage() {
                                         )}
 
                                         <div className="space-y-1.5 flex-1 text-left">
-                                          <div className="flex items-center space-x-2">
-                                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center space-x-1">
-                                              <Check className="w-3 h-3 text-emerald-600" />
-                                              <span>AI Visual Ready &amp; Attached</span>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border flex items-center space-x-1 ${
+                                              isVideoAssetUrl(post.mediaUrl) || post.mediaSource !== 'STOCK_FALLBACK'
+                                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                                            }`}>
+                                              <Check className="w-3 h-3" />
+                                              <span>
+                                                {isVideoAssetUrl(post.mediaUrl)
+                                                  ? 'Real MP4 Video Ready'
+                                                  : post.mediaSource === 'STOCK_FALLBACK'
+                                                    ? 'Stock Fallback Cover Attached'
+                                                    : post.format === 'REEL'
+                                                      ? 'AI 9:16 Cover Frame Attached'
+                                                      : 'AI Visual Ready & Attached'}
+                                              </span>
                                             </span>
                                             <span className="text-[10px] font-bold text-slate-400">
                                               {post.aspectRatio || (post.format === 'REEL' ? '9:16 Vertical' : '1:1 Square')}
                                             </span>
                                           </div>
                                           <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
-                                            This AI asset is saved and will be scheduled automatically with your publication.
+                                            {post.format === 'REEL' && !isVideoAssetUrl(post.mediaUrl)
+                                              ? 'Preview is a static 9:16 cover frame. Generate a real MP4 Reel stream below before publishing.'
+                                              : 'This asset is saved and will be scheduled automatically with your post.'}
                                           </p>
-                                          <div className="flex items-center space-x-3 pt-1">
+                                          <div className="flex flex-wrap items-center gap-3 pt-1">
                                             <button
                                               type="button"
                                               disabled={generatingMediaIndex === currentIdx}
                                               onClick={() => handleGenerateMediaForPost(currentIdx, post.format === 'REEL' ? 'REEL' : 'IMAGE')}
-                                              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
+                                              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1 cursor-pointer"
                                             >
                                               <RefreshCw className={`w-3 h-3 ${generatingMediaIndex === currentIdx ? 'animate-spin' : ''}`} />
-                                              <span>Regenerate Variation</span>
+                                              <span>Regenerate Cover</span>
                                             </button>
+                                            {post.format === 'REEL' && (
+                                              <>
+                                                <span className="text-slate-300">•</span>
+                                                <button
+                                                  type="button"
+                                                  disabled={roadmapVideoGeneratingIdx !== null}
+                                                  onClick={() => handleGenerateRoadmapMp4Video(currentIdx)}
+                                                  className="text-[11px] font-bold text-purple-600 hover:text-purple-800 flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+                                                >
+                                                  <Video className="w-3 h-3" />
+                                                  <span>
+                                                    {roadmapVideoGeneratingIdx === currentIdx
+                                                      ? 'Rendering MP4...'
+                                                      : 'Generate Real MP4 Reel'}
+                                                  </span>
+                                                </button>
+                                              </>
+                                            )}
                                             <span className="text-slate-300">•</span>
                                             <button
                                               type="button"
@@ -6175,6 +6494,62 @@ export default function CalendarPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================================== */}
+        {/* HUMAN-IN-THE-LOOP GOVERNANCE GATE NOTICE (1-CLICK & ARCHITECT)        */}
+        {/* ===================================================================== */}
+        {deployGateTarget && (
+          <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => setDeployGateTarget(null)}
+                aria-label="Close governance notice"
+                className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center space-x-3 text-amber-600">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Governance Gate Notice</h3>
+                  <p className="text-xs text-slate-500">Human-in-the-Loop Content Safety Protocol</p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 leading-relaxed space-y-2">
+                <p className="font-semibold">
+                  {deployGateTarget === 'CAMPAIGN'
+                    ? `These ${generatedRoadmap?.posts?.length || 1} AI campaign drops have not yet received client or agency lead sign-off in the Approvals queue.`
+                    : 'This 1-Click AI post has not yet received client or internal stakeholder sign-off in the Approvals queue.'}
+                </p>
+                <p className="text-amber-800 text-[11px]">
+                  Scheduling directly into the live Calendar bypasses client audit controls. Submit for approval first unless explicitly authorized to bypass.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => executeGovernedDeploy('PENDING')}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                >
+                  Submit for Client Approval
+                </button>
+                <button
+                  type="button"
+                  onClick={() => executeGovernedDeploy('APPROVED')}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
+                >
+                  Bypass Gate &amp; Schedule Drop
+                </button>
               </div>
             </div>
           </div>

@@ -153,6 +153,8 @@ function DashboardContent() {
   const totalPublishedPosts = kpis.totalPublishedPosts ?? 0;
   const totalQueuedPosts = data?.queuedEventsCount !== undefined ? data.queuedEventsCount : (kpis.totalQueuedPosts ?? 0);
   const totalFailedPosts = kpis.totalFailedPosts ?? 0;
+  const totalMissedPosts = data?.missedEventsCount !== undefined ? data.missedEventsCount : (kpis.totalMissedPosts ?? 0);
+  const totalUnfulfilledDrops = totalFailedPosts + totalMissedPosts;
   const totalInteractions = kpis.totalInteractions ?? 0;
   const engagementRate = kpis.engagementRate ?? (totalPublishedPosts > 0 ? (totalInteractions / totalPublishedPosts).toFixed(1) : '0');
 
@@ -166,10 +168,10 @@ function DashboardContent() {
   const neutralSentiment = sentiment.neutral ?? 0;
   const negativeSentiment = sentiment.negative ?? 0;
 
-  // On-time Publishing SLA
-  const totalAttempts = totalPublishedPosts + totalFailedPosts;
-  const publishingSla = totalAttempts > 0 
-    ? Math.round((totalPublishedPosts / totalAttempts) * 100) 
+  // On-time Publishing SLA (includes both FAILED and MISSED / overdue QUEUED drops)
+  const totalAttempts = totalPublishedPosts + totalUnfulfilledDrops;
+  const publishingSla = totalAttempts > 0
+    ? Math.round((totalPublishedPosts / totalAttempts) * 100)
     : 100;
 
   const handleExportBuilderCsv = () => {
@@ -827,11 +829,19 @@ function DashboardContent() {
                 <div className="h-5 w-32 bg-neutral-200 animate-pulse rounded-full" />
               ) : (
                 <span className={`inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full border ${
-                  totalFailedPosts === 0 
-                    ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80' 
-                    : 'text-amber-800 bg-[#FEF3C7] border-amber-200/80'
+                  totalUnfulfilledDrops === 0
+                    ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80'
+                    : totalFailedPosts > 0
+                      ? 'text-rose-800 bg-rose-50 border-rose-200/80'
+                      : 'text-amber-800 bg-[#FEF3C7] border-amber-200/80'
                 }`}>
-                  {totalFailedPosts === 0 ? 'Optimal 0 Failed Drops' : `${totalFailedPosts} Failed attempts recorded`}
+                  {totalUnfulfilledDrops === 0
+                    ? 'Optimal 0 Failed Drops'
+                    : totalFailedPosts > 0 && totalMissedPosts > 0
+                      ? `${totalMissedPosts} Missed • ${totalFailedPosts} Failed Drops`
+                      : totalMissedPosts > 0
+                        ? `${totalMissedPosts} Missed ${totalMissedPosts === 1 ? 'Drop' : 'Drops'} (${totalFailedPosts} Failed)`
+                        : `${totalFailedPosts} Failed attempts recorded`}
                 </span>
               )}
             </div>

@@ -992,7 +992,14 @@ function cleanMediaUrl(raw: any): string {
       if (res.imageUrl) {
         setMediaUrl(res.imageUrl);
         setIsVideoMedia(false);
-        const modelLabel = imageModel.includes('flux') ? 'FLUX 3' : 'AI Photo';
+        const activeModelId = String(res.modelUsed || imageModel || '');
+        const modelLabel = activeModelId.includes('flux')
+          ? 'FLUX 3'
+          : activeModelId.includes('recraft')
+            ? 'Recraft v4.1 AI'
+            : activeModelId.includes('seedream')
+              ? 'Seedream 5.0'
+              : 'AI Photo';
         setUploadedFileName(`${modelLabel} Realistic Image (${imageAspectRatio})`);
         setStatusMessage({
           type: 'success',
