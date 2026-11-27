@@ -29,7 +29,28 @@ export function clearAuthToken() {
 export function getStoredUser(): any | null {
   if (typeof window === 'undefined') return null;
   const user = localStorage.getItem('omni_user');
-  return user ? JSON.parse(user) : null;
+  if (!user) return null;
+  try {
+    return JSON.parse(user);
+  } catch {
+    return null;
+  }
+}
+
+export const GOVERNANCE_BYPASS_ROLES = new Set([
+  'SUPER_ADMIN',
+  'SUPERADMIN',
+  'OWNER',
+  'ADMIN',
+  'TENANT_ADMIN',
+  'AGENCY_ADMIN',
+  'APPROVER'
+]);
+
+export function canBypassGovernanceGate(): boolean {
+  const user = getStoredUser();
+  if (!user || !user.role) return false;
+  return GOVERNANCE_BYPASS_ROLES.has(String(user.role).toUpperCase());
 }
 
 export function setStoredUser(user: any) {

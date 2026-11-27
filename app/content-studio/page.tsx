@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
+import { apiRequest, canBypassGovernanceGate, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   PenTool,
   Sparkles,
@@ -2150,26 +2150,28 @@ function cleanMediaUrl(raw: any): string {
                     setApprovalGateContext(false);
                     await handleSavePost(false, true, 'PENDING');
                   }}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md transition cursor-pointer"
                 >
                   {approvalGateContext ? 'Confirm & Submit for Client Approval' : 'Submit for Client Approval First'}
                 </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowUnapprovedPublishModal(false);
-                    setApprovalGateContext(false);
-                    setIsPublishGateConfirmed(true);
-                    if (scheduledFor) {
-                      await handleSavePost(false, true, 'APPROVED', false, true);
-                    } else {
-                      await handleSavePost(true, true);
-                    }
-                  }}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
-                >
-                  {scheduledFor ? 'Bypass Gate & Schedule Drop' : 'Bypass Gate & Publish Now'}
-                </button>
+                {canBypassGovernanceGate() && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setShowUnapprovedPublishModal(false);
+                      setApprovalGateContext(false);
+                      setIsPublishGateConfirmed(true);
+                      if (scheduledFor) {
+                        await handleSavePost(false, true, 'APPROVED', false, true);
+                      } else {
+                        await handleSavePost(true, true);
+                      }
+                    }}
+                    className="py-2.5 px-4 text-xs font-semibold text-amber-800 bg-white hover:bg-amber-50 border border-amber-300 rounded-xl transition cursor-pointer shrink-0"
+                  >
+                    {scheduledFor ? 'Bypass Gate & Schedule Drop' : 'Bypass Gate & Publish Now'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -118,13 +118,23 @@ function DashboardContent() {
         }
       };
 
+      const interactionsList = inboxRes?.interactions || [];
+      const fallbackComments = interactionsList.filter((i: any) => i.type === 'COMMENT').length;
+      const fallbackDms = interactionsList.filter((i: any) => i.type === 'DIRECT_MESSAGE').length;
+      const resolvedInboxTotal = inboxRes?.total ?? analyticsRes?.kpis?.totalInteractions ?? interactionsList.length;
+      const resolvedCommentsCount = inboxRes?.commentsCount ?? inboxRes?.totalCommentsCount ?? fallbackComments;
+      const resolvedDmsCount = inboxRes?.dmsCount ?? inboxRes?.totalDmsCount ?? fallbackDms;
+
       setData({
         analytics: fallbackAnalytics,
-        recentInteractions: (inboxRes?.interactions || []).slice(0, 5),
+        recentInteractions: interactionsList.slice(0, 5),
         upcomingPosts: (queuedEvents.length > 0 ? queuedEvents : missedEvents).slice(0, 3),
         accounts: accountsList,
         queuedEventsCount: queuedEvents.length,
-        missedEventsCount: missedEvents.length
+        missedEventsCount: missedEvents.length,
+        inboxCount: resolvedInboxTotal,
+        commentsCount: resolvedCommentsCount,
+        dmsCount: resolvedDmsCount
       });
 
       if (activePlatforms.length > 0) {
@@ -1243,7 +1253,9 @@ function DashboardContent() {
             <div className="px-6 py-3.5 bg-neutral-50/70 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 font-medium">
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Total: {data?.inboxCount || 22} items • Comments: {data?.commentsCount || 17} • DMs: {data?.dmsCount || 5}</span>
+                <span>
+                  Total: {data?.inboxCount ?? totalInteractions} items • Comments: {data?.commentsCount ?? 0} • DMs: {data?.dmsCount ?? 0}
+                </span>
               </div>
               <Link href="/inbox" className="text-neutral-900 font-bold hover:underline">
                 View All Threads →

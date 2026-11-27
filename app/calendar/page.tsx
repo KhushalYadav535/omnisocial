@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import AppLayout from '../../components/AppLayout';
-import { apiRequest, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
+import { apiRequest, canBypassGovernanceGate, getStoredActiveBrandId, setStoredActiveBrandId } from '../../lib/api';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -2552,10 +2552,10 @@ export default function CalendarPage() {
         {/* CONTENT PILLARS & 80/20 BALANCE AUDITOR GAUGE (SPRINT 3)             */}
         {/* ===================================================================== */}
         <div className={`p-4 rounded-2xl border backdrop-blur-md transition-all space-y-2.5 shadow-2xs ${pillarStats.status === 'FATIGUE'
-            ? 'bg-rose-50/70 border-rose-200 text-rose-900'
-            : pillarStats.status === 'MODERATE'
-              ? 'bg-amber-50/70 border-amber-200 text-amber-900'
-              : 'bg-emerald-50/50 border-emerald-200/80 text-emerald-950'
+          ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+          : pillarStats.status === 'MODERATE'
+            ? 'bg-amber-50/70 border-amber-200 text-amber-900'
+            : 'bg-emerald-50/50 border-emerald-200/80 text-emerald-950'
           }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center space-x-2.5">
@@ -2566,12 +2566,12 @@ export default function CalendarPage() {
                     Content Pillar Auditor: {loading ? '…' : `${pillarStats.valuePercent}% Value & Proof vs ${pillarStats.promoPercent}% Promo`}
                   </span>
                   <span className={`text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded-full ${loading
-                      ? 'bg-neutral-200 text-neutral-600'
-                      : pillarStats.status === 'FATIGUE'
-                        ? 'bg-rose-200 text-rose-800'
-                        : pillarStats.status === 'MODERATE'
-                          ? 'bg-amber-200 text-amber-900'
-                          : 'bg-emerald-200 text-emerald-800'
+                    ? 'bg-neutral-200 text-neutral-600'
+                    : pillarStats.status === 'FATIGUE'
+                      ? 'bg-rose-200 text-rose-800'
+                      : pillarStats.status === 'MODERATE'
+                        ? 'bg-amber-200 text-amber-900'
+                        : 'bg-emerald-200 text-emerald-800'
                     }`}>
                     {loading ? '…' : pillarStats.statusLabel}
                   </span>
@@ -2788,10 +2788,10 @@ export default function CalendarPage() {
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropOnDate(e, dayItem.date)}
                         className={`p-2 sm:p-2.5 flex flex-col justify-between transition-all min-h-[160px] sm:min-h-[175px] relative group/cell ${dayItem.isCurrentMonth
-                            ? isToday
-                              ? 'bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-inset ring-indigo-500/20'
-                              : 'bg-white hover:bg-neutral-50/50'
-                            : 'bg-neutral-50/40 text-neutral-300'
+                          ? isToday
+                            ? 'bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-inset ring-indigo-500/20'
+                            : 'bg-white hover:bg-neutral-50/50'
+                          : 'bg-neutral-50/40 text-neutral-300'
                           }`}
                       >
                         {/* Day Cell Header */}
@@ -2810,8 +2810,8 @@ export default function CalendarPage() {
                               ) : (
                                 <span
                                   className={`text-xs font-bold font-mono w-6 h-6 flex items-center justify-center rounded-full transition-colors ${dayItem.isCurrentMonth
-                                      ? 'text-neutral-700 group-hover/cell:text-neutral-950 group-hover/cell:bg-neutral-100'
-                                      : 'text-neutral-300'
+                                    ? 'text-neutral-700 group-hover/cell:text-neutral-950 group-hover/cell:bg-neutral-100'
+                                    : 'text-neutral-300'
                                     }`}
                                 >
                                   {dayItem.date.getDate()}
@@ -3510,8 +3510,8 @@ export default function CalendarPage() {
                           type="button"
                           onClick={() => setPreviewModalPlatform(p.id)}
                           className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer ${previewModalPlatform === p.id
-                              ? 'bg-white text-neutral-900 shadow-xs'
-                              : 'text-neutral-500 hover:text-neutral-800'
+                            ? 'bg-white text-neutral-900 shadow-xs'
+                            : 'text-neutral-500 hover:text-neutral-800'
                             }`}
                         >
                           {p.icon}
@@ -3521,12 +3521,12 @@ export default function CalendarPage() {
                     </div>
 
                     <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${selectedEvent.status === 'PUBLISHED'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : selectedEvent.status === 'MISSED' || (selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now())
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                          : selectedEvent.status === 'QUEUED'
-                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : selectedEvent.status === 'MISSED' || (selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now())
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : selectedEvent.status === 'QUEUED'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
                       {selectedEvent.status === 'QUEUED' && new Date(selectedEvent.scheduledFor).getTime() < Date.now() ? 'MISSED' : selectedEvent.status}
                     </span>
@@ -3918,10 +3918,10 @@ export default function CalendarPage() {
                           </div>
                           {aiScoreAnalysis ? (
                             <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${aiScoreAnalysis.score >= 85
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : aiScoreAnalysis.score >= 65
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-rose-100 text-rose-800'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : aiScoreAnalysis.score >= 65
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-rose-100 text-rose-800'
                               }`}>
                               Score: {aiScoreAnalysis.score}/100 ({aiScoreAnalysis.grade})
                             </span>
@@ -4236,8 +4236,8 @@ export default function CalendarPage() {
                               handleToggleEvergreen(selectedEvent, nextState, selectedEventRecycleInterval);
                             }}
                             className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all cursor-pointer ${selectedEventIsEvergreen
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
                               }`}
                           >
                             {selectedEventIsEvergreen ? 'Active ♻️' : 'Turn On'}
@@ -4282,8 +4282,8 @@ export default function CalendarPage() {
                           onClick={handleSaveContentEdit}
                           disabled={saving || !hasModifications}
                           className={`px-5 py-2 text-xs font-semibold rounded-full transition-all flex items-center space-x-1.5 ${hasModifications
-                              ? 'text-white bg-[#111215] hover:bg-neutral-800 cursor-pointer shadow-md'
-                              : 'text-neutral-400 bg-neutral-100 border border-neutral-200 cursor-default opacity-60'
+                            ? 'text-white bg-[#111215] hover:bg-neutral-800 cursor-pointer shadow-md'
+                            : 'text-neutral-400 bg-neutral-100 border border-neutral-200 cursor-default opacity-60'
                             }`}
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -4654,8 +4654,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setInstantScheduledTime(slot.time)}
                             className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${instantScheduledTime === slot.time
-                                ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold ring-2 ring-amber-400/20 shadow-xs'
-                                : 'bg-white border-slate-200 hover:border-amber-300 text-slate-700'
+                              ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold ring-2 ring-amber-400/20 shadow-xs'
+                              : 'bg-white border-slate-200 hover:border-amber-300 text-slate-700'
                               }`}
                           >
                             <div className="text-[11px] font-bold">{slot.label}</div>
@@ -4762,10 +4762,10 @@ export default function CalendarPage() {
                         <div className="w-full flex items-center justify-between gap-2">
                           <span className="text-[10px] font-extrabold uppercase text-slate-500">Visual Asset Preview</span>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${generatedInstantPost.mediaSource === 'OPENROUTER_AI'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : generatedInstantPost.mediaSource === 'USER_SELECTED'
-                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : generatedInstantPost.mediaSource === 'USER_SELECTED'
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
                             }`}>
                             {isVideoAssetUrl(generatedInstantPost.mediaUrl)
                               ? '🎬 Real MP4 Video (AI)'
@@ -4877,8 +4877,8 @@ export default function CalendarPage() {
                                   imageModelUsed: undefined
                                 }))}
                                 className={`px-1.5 py-1 rounded-md text-[9px] font-bold border transition-all text-center truncate cursor-pointer ${generatedInstantPost.mediaUrl === preset.url
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-800 font-extrabold'
-                                    : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                                  ? 'bg-indigo-50 border-indigo-400 text-indigo-800 font-extrabold'
+                                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
                                   }`}
                                 title={`Switch to ${preset.label}`}
                               >
@@ -5061,10 +5061,10 @@ export default function CalendarPage() {
                     <div
                       key={s.step}
                       className={`flex-1 py-1.5 px-2 rounded-full text-center text-xs font-semibold transition-all ${wizardStep === s.step
-                          ? 'bg-white text-neutral-900 shadow-sm font-bold'
-                          : wizardStep > s.step
-                            ? 'text-white'
-                            : 'text-neutral-400'
+                        ? 'bg-white text-neutral-900 shadow-sm font-bold'
+                        : wizardStep > s.step
+                          ? 'text-white'
+                          : 'text-neutral-400'
                         }`}
                     >
                       {s.label}
@@ -5393,8 +5393,8 @@ export default function CalendarPage() {
                               type="button"
                               onClick={() => setArchitectTone(t.id as any)}
                               className={`p-3 text-left rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
-                                  ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
-                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                ? 'bg-indigo-50/80 border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                                 }`}
                             >
                               <span className="text-xs font-bold text-slate-900">{t.label}</span>
@@ -5452,8 +5452,8 @@ export default function CalendarPage() {
                               type="button"
                               onClick={() => setArchitectLanguage(l.id as any)}
                               className={`p-2.5 text-center rounded-2xl border transition-all cursor-pointer ${architectLanguage === l.id
-                                  ? 'bg-[#101014] text-white border-black shadow-xs font-bold'
-                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                                ? 'bg-[#101014] text-white border-black shadow-xs font-bold'
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                                 }`}
                             >
                               <span className="text-xs font-bold block">{l.label}</span>
@@ -5696,8 +5696,8 @@ export default function CalendarPage() {
                             type="button"
                             onClick={() => setEnableUtmTracking(!enableUtmTracking)}
                             className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all flex items-center space-x-1.5 cursor-pointer ${enableUtmTracking
-                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-xs'
-                                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-xs'
+                              : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10'
                               }`}
                           >
                             <span>{enableUtmTracking ? '✓ UTM Active' : 'UTM Tracking Off'}</span>
@@ -5823,8 +5823,8 @@ export default function CalendarPage() {
                               type="button"
                               onClick={() => setRoadmapPhaseFilter(tab.id)}
                               className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${roadmapPhaseFilter === tab.id
-                                  ? 'bg-slate-900 text-white shadow-xs'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                                ? 'bg-slate-900 text-white shadow-xs'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
                                 }`}
                             >
                               {tab.label}
@@ -5855,8 +5855,8 @@ export default function CalendarPage() {
                             <div
                               key={currentIdx}
                               className={`rounded-2xl border transition-all overflow-hidden ${isExpanded
-                                  ? 'border-indigo-400 bg-white shadow-md ring-1 ring-indigo-500/20'
-                                  : 'border-slate-200 bg-white hover:border-slate-300 shadow-2xs'
+                                ? 'border-indigo-400 bg-white shadow-md ring-1 ring-indigo-500/20'
+                                : 'border-slate-200 bg-white hover:border-slate-300 shadow-2xs'
                                 }`}
                             >
                               {/* Card Accordion Header */}
@@ -5937,8 +5937,8 @@ export default function CalendarPage() {
                                       }
                                     }}
                                     className={`px-2.5 py-1 text-[11px] font-bold rounded-xl border transition-all cursor-pointer ${editingPostIndex === currentIdx
-                                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
                                       }`}
                                   >
                                     {editingPostIndex === currentIdx ? '✓ Save' : '✏️ Edit'}
@@ -5991,8 +5991,8 @@ export default function CalendarPage() {
                                               type="button"
                                               onClick={() => handleSwapHookVariation(currentIdx, hIdx, hVar)}
                                               className={`p-2.5 text-left rounded-xl text-[11px] border transition-all cursor-pointer flex flex-col justify-between ${isActive
-                                                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs font-medium'
-                                                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs font-medium'
+                                                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
                                                 }`}
                                             >
                                               <span className={`text-[9px] font-extrabold uppercase tracking-wider mb-1 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>
@@ -6321,8 +6321,8 @@ export default function CalendarPage() {
                                         <div className="space-y-1.5 flex-1 text-left">
                                           <div className="flex flex-wrap items-center gap-2">
                                             <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border flex items-center space-x-1 ${isVideoAssetUrl(post.mediaUrl) || post.mediaSource !== 'STOCK_FALLBACK'
-                                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                              : 'bg-amber-50 text-amber-800 border-amber-200'
                                               }`}>
                                               <Check className="w-3 h-3" />
                                               <span>
@@ -6539,17 +6539,19 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => executeGovernedDeploy('PENDING')}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl shadow-md transition cursor-pointer"
                 >
                   Submit for Client Approval
                 </button>
-                <button
-                  type="button"
-                  onClick={() => executeGovernedDeploy('APPROVED')}
-                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl shadow-xs transition cursor-pointer"
-                >
-                  Bypass Gate &amp; Schedule Drop
-                </button>
+                {canBypassGovernanceGate() && (
+                  <button
+                    type="button"
+                    onClick={() => executeGovernedDeploy('APPROVED')}
+                    className="py-2.5 px-4 text-xs font-semibold text-amber-800 bg-white hover:bg-amber-50 border border-amber-300 rounded-xl transition cursor-pointer shrink-0"
+                  >
+                    Bypass Gate &amp; Schedule Drop
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -6744,8 +6746,8 @@ export default function CalendarPage() {
                   type="button"
                   onClick={() => setLibraryTab('HASHTAGS')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'HASHTAGS'
-                      ? 'bg-neutral-900 text-white shadow-xs'
-                      : 'text-neutral-600 hover:bg-neutral-100'
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-600 hover:bg-neutral-100'
                     }`}
                 >
                   <Hash className="w-3.5 h-3.5" />
@@ -6756,8 +6758,8 @@ export default function CalendarPage() {
                   type="button"
                   onClick={() => setLibraryTab('SNIPPETS')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'SNIPPETS'
-                      ? 'bg-neutral-900 text-white shadow-xs'
-                      : 'text-neutral-600 hover:bg-neutral-100'
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-600 hover:bg-neutral-100'
                     }`}
                 >
                   <Copy className="w-3.5 h-3.5" />
@@ -6768,8 +6770,8 @@ export default function CalendarPage() {
                   type="button"
                   onClick={() => setLibraryTab('IDEAS')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${libraryTab === 'IDEAS'
-                      ? 'bg-neutral-900 text-white shadow-xs'
-                      : 'text-neutral-600 hover:bg-neutral-100'
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-600 hover:bg-neutral-100'
                     }`}
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
